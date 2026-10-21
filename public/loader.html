@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Chatroom</title>
+<style>
+  /* tiny splash shown while the app is being fetched */
+  html,body{height:100%;margin:0;background:#0e1015;color:#8b92a5;font:15px system-ui,-apple-system,"Segoe UI",sans-serif}
+  #boot{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:20px}
+  .sp{width:34px;height:34px;border-radius:50%;border:3px solid #262b3a;border-top-color:#6c8cff;animation:s .8s linear infinite}
+  @keyframes s{to{transform:rotate(360deg)}}
+  button{background:#6c8cff;color:#fff;border:0;border-radius:10px;padding:10px 18px;font:inherit;font-weight:600;cursor:pointer}
+</style>
+</head>
+<body>
+<div id="boot"><div class="sp"></div><div>Loading Chatroom...</div></div>
+<script>
+/*
+  Chatroom loader - no iframe.
+  It downloads the app page from your Chatroom server and writes it straight into THIS page,
+  so the app runs as the page itself (same window, same url bar, no embedding).
+  Host this file anywhere (github pages, netlify, your own site, or just open it from disk).
+*/
+(function () {
+  // put your Railway url here (no trailing slash). If you leave the placeholder and serve this file from the
+  // Chatroom server itself, it automatically uses that server.
+  var SERVER = "__SERVER__";
+
+  if (SERVER.indexOf("__") === 0) SERVER = /^https?:/.test(location.origin) ? location.origin : "";
+  SERVER = SERVER.replace(/\/+$/, "");
+
+  var boot = document.getElementById("boot");
+
+  function fail(msg) {
+    // show the error and a retry button
+    boot.innerHTML = "";
+    var t = document.createElement("div");
+    t.textContent = msg;
+    var b = document.createElement("button");
+    b.textContent = "Try again";
+    b.onclick = function () { location.reload(); };
+    boot.appendChild(t);
+    boot.appendChild(b);
+  }
+
+  if (!SERVER) return fail("Set the SERVER address at the top of loader.html first.");
+
+  fetch(SERVER + "/app", { cache: "no-cache" })
+    .then(function (r) {
+      if (!r.ok) throw new Error("server answered " + r.status);
+      return r.text();
+    })
+    .then(function (html) {
+      // tell the app where its server lives, before any of its own code runs
+      var inject = "<script>window.CHATROOM_ORIGIN=" + JSON.stringify(SERVER) + ";<\/script>";
+      html = html.replace(/<head[^>]*>/i, function (m) { return m + inject; });
+      // replace this page with the app (this is a real page swap, not an iframe)
+      document.open();
+      document.write(html);
+      document.close();
+    })
+    .catch(function (e) {
+      fail("Could not reach the Chatroom server (" + e.message + ").");
+    });
+})();
+</script>
+</body>
+</html>
