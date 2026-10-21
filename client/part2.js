@@ -10,6 +10,8 @@ const SAME_ORIGIN = API === location.origin;               // web push needs a s
 
 // ---------- tiny dom helpers ----------
 // el('div', {class:'x', onclick: fn}, 'text', childNode) - builds nodes with textContent only (no innerHTML, so no xss)
+// append/replaceChildren would print "null" for empty slots, so skip null/false/undefined everywhere
+for (const k of ['append', 'prepend', 'replaceChildren']) { const o = Element.prototype[k]; Element.prototype[k] = function (...a) { return o.apply(this, a.flat(9).filter((x) => x != null && x !== false)); }; }
 const el = (tag, props, ...kids) => {
   const n = document.createElement(tag);
   if (props) for (const [k, v] of Object.entries(props)) {
@@ -75,6 +77,19 @@ const ICONS = {
   timer: '<circle cx="12" cy="14" r="8"/><path d="M12 10v4l2 2M9 2h6"/>',
   database: '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/>',
   palette: '<circle cx="13.5" cy="6.5" r="1"/><circle cx="17.5" cy="10.5" r="1"/><circle cx="8.5" cy="7.5" r="1"/><circle cx="6.5" cy="12.5" r="1"/><path d="M12 2a10 10 0 0 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.300 0-1.100.900-2 2-2h2.300c3 0 5.200-2.200 5.200-5.200C22 6 17.500 2 12 2z"/>',
+  compass: '<circle cx="12" cy="12" r="10"/><path d="m16.2 7.8-2.1 6.3-6.3 2.1 2.1-6.3z"/>',
+  globe: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
+  pin: '<path d="M12 17v5"/><path d="M9 10.8a2 2 0 0 1-1.1 1.8l-1.8.9A2 2 0 0 0 5 15.2V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.8a2 2 0 0 0-1.1-1.8l-1.8-.9a2 2 0 0 1-1.1-1.8V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>',
+  copy: '<rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+  flag: '<path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 8 2a6 6 0 0 0 4-1v12a6 6 0 0 1-4 1c-3 0-5-2-8-2a6 6 0 0 0-4 1"/>',
+  smile: '<circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/>',
+  gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/>',
+  image: '<rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>',
+  checksquare: '<path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
+  newspaper: '<path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8M15 18h-5M10 6h8v4h-8z"/>',
+  star: '<path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8-6.2-3.3-6.2 3.3L8 14.2 3 9.3l6.9-1z"/>',
+  undo: '<path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>',
 };
 const ic = (name, size = 18) => {
   const s = document.createElement('span');
@@ -165,6 +180,9 @@ async function keyFor(conv, version) {
   if (conv.type === 'dm') {
     const other = conv.members.find((m) => m.id !== S.me.id);
     entry = { key: await sharedKey(other.publicKey, 'chatroom-dm-v1|' + [S.me.id, other.id].sort().join(':')) };
+  } else if (conv.isPublic) {                                // public rooms: anyone can join, so the key is derived from the room id (readable by the server, by design)
+    const raw = new Uint8Array(await subtle.digest('SHA-256', enc.encode('chatroom-public-v1|' + conv.id)));
+    entry = { raw, key: await subtle.importKey('raw', raw, 'AES-GCM', false, ['encrypt', 'decrypt']) };
   } else {
     const ke = conv.keys.find((k) => k.version === version);
     if (!ke) throw new Error('no key for version ' + version);
@@ -206,6 +224,31 @@ const idb = () => new Promise((ok, no) => { const r = indexedDB.open('chatroom',
 const idbGet = async (k) => { try { const db = await idb(); return await new Promise((ok, no) => { const r = db.transaction('keys').objectStore('keys').get(k); r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); }); } catch { return undefined; } };
 const idbSet = async (k, v) => { try { const db = await idb(); await new Promise((ok, no) => { const t = db.transaction('keys', 'readwrite'); t.objectStore('keys').put(v, k); t.oncomplete = ok; t.onerror = () => no(t.error); }); } catch {} };
 const idbDel = async (k) => { try { const db = await idb(); await new Promise((ok) => { const t = db.transaction('keys', 'readwrite'); t.objectStore('keys').delete(k); t.oncomplete = ok; t.onerror = ok; }); } catch {} };
+
+// ---------- emoji (shown as twemoji images so they look the same on windows, mac and phones) ----------
+const EMOJI_SRC = '+1 👍|-1 👎|smile 😄|grin 😁|joy 😂|rofl 🤣|sweat_smile 😅|wink 😉|blush 😊|heart_eyes 😍|kissing_heart 😘|yum 😋|zany 🤪|thinking 🤔|shush 🤫|neutral_face 😐|expressionless 😑|unamused 😒|roll_eyes 🙄|smirk 😏|pleading 🥺|sob 😭|cry 😢|angry 😠|rage 😡|scream 😱|flushed 😳|sleeping 😴|sunglasses 😎|nerd 🤓|cold 🥶|hot 🥵|sick 🤢|mask 😷|salute 🫡|melting 🫠|party 🥳|skull 💀|skull_crossbones ☠️|ghost 👻|clown 🤡|poop 💩|alien 👽|robot 🤖|moai 🗿|fire 🔥|sparkles ✨|star ⭐|boom 💥|100 💯|zap ⚡|rainbow 🌈|sun ☀️|moon 🌙|snowflake ❄️|sweat 💦|heart ❤️|orange_heart 🧡|yellow_heart 💛|green_heart 💚|blue_heart 💙|purple_heart 💜|black_heart 🖤|broken_heart 💔|sparkling_heart 💖|thumbsup 👍|thumbsdown 👎|clap 👏|wave 👋|pray 🙏|muscle 💪|ok_hand 👌|v ✌️|crossed_fingers 🤞|point_up ☝️|point_right 👉|raised_hands 🙌|handshake 🤝|eyes 👀|brain 🧠|tada 🎉|balloon 🎈|gift 🎁|trophy 🏆|medal 🏅|crown 👑|gem 💎|money 💰|game 🎮|dice 🎲|music 🎵|headphones 🎧|guitar 🎸|pizza 🍕|burger 🍔|fries 🍟|taco 🌮|cake 🍰|cookie 🍪|coffee ☕|tea 🍵|beer 🍺|cat 🐱|dog 🐶|fox 🦊|panda 🐼|frog 🐸|unicorn 🦄|bee 🐝|butterfly 🦋|flower 🌸|rose 🌹|tree 🌳|cactus 🌵|mushroom 🍄|apple 🍎|banana 🍌|strawberry 🍓|watermelon 🍉|rocket 🚀|car 🚗|plane ✈️|house 🏠|bulb 💡|bomb 💣|hammer 🔨|wrench 🔧|key 🔑|lock 🔒|bell 🔔|mag 🔍|phone 📱|computer 💻|camera 📷|book 📖|pencil ✏️|memo 📝|calendar 📅|check ✅|x ❌|warning ⚠️|question ❓|exclamation ❗|no_entry ⛔|recycle ♻️|hourglass ⌛|alarm ⏰|soccer ⚽|basketball 🏀|football 🏈|tennis 🎾|bowling 🎳|chains ⛓️';
+const EMOJI = new Map(EMOJI_SRC.split('|').map((x) => { const i = x.indexOf(' '); return [x.slice(0, i), x.slice(i + 1)]; }));
+const EMOJI_LIST = [...EMOJI];
+const QUICK_REACTS = ['thumbsup', 'heart', 'joy', 'skull', 'fire', 'tada', 'eyes', 'pray'].map((n) => EMOJI.get(n));
+const emojiUrl = (ch) => { const str = ch.indexOf('‍') < 0 ? ch.replace(/️/g, '') : ch; return 'https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/' + [...str].map((c) => c.codePointAt(0).toString(16)).join('-') + '.svg'; };
+const emojiEl = (ch, cls = '') => { const i = el('img', { class: 'emoji ' + cls, src: emojiUrl(ch), alt: ch, draggable: false }); i.onerror = () => i.replaceWith(document.createTextNode(ch)); return i; };
+const EMOJI_RE = /((?:\p{Extended_Pictographic}(?:️|[\u{1F3FB}-\u{1F3FF}])?)(?:‍\p{Extended_Pictographic}(?:️|[\u{1F3FB}-\u{1F3FF}])?)*|[\u{1F1E6}-\u{1F1FF}]{2})/gu;
+// turns emoji characters inside text into image nodes, everything else stays text
+function emojify(text, cls = '') {
+  const out = []; let last = 0; const str = String(text);
+  for (const m of str.matchAll(EMOJI_RE)) {
+    if (m[0].codePointAt(0) < 0x203c) continue;           // (c) (r) (tm) stay as plain text
+    if (m.index > last) out.push(str.slice(last, m.index));
+    out.push(emojiEl(m[0], cls)); last = m.index + m[0].length;
+  }
+  if (last < str.length) out.push(str.slice(last));
+  return out;
+}
+const onlyEmoji = (t) => { const s = String(t).trim(); if (!s) return false; const r = s.replace(EMOJI_RE, '').trim(); return r === '' && (s.match(EMOJI_RE) || []).length <= 3; };
+const expandShortcodes = (t) => String(t).replace(/:([a-z0-9_+-]{1,24}):/gi, (all, n) => EMOJI.get(n.toLowerCase()) || all);
+const GIF_HOSTS = ['tenor.com', 'giphy.com', 'klipy.com', 'klipy.co', 'imgur.com'];
+const gifOk = (u) => { try { const x = new URL(u); return x.protocol === 'https:' && GIF_HOSTS.some((d) => x.hostname === d || x.hostname.endsWith('.' + d)); } catch { return false; } };
+const betaActive = () => !!(S.me && (S.me.isAdmin || (S.me.betaUntil && new Date(S.me.betaUntil) > new Date())));
 
 // ---------- toasts, sound, notifications ----------
 function toast(msg, kind = 'info', onclick) {
@@ -261,6 +304,7 @@ function previewText(p, mine) {
   const pre = mine ? 'You: ' : '';
   if (p.t === 'text') return pre + p.text;
   if (p.t === 'game') return pre + 'shared a game: ' + p.title;
+  if (p.t === 'gif') return pre + 'sent a gif';
   if (p.t === 'deleted') return 'message deleted';
   return 'encrypted message';
 }
@@ -387,6 +431,30 @@ async function onWS(m) {
       ui.renderSide(); if (S.active === c.id) ui.renderMessages(c);
       break;
     }
+    case 'msgs_deleted': {                                   // one or many deleted at once
+      const c = convOf(m.convId); if (!c) return;
+      for (const id of m.ids) { const x = c.msgs.find((y) => y.id === id); if (x) { x.deleted = true; x._p = { t: 'deleted' }; x.pinned = false; x.reactions = {}; } if (c.lastMessage && c.lastMessage.id === id) { c.lastMessage.deleted = true; c._preview = 'message deleted'; } }
+      ui.renderSide(); if (S.active === c.id) ui.renderMessages(c);
+      break;
+    }
+    case 'reaction': {
+      const c = convOf(m.convId); const x = c && c.msgs.find((y) => y.id === m.msgId); if (!x) return;
+      x.reactions = x.reactions || {};
+      const list = (x.reactions[m.emoji] = x.reactions[m.emoji] || []);
+      const at = list.indexOf(m.userId);
+      if (m.on && at < 0) list.push(m.userId); else if (!m.on && at >= 0) list.splice(at, 1);
+      if (!list.length) delete x.reactions[m.emoji];
+      if (S.active === c.id) ui.renderMessages(c);
+      break;
+    }
+    case 'pin': {
+      const c = convOf(m.convId); if (!c) return;
+      const x = c.msgs.find((y) => y.id === m.msgId); if (x) x.pinned = m.on;
+      c._pinsAt = 0;                                          // pins list is stale, refetch next time
+      if (S.active === c.id) { ui.renderMessages(c); window.__ui.renderPins && window.__ui.renderPins(c); }
+      break;
+    }
+    case 'reports_changed': if (window.__ui.reportsChanged) window.__ui.reportsChanged(); break;
     case 'typing': {
       const c = convOf(m.convId); if (!c) return;
       let t = S.typing.get(c.id); if (!t) { t = new Map(); S.typing.set(c.id, t); }
@@ -397,7 +465,7 @@ async function onWS(m) {
     }
     case 'me_update': {
       const me = await api('GET', '/api/me', null, { quiet: true }).catch(() => null);
-      if (me) { Object.assign(S.me, me.user); S.ttlHours = me.ttlHours || S.ttlHours; ui.renderAll(); }
+      if (me) { Object.assign(S.me, me.user); S.ttlHours = me.ttlHours || S.ttlHours; S.referral = me.referral; window.__ext && window.__ext.applyTheme(); ui.renderAll(); }
       break;
     }
     case 'presence': S.presence.set(m.userId, m); ui.renderSide(); ui.renderHeader(); ui.renderActivityLive(); break;
@@ -429,7 +497,7 @@ async function onWS(m) {
     case 'notif': {
       S.notifs.unshift(m.notif); S.notifUnread++;
       ui.renderRail();
-      const txt = m.notif.type === 'group_added' ? `${m.notif.data.by} added you to ${m.notif.data.name}` : m.notif.type === 'dm_new' ? `${m.notif.data.from} started a chat with you` : 'new notification';
+      const txt = m.notif.type === 'group_added' ? `${m.notif.data.by} added you to ${m.notif.data.name}` : m.notif.type === 'dm_new' ? `${m.notif.data.from} started a chat with you` : m.notif.type === 'referral' ? `${m.notif.data.name} joined, +${m.notif.data.minutes} min beta` : m.notif.type === 'report' ? 'new report to review' : 'new notification';
       toast(txt, 'info', () => { if (m.notif.data.convId) ui.openConv(m.notif.data.convId); });
       beep();
       break;
@@ -437,5 +505,5 @@ async function onWS(m) {
   }
 }
 
-window.__core = { API, SAME_ORIGIN, S, el, $, ic, avatar, fmtTime, fmtDay, fmtDur, ago, rid, debounce, lsGet, lsSet, lsDel, toast, beep, updateBadge, api, kdf, newIdentity, openIdentity, wrapGroupKey, encryptPayload, decryptMsg, safetyNumber, idbGet, idbSet, idbDel, convOf, other, convTitle, memberOf, keyFor, previewText, refreshPreview, sortConvs, mergeConvs, loadConvs, loadMessages, addMessage, sendPayload, markRead, connectWS, sendWS, rand, b64, unb64, subtle, skCache, convKeys, startCooldown, hue, tone };
+window.__core = { API, SAME_ORIGIN, S, el, $, ic, avatar, fmtTime, fmtDay, fmtDur, ago, rid, debounce, lsGet, lsSet, lsDel, toast, beep, updateBadge, api, kdf, newIdentity, openIdentity, wrapGroupKey, encryptPayload, decryptMsg, safetyNumber, idbGet, idbSet, idbDel, convOf, other, convTitle, memberOf, keyFor, previewText, refreshPreview, sortConvs, mergeConvs, loadConvs, loadMessages, addMessage, sendPayload, markRead, connectWS, sendWS, rand, b64, unb64, subtle, skCache, convKeys, startCooldown, hue, tone, EMOJI, EMOJI_LIST, QUICK_REACTS, emojiEl, emojify, onlyEmoji, expandShortcodes, gifOk, betaActive };
 })();
