@@ -2,7 +2,7 @@
 const fs = require('fs');                                     // file access
 const read = (f) => fs.readFileSync(__dirname + '/client/' + f, 'utf8'); // read a part
 fs.mkdirSync(__dirname + '/public', { recursive: true });     // make sure output dir exists
-const out = read('part1.html') + read('part2.js') + '\n' + read('part3.js') + '\n' + read('part4.html'); // stitch parts together
+const out = read('part1.html') + read('part2.js') + '\n' + read('part3.js') + '\n' + read('part3b.js') + '\n' + read('part4.html'); // stitch parts together
 if (out.includes('</scr' + 'ipt>', out.indexOf('<script>') + 8) && out.split('</scr' + 'ipt>').length !== 2) throw new Error('stray closing script tag inside the js'); // would break document.write loading
 fs.writeFileSync(__dirname + '/public/index.html', out);      // write the finished page
 console.log('built public/index.html', out.length, 'bytes');

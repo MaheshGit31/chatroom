@@ -12,6 +12,7 @@ const { q, pool, init } = require('./lib/db');
 const { limiter, rl } = require('./lib/limiter');
 const { Games } = require('./lib/games');
 
+const features = require('./lib/features');                  // reactions, pins, reports, public groups, referrals, gifs, themes
 const PORT = process.env.PORT || 3000;
 const ADMIN_USERNAME = (process.env.ADMIN_USERNAME || 'bart').toLowerCase();   // this username becomes the owner/admin
 const ADMIN_SETUP_KEY = process.env.ADMIN_SETUP_KEY || '';                      // if set, registering the owner name needs this key (stops name squatting)
@@ -113,7 +114,7 @@ const auth = wrap(async (req, res, next) => {
   const token = h.startsWith('Bearer ') ? h.slice(7) : '';
   if (!token) return bad(res, 'unauthorized', 401);
   const r = await q(
-    `select u.id,u.username,u.display_name,u.share_activity,u.is_admin,u.banned,u.status_text,u.status_icon,u.status_mode,u.status_expires,s.expires_at from sessions s join users u on u.id=s.user_id
+    `select u.*,s.expires_at from sessions s join users u on u.id=s.user_id
      where s.token_hash=$1 and s.expires_at>now()`, [sha256(token)]);
   if (!r.rows[0] || r.rows[0].banned) return bad(res, r.rows[0] ? 'account suspended' : 'unauthorized', 401);
   req.user = r.rows[0];
@@ -128,7 +129,7 @@ async function makeSession(userId, ua) {
   return token;
 }
 const statusOf = (u) => (u.status_text || u.status_icon ? { text: u.status_text || '', icon: u.status_icon || '' } : null);
-const publicUser = (u) => ({ id: u.id, username: u.username, displayName: u.display_name, shareActivity: u.share_activity, isAdmin: !!u.is_admin, isOwner: u.username === ADMIN_USERNAME, mode: u.status_mode || 'online', status: statusOf(u), statusExpires: u.status_expires || null });
+const publicUser = (u) => ({ id: u.id, username: u.username, displayName: u.display_name, shareActivity: u.share_activity, isAdmin: !!u.is_admin, isOwner: u.username === ADMIN_USERNAME, mode: u.status_mode || 'online', status: statusOf(u), statusExpires: u.status_expires || null, beta: features.betaOn(u), betaUntil: u.beta_until || null, theme: u.theme || null });
 
 const SECS = "(case when p.ended_at is null then floor(extract(epoch from (now()-p.started_at)))::int else p.seconds end)"; // running sessions count live
 const USERNAME = /^[a-z0-9_]{3,20}$/;
@@ -150,11 +151,13 @@ app.post('/api/auth/register', rl('register', 5, 3_600_000), wrap(async (req, re
   if (![b.kdfSalt, b.authSecret, b.publicKey, b.wrappedPriv, b.wrappedPrivIv].every((x) => isB64(x, 2000))) return bad(res, 'bad key material');
   const authSalt = crypto.randomBytes(16).toString('hex');
   const hash = await scrypt(b.authSecret, authSalt);
+  let referredBy = null;                                     // optional invite code, a bad code is just ignored
+  if (typeof b.ref === 'string' && /^[a-z0-9]{4,12}$/i.test(b.ref)) { const rr = await q('select id from users where referral_code=$1 and not banned', [b.ref.toLowerCase()]); referredBy = rr.rows[0] ? rr.rows[0].id : null; }
   try {
     const r = await q(
-      `insert into users(username,display_name,kdf_salt,auth_salt,auth_hash,public_key,wrapped_priv,wrapped_priv_iv,is_admin)
-       values($1,$2,$3,$4,$5,$6,$7,$8,$9) returning *`,
-      [username, displayName, b.kdfSalt, authSalt, hash, b.publicKey, b.wrappedPriv, b.wrappedPrivIv, username === ADMIN_USERNAME]);
+      `insert into users(username,display_name,kdf_salt,auth_salt,auth_hash,public_key,wrapped_priv,wrapped_priv_iv,is_admin,referred_by)
+       values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) returning *`,
+      [username, displayName, b.kdfSalt, authSalt, hash, b.publicKey, b.wrappedPriv, b.wrappedPrivIv, username === ADMIN_USERNAME, referredBy]);
     const token = await makeSession(r.rows[0].id, req.headers['user-agent']);
     res.json({ token, user: publicUser(r.rows[0]) });
   } catch (e) {
@@ -186,7 +189,7 @@ app.post('/api/auth/logout', auth, wrap(async (req, res) => {
 
 app.get('/api/me', auth, wrap(async (req, res) => {
   const r = await q('select public_key,wrapped_priv,wrapped_priv_iv from users where id=$1', [req.user.id]);
-  res.json({ user: publicUser(req.user), ttlHours: TTL_HOURS, publicKey: r.rows[0].public_key, wrappedPriv: r.rows[0].wrapped_priv, wrappedPrivIv: r.rows[0].wrapped_priv_iv });
+  res.json({ user: publicUser(req.user), ttlHours: TTL_HOURS, referral: await features.refInfo(q, req.user), publicKey: r.rows[0].public_key, wrappedPriv: r.rows[0].wrapped_priv, wrappedPrivIv: r.rows[0].wrapped_priv_iv });
 }));
 
 app.patch('/api/me', auth, byUser('me-patch', 20, 60_000), wrap(async (req, res) => {
@@ -216,12 +219,12 @@ app.put('/api/me/status', auth, byUser('status', 20, 60_000), wrap(async (req, r
 // ---------- admin ----------
 const adminOnly = (req, res, next) => (req.user.is_admin ? next() : bad(res, 'forbidden', 403));
 const ownerOnly = (req, res, next) => (req.user.username === ADMIN_USERNAME ? next() : bad(res, 'only the owner can do that', 403));
-const adminRow = (u) => ({ id: u.id, username: u.username, displayName: u.display_name, isAdmin: u.is_admin, isOwner: u.username === ADMIN_USERNAME, banned: u.banned, online: sockets.has(u.id), createdAt: u.created_at, messages: Number(u.msgs || 0) });
+const adminRow = (u) => ({ id: u.id, username: u.username, displayName: u.display_name, isAdmin: u.is_admin, isOwner: u.username === ADMIN_USERNAME, banned: u.banned, online: sockets.has(u.id), createdAt: u.created_at, messages: Number(u.msgs || 0), beta: features.betaOn(u), betaUntil: u.beta_until || null });
 
 app.get('/api/admin/stats', auth, adminOnly, wrap(async (req, res) => {
   const r = await q(`select (select count(*) from users)::int users, (select count(*) from users where banned)::int banned,
     (select count(*) from messages)::int messages, (select count(*) from conversations where type='group')::int groups,
-    (select count(*) from plays)::int plays, pg_database_size(current_database())::bigint bytes`);
+    (select count(*) from plays)::int plays, (select count(*) from reports where status='open')::int reports, (select count(*) from conversations where is_public)::int public_groups, pg_database_size(current_database())::bigint bytes`);
   res.json({ ...r.rows[0], bytes: Number(r.rows[0].bytes), online: sockets.size, ttlHours: TTL_HOURS });
 }));
 
@@ -274,9 +277,10 @@ app.post('/api/admin/purge', auth, adminOnly, wrap(async (req, res) => {
 
 // ---------- expiry: messages vanish after TTL_HOURS ----------
 async function sweepExpired() {
-  const m = await q(`delete from messages where created_at < now() - make_interval(hours=>$1)`, [TTL_HOURS]);
+  const m = await q(`delete from messages where created_at < now() - make_interval(hours=>$1) and id not in (select msg_id from pins)`, [TTL_HOURS]); // pinned messages stay until unpinned
   await q(`delete from notifications where created_at < now() - make_interval(hours=>$1)`, [TTL_HOURS]);
   await q(`delete from plays where ended_at is not null and ended_at < now() - interval '14 days'`);
+  await features.pruneOldPlays(q);                         // only the newest 12 game sessions per person are kept
   const ex = await q(`update users set status_text=null,status_icon=null,status_mode='online',status_expires=null where status_expires is not null and status_expires<now() returning id`);
   for (const u of ex.rows) broadcastPresence(u.id).catch(() => {});
   if (m.rowCount) console.log(`expiry: removed ${m.rowCount} messages`);
@@ -320,7 +324,7 @@ const isBlockedEitherWay = async (a, b) => (await q('select 1 from blocks where 
 // ---------- conversations ----------
 async function loadConversations(userId, onlyId) {
   const convs = await q(
-    `select c.id,c.type,c.name,c.key_version,c.created_at,m.role,m.muted,m.last_read_at,m.joined_at,
+    `select c.id,c.type,c.name,c.key_version,c.created_at,c.is_public,c.description,c.topic,m.role,m.muted,m.last_read_at,m.joined_at,
        (select count(*) from messages x where x.conv_id=c.id and x.created_at>m.last_read_at and x.created_at>=m.joined_at and x.sender_id is distinct from $1 and not x.deleted and x.created_at>now()-interval '${TTL_HOURS} hours')::int unread,
        (select row_to_json(l) from (select id,sender_id "senderId",ciphertext,iv,key_version "keyVersion",created_at "createdAt",deleted from messages where conv_id=c.id and created_at>=m.joined_at and created_at>now()-interval '${TTL_HOURS} hours' order by id desc limit 1) l) last_message,
        (select max(created_at) from messages where conv_id=c.id and created_at>=m.joined_at and created_at>now()-interval '${TTL_HOURS} hours') last_at
@@ -338,7 +342,7 @@ async function loadConversations(userId, onlyId) {
   const keyUsers = {};
   for (const u of ku.rows) keyUsers[u.id] = { username: u.username, publicKey: u.public_key };
   const conversations = convs.rows.map((c) => ({
-    id: c.id, type: c.type, name: c.name, keyVersion: c.key_version, createdAt: c.created_at, role: c.role, muted: c.muted,
+    id: c.id, type: c.type, name: c.name, isPublic: c.is_public, description: c.description || '', topic: c.topic || '', keyVersion: c.key_version, createdAt: c.created_at, role: c.role, muted: c.muted,
     lastReadAt: c.last_read_at, joinedAt: c.joined_at, unread: c.unread, lastMessage: c.last_message,
     members: mem.rows.filter((m) => m.conv_id === c.id).map((m) => ({ id: m.id, username: m.username, displayName: m.display_name, publicKey: m.public_key, role: m.role, lastReadAt: m.last_read_at, online: sockets.has(m.id) && m.status_mode !== 'invisible', mode: m.status_mode, status: statusOf(m), isAdmin: m.is_admin })),
     keys: keys.rows.filter((k) => k.conv_id === c.id).map((k) => ({ version: k.version, wrappedKey: k.wrapped_key, iv: k.iv, wrappedBy: k.wrapped_by })),
@@ -412,7 +416,7 @@ app.post('/api/conversations/group', auth, byUser('conv-create', 15, 3_600_000),
 
 async function requireMember(req, res) {
   if (!isUuid(req.params.id)) { bad(res, 'bad id'); return null; }
-  const r = await q('select m.role,m.joined_at,c.type,c.key_version,c.name from members m join conversations c on c.id=m.conv_id where m.conv_id=$1 and m.user_id=$2', [req.params.id, req.user.id]);
+  const r = await q('select m.role,m.joined_at,c.type,c.key_version,c.name,c.is_public from members m join conversations c on c.id=m.conv_id where m.conv_id=$1 and m.user_id=$2', [req.params.id, req.user.id]);
   if (!r.rows[0]) { bad(res, 'not a member', 403); return null; }
   return r.rows[0];
 }
@@ -436,6 +440,7 @@ app.patch('/api/conversations/:id/me', auth, byUser('conv-edit', 20, 60_000), wr
 app.post('/api/conversations/:id/members', auth, byUser('member-add', 30, 3_600_000), wrap(async (req, res) => {
   const m = await requireMember(req, res); if (!m) return;
   if (m.type !== 'group' || m.role !== 'admin') return bad(res, 'admins only', 403);
+  if (m.is_public) return bad(res, 'people join public groups from discover');
   const { userId, wrappedKey, iv } = req.body;
   if (!isUuid(userId) || !isB64(wrappedKey, 400) || !isB64(iv, 40)) return bad(res, 'bad request');
   const cnt = await q('select count(*)::int c from members where conv_id=$1', [req.params.id]);
@@ -462,6 +467,14 @@ app.delete('/api/conversations/:id/members/:userId', auth, byUser('member-del', 
   if (!cur.rows.find((x) => x.user_id === target)) return bad(res, 'not in group', 404);
   const remaining = cur.rows.filter((x) => x.user_id !== target);
   if (!remaining.length) { await q('delete from conversations where id=$1', [req.params.id]); return res.json({ ok: true, deleted: true }); }
+  if (m.is_public) {                                         // public groups share one open key, so no rotation, just remove (and ban if kicked)
+    await q('delete from members where conv_id=$1 and user_id=$2', [req.params.id, target]);
+    if (target !== req.user.id) await q('insert into conv_bans(conv_id,user_id) values($1,$2) on conflict do nothing', [req.params.id, target]);
+    if (!remaining.some((x) => x.role === 'admin')) await q(`update members set role='admin' where conv_id=$1 and user_id=$2`, [req.params.id, remaining[0].user_id]);
+    sendTo(target, { t: 'conv_removed', convId: req.params.id });
+    await sendToConv(req.params.id, { t: 'conv_update', convId: req.params.id, refresh: true });
+    return res.json({ ok: true });
+  }
   const keys = Array.isArray(req.body.keys) ? req.body.keys : [];
   const want = new Set(remaining.map((x) => x.user_id));
   if (keys.length !== want.size || !keys.every((k) => want.has(k.userId) && isB64(k.wrappedKey, 400) && isB64(k.iv, 40))) return bad(res, 'new keys must cover every remaining member');
@@ -486,9 +499,12 @@ app.get('/api/conversations/:id/messages', auth, byUser('msg-read', 120, 60_000)
   const limit = Math.min(parseInt(req.query.limit, 10) || 50, 100);
   const before = parseInt(req.query.before, 10) || 9e15;
   const r = await q(
-    `select id,sender_id "senderId",ciphertext,iv,key_version "keyVersion",created_at "createdAt",deleted from messages
+    `select id,sender_id "senderId",ciphertext,iv,key_version "keyVersion",created_at "createdAt",deleted,
+       exists(select 1 from pins p where p.msg_id=messages.id) pinned,
+       (select coalesce(jsonb_object_agg(e, ids),'{}'::jsonb) from (select emoji e, jsonb_agg(user_id) ids from reactions r where r.msg_id=messages.id group by emoji) x) reactions
+     from messages
      where conv_id=$1 and id<$2 and created_at>=$3 and created_at>now()-make_interval(hours=>$5) order by id desc limit $4`, [req.params.id, before, m.joined_at, limit, TTL_HOURS]);
-  res.json({ messages: r.rows.reverse(), hasMore: r.rows.length === limit });
+  res.json({ messages: r.rows.map((x) => ({ ...x, id: Number(x.id) })).reverse(), hasMore: r.rows.length === limit });
 }));
 
 // message sending: strict limits + escalating mutes for spammers
@@ -514,20 +530,15 @@ app.post('/api/conversations/:id/messages', auth, wrap(async (req, res, next) =>
   }
   const r = await q('insert into messages(conv_id,sender_id,ciphertext,iv,key_version) values($1,$2,$3,$4,$5) returning id,created_at', [req.params.id, uid, ciphertext, iv, keyVersion]);
   const message = { id: Number(r.rows[0].id), senderId: uid, ciphertext, iv, keyVersion, createdAt: r.rows[0].created_at, deleted: false };
+  features.creditReferral({ q, sendTo, notify }, req.user).catch(() => {});
   const mems = await q('select user_id,muted from members where conv_id=$1', [req.params.id]);
   for (const mm of mems.rows) {
     sendTo(mm.user_id, { t: 'msg', convId: req.params.id, message, cid: req.body.cid || null, muted: mm.muted });
-    if (mm.user_id !== uid && !mm.muted && !sockets.has(mm.user_id)) pushTo(mm.user_id, req.params.id).catch(() => {}); // offline => web push
+    if (!m.is_public && mm.user_id !== uid && !mm.muted && !sockets.has(mm.user_id)) pushTo(mm.user_id, req.params.id).catch(() => {}); // offline => web push
   }
   res.json({ message });
 }));
 
-app.delete('/api/messages/:id', auth, byUser('msg-del', 30, 60_000), wrap(async (req, res) => {
-  const r = await q(`update messages set deleted=true,ciphertext='',iv='' where id=$1 and sender_id=$2 and not deleted returning conv_id`, [parseInt(req.params.id, 10) || 0, req.user.id]);
-  if (!r.rows[0]) return bad(res, 'not found', 404);
-  await sendToConv(r.rows[0].conv_id, { t: 'msg_deleted', convId: r.rows[0].conv_id, id: Number(req.params.id) });
-  res.json({ ok: true });
-}));
 
 app.post('/api/conversations/:id/read', auth, byUser('read', 120, 60_000), wrap(async (req, res) => {
   const m = await requireMember(req, res); if (!m) return;
@@ -612,6 +623,7 @@ async function endPlay(userId) {
   activityNow.delete(userId);
   await q('update plays set ended_at=now(), last_ping=now(), seconds=floor(extract(epoch from (now()-started_at)))::int where id=$1 and ended_at is null', [a.playId]);
   broadcastPresence(userId).catch(() => {});
+  features.pruneOldPlays(q, userId).catch(() => {});
 }
 // sessions that stop pinging (closed tab, crash) are closed using their last ping time
 setInterval(async () => {
@@ -651,6 +663,8 @@ app.get('/api/activity/mine', auth, wrap(async (req, res) => {
   const t = await q(`select coalesce(sum(${SECS}),0)::int total from plays p where p.user_id=$1`, [req.user.id]);
   res.json({ totalSeconds: t.rows[0].total, history: r.rows.map((p) => ({ id: Number(p.id), path: p.game_path, title: p.game_title, startedAt: p.started_at, seconds: p.seconds })) });
 }));
+
+features.mount(app, { q, pool, auth, byUser, bad, wrap, sendTo, sendToConv, notify, isUuid, loadConversations, adminOnly });
 
 // ---------- static client ----------
 const PUB = path.join(__dirname, 'public');

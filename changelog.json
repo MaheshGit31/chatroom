@@ -1,0 +1,30 @@
+[
+  {
+    "id": "2026-10-21-a",
+    "date": "2026-10-21",
+    "title": "the big cozy update",
+    "items": [
+      "reactions: tap react on any message, or type :skull: style shortcodes while writing",
+      "pins: pin up to 5 messages per chat, pinned messages stay past the 2 day vanish",
+      "easier deleting: hover toolbar, undo for 5 seconds, select several and delete in one go, hosts can clear anyone's message in their group",
+      "reporting: report a message, person or public group, admins review them in the admin panel",
+      "public groups: host an open group (3 max), find them in discover, join with one tap",
+      "game history now keeps only your last 12 sessions, older ones are deleted for good",
+      "public rooms show the last few days of chat when you join",
+      "invite friends: every friend who joins and sends a message earns you 30 minutes of beta",
+      "beta: gifs (paste a link or search) and custom themes, admins get beta by default",
+      "this changes board, updated with every change"
+    ]
+  },
+  {
+    "id": "2026-10-20-a",
+    "date": "2026-10-20",
+    "title": "cozy redesign",
+    "items": [
+      "new warm look with day and night modes and smoother animations",
+      "messages vanish after 2 days",
+      "custom statuses",
+      "admin panel"
+    ]
+  }
+]
