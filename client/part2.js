@@ -58,16 +58,35 @@ const ICONS = {
   check: '<path d="M20 6 9 17l-5-5"/>',
   info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>',
   ban: '<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>',
+  coffee: '<path d="M10 2v2M14 2v2M6 2v2"/><path d="M5 8h12v6a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5z"/><path d="M17 10h1.5a2.5 2.5 0 0 1 0 5H17"/>',
+  book: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M20 17v4H6.5A2.5 2.5 0 0 1 4 18.5"/>',
+  moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/>',
+  music: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+  code: '<path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/>',
+  heart: '<path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  leaf: '<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.5 19 2c1 2 2 4.2 2 8 0 5.5-4.8 10-10 10z"/><path d="M2 21c0-3 1.9-5.4 5.1-6.4C9.5 13.9 12 13 12 13"/>',
+  flame: '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.4-.5-2-1-3-1.1-2.1-.2-4 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.2.4-2.3 1-3 0 1.4 1 2.5 2.5 2.5z"/>',
+  headphones: '<path d="M3 14v-2a9 9 0 0 1 18 0v2"/><path d="M21 16a2 2 0 0 1-2 2h-1v-6h3zM3 16a2 2 0 0 0 2 2h1v-6H3z"/>',
+  pizza: '<path d="M15 11h.01M11 15h.01M16 16h.01M2 16l20 6-6-20A20 20 0 0 0 2 16z"/><path d="M5.7 12.5a14 14 0 0 1 6-6.5"/>',
+  crown: '<path d="m2 18 2-11 5 5 3-8 3 8 5-5 2 11z"/><path d="M3 21h18"/>',
+  edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+  eyeoff: '<path d="M9.9 4.2A10 10 0 0 1 12 4c7 0 10 8 10 8a13 13 0 0 1-1.7 2.7M6.6 6.6A13 13 0 0 0 2 12s3 8 10 8a9.7 9.7 0 0 0 5.4-1.6"/><path d="m2 2 20 20"/>',
+  timer: '<circle cx="12" cy="14" r="8"/><path d="M12 10v4l2 2M9 2h6"/>',
+  database: '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/>',
+  palette: '<circle cx="13.5" cy="6.5" r="1"/><circle cx="17.5" cy="10.5" r="1"/><circle cx="8.5" cy="7.5" r="1"/><circle cx="6.5" cy="12.5" r="1"/><path d="M12 2a10 10 0 0 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.300 0-1.100.900-2 2-2h2.300c3 0 5.200-2.200 5.200-5.200C22 6 17.500 2 12 2z"/>',
 };
 const ic = (name, size = 18) => {
   const s = document.createElement('span');
   s.className = 'ic';
-  s.innerHTML = `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[name] || ''}</svg>`;
+  s.innerHTML = `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[name] || ''}</svg>`;
   return s;
 };
 
 const hue = (str) => { let h = 0; for (const ch of String(str)) h = (h * 31 + ch.charCodeAt(0)) % 360; return h; };
-const avatar = (name, size = 40, extra = '') => el('div', { class: 'avatar ' + extra, style: `width:${size}px;height:${size}px;font-size:${Math.round(size * 0.42)}px;background:hsl(${hue(name)} 55% 45%)` }, (String(name).trim()[0] || '?').toUpperCase());
+const TONES = ['#b4532e', '#7a8c55', '#b8843a', '#8c5a6c', '#587a82', '#a2644a', '#6c7596', '#8f6a3a', '#6d8a6a', '#9c5b52'];   // earthy, muted, no neon
+const tone = (str) => TONES[hue(str) % TONES.length];
+const avatar = (name, size = 40, extra = '') => el('div', { class: 'avatar ' + extra, style: `width:${size}px;height:${size}px;font-size:${Math.round(size * 0.46)}px;background:${tone(name)}` }, (String(name).trim()[0] || '?').toLowerCase());
 const pad = (n) => String(n).padStart(2, '0');
 const fmtTime = (d) => { d = new Date(d); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 const fmtDay = (d) => { d = new Date(d); const t = new Date(); const y = new Date(Date.now() - 864e5); if (d.toDateString() === t.toDateString()) return 'Today'; if (d.toDateString() === y.toDateString()) return 'Yesterday'; return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: d.getFullYear() === t.getFullYear() ? undefined : 'numeric' }); };
@@ -110,7 +129,7 @@ async function openIdentity(wrappedPriv, iv, wrapKey) {
 
 const S = {                                                  // app state
   token: null, me: null, priv: null, convs: [], keyUsers: {}, active: null, view: 'chats',
-  presence: new Map(), typing: new Map(), notifs: [], notifUnread: 0, ws: null, wsOk: false,
+  ttlHours: 48, presence: new Map(), typing: new Map(), notifs: [], notifUnread: 0, ws: null, wsOk: false,
   cooldownUntil: 0, nowPlaying: [], prefs: { sound: true, desktop: true },
 };
 const skCache = new Map(), convKeys = new Map();
@@ -192,9 +211,10 @@ const idbDel = async (k) => { try { const db = await idb(); await new Promise((o
 function toast(msg, kind = 'info', onclick) {
   let box = $('#toasts');
   if (!box) { box = el('div', { id: 'toasts' }); document.body.append(box); }
-  const t = el('div', { class: 'toast ' + kind, onclick: () => { t.remove(); onclick && onclick(); } }, el('span', null, msg));
+  const gone = () => { t.classList.add('out'); setTimeout(() => t.remove(), 240); };
+  const t = el('div', { class: 'toast ' + kind, onclick: () => { gone(); onclick && onclick(); } }, el('span', null, msg));
   box.append(t);
-  setTimeout(() => t.remove(), kind === 'error' ? 6000 : 4500);
+  setTimeout(gone, kind === 'error' ? 6000 : 4500);
 }
 let actx;
 function beep() {
@@ -209,7 +229,7 @@ function beep() {
 }
 function updateBadge() {
   const n = S.convs.reduce((a, c) => a + (c.muted ? 0 : c.unread || 0), 0);
-  document.title = (n ? `(${n}) ` : '') + 'Chatroom';
+  document.title = (n ? `(${n}) ` : '') + 'chatroom';
   return n;
 }
 
@@ -375,6 +395,11 @@ async function onWS(m) {
       ui.renderTyping();
       break;
     }
+    case 'me_update': {
+      const me = await api('GET', '/api/me', null, { quiet: true }).catch(() => null);
+      if (me) { Object.assign(S.me, me.user); S.ttlHours = me.ttlHours || S.ttlHours; ui.renderAll(); }
+      break;
+    }
     case 'presence': S.presence.set(m.userId, m); ui.renderSide(); ui.renderHeader(); ui.renderActivityLive(); break;
     case 'read': {
       const c = convOf(m.convId); if (!c) return;
@@ -412,5 +437,5 @@ async function onWS(m) {
   }
 }
 
-window.__core = { API, SAME_ORIGIN, S, el, $, ic, avatar, fmtTime, fmtDay, fmtDur, ago, rid, debounce, lsGet, lsSet, lsDel, toast, beep, updateBadge, api, kdf, newIdentity, openIdentity, wrapGroupKey, encryptPayload, decryptMsg, safetyNumber, idbGet, idbSet, idbDel, convOf, other, convTitle, memberOf, keyFor, previewText, refreshPreview, sortConvs, mergeConvs, loadConvs, loadMessages, addMessage, sendPayload, markRead, connectWS, sendWS, rand, b64, unb64, subtle, skCache, convKeys, startCooldown, hue };
+window.__core = { API, SAME_ORIGIN, S, el, $, ic, avatar, fmtTime, fmtDay, fmtDur, ago, rid, debounce, lsGet, lsSet, lsDel, toast, beep, updateBadge, api, kdf, newIdentity, openIdentity, wrapGroupKey, encryptPayload, decryptMsg, safetyNumber, idbGet, idbSet, idbDel, convOf, other, convTitle, memberOf, keyFor, previewText, refreshPreview, sortConvs, mergeConvs, loadConvs, loadMessages, addMessage, sendPayload, markRead, connectWS, sendWS, rand, b64, unb64, subtle, skCache, convKeys, startCooldown, hue, tone };
 })();

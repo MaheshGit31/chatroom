@@ -13,6 +13,11 @@ const { limiter, rl } = require('./lib/limiter');
 const { Games } = require('./lib/games');
 
 const PORT = process.env.PORT || 3000;
+const ADMIN_USERNAME = (process.env.ADMIN_USERNAME || 'bart').toLowerCase();   // this username becomes the owner/admin
+const ADMIN_SETUP_KEY = process.env.ADMIN_SETUP_KEY || '';                      // if set, registering the owner name needs this key (stops name squatting)
+const TTL_HOURS = Math.max(1, parseInt(process.env.MESSAGE_TTL_HOURS, 10) || 48); // messages self-delete after this long
+const STATUS_ICONS = ['coffee', 'book', 'moon', 'music', 'code', 'gamepad', 'heart', 'sun', 'leaf', 'flame', 'headphones', 'pizza']; // allowed status icons
+const STATUS_MODES = ['online', 'busy', 'invisible'];
 const games = new Games();
 const app = express();
 app.set('trust proxy', 1);                                   // railway sits in front, req.ip becomes the real client ip
@@ -71,10 +76,10 @@ async function peersOf(userId) {
   return r.rows.map((x) => x.user_id);
 }
 async function presenceOf(userId) {
-  const u = await q('select share_activity from users where id=$1', [userId]);
-  const share = u.rows[0] ? u.rows[0].share_activity : false;
-  const a = share ? activityNow.get(userId) : null;
-  return { userId, online: sockets.has(userId), activity: a ? { title: a.title, path: a.path, since: a.since } : null };
+  const u = await q('select share_activity,status_text,status_icon,status_mode from users where id=$1', [userId]);
+  const row = u.rows[0] || {};
+  const a = row.share_activity && row.status_mode !== 'invisible' ? activityNow.get(userId) : null;
+  return { userId, online: sockets.has(userId) && row.status_mode !== 'invisible', mode: row.status_mode || 'online', status: statusOf(row), activity: a ? { title: a.title, path: a.path, since: a.since } : null };
 }
 async function broadcastPresence(userId) {
   const evt = { t: 'presence', ...(await presenceOf(userId)) };
@@ -108,9 +113,9 @@ const auth = wrap(async (req, res, next) => {
   const token = h.startsWith('Bearer ') ? h.slice(7) : '';
   if (!token) return bad(res, 'unauthorized', 401);
   const r = await q(
-    `select u.id,u.username,u.display_name,u.share_activity,s.expires_at from sessions s join users u on u.id=s.user_id
+    `select u.id,u.username,u.display_name,u.share_activity,u.is_admin,u.banned,u.status_text,u.status_icon,u.status_mode,u.status_expires,s.expires_at from sessions s join users u on u.id=s.user_id
      where s.token_hash=$1 and s.expires_at>now()`, [sha256(token)]);
-  if (!r.rows[0]) return bad(res, 'unauthorized', 401);
+  if (!r.rows[0] || r.rows[0].banned) return bad(res, r.rows[0] ? 'account suspended' : 'unauthorized', 401);
   req.user = r.rows[0];
   req.tokenHash = sha256(token);
   next();
@@ -122,7 +127,8 @@ async function makeSession(userId, ua) {
   await q('insert into sessions(token_hash,user_id,expires_at,ua) values($1,$2,now()+interval \'30 days\',$3)', [sha256(token), userId, (ua || '').slice(0, 200)]);
   return token;
 }
-const publicUser = (u) => ({ id: u.id, username: u.username, displayName: u.display_name, shareActivity: u.share_activity });
+const statusOf = (u) => (u.status_text || u.status_icon ? { text: u.status_text || '', icon: u.status_icon || '' } : null);
+const publicUser = (u) => ({ id: u.id, username: u.username, displayName: u.display_name, shareActivity: u.share_activity, isAdmin: !!u.is_admin, isOwner: u.username === ADMIN_USERNAME, mode: u.status_mode || 'online', status: statusOf(u), statusExpires: u.status_expires || null });
 
 const SECS = "(case when p.ended_at is null then floor(extract(epoch from (now()-p.started_at)))::int else p.seconds end)"; // running sessions count live
 const USERNAME = /^[a-z0-9_]{3,20}$/;
@@ -140,14 +146,15 @@ app.post('/api/auth/register', rl('register', 5, 3_600_000), wrap(async (req, re
   const username = String(b.username || '').toLowerCase();
   const displayName = String(b.displayName || username).trim().slice(0, 32) || username;
   if (!USERNAME.test(username)) return bad(res, 'username must be 3-20 chars: a-z 0-9 _');
+  if (username === ADMIN_USERNAME && ADMIN_SETUP_KEY && sha256(String(b.setupKey || '')) !== sha256(ADMIN_SETUP_KEY)) return res.status(403).json({ error: 'setup_key_required', message: 'this name is reserved, enter the setup key' });
   if (![b.kdfSalt, b.authSecret, b.publicKey, b.wrappedPriv, b.wrappedPrivIv].every((x) => isB64(x, 2000))) return bad(res, 'bad key material');
   const authSalt = crypto.randomBytes(16).toString('hex');
   const hash = await scrypt(b.authSecret, authSalt);
   try {
     const r = await q(
-      `insert into users(username,display_name,kdf_salt,auth_salt,auth_hash,public_key,wrapped_priv,wrapped_priv_iv)
-       values($1,$2,$3,$4,$5,$6,$7,$8) returning id,username,display_name,share_activity`,
-      [username, displayName, b.kdfSalt, authSalt, hash, b.publicKey, b.wrappedPriv, b.wrappedPrivIv]);
+      `insert into users(username,display_name,kdf_salt,auth_salt,auth_hash,public_key,wrapped_priv,wrapped_priv_iv,is_admin)
+       values($1,$2,$3,$4,$5,$6,$7,$8,$9) returning *`,
+      [username, displayName, b.kdfSalt, authSalt, hash, b.publicKey, b.wrappedPriv, b.wrappedPrivIv, username === ADMIN_USERNAME]);
     const token = await makeSession(r.rows[0].id, req.headers['user-agent']);
     res.json({ token, user: publicUser(r.rows[0]) });
   } catch (e) {
@@ -167,6 +174,7 @@ app.post('/api/auth/login',
     const given = await scrypt(secret, u ? u.auth_salt : 'fake-salt-fake-salt');   // always burn the same time
     const ok = u && crypto.timingSafeEqual(Buffer.from(given), Buffer.from(u.auth_hash));
     if (!ok) return bad(res, 'wrong username or password', 401);
+    if (u.banned) return bad(res, 'this account is suspended', 403);
     const token = await makeSession(u.id, req.headers['user-agent']);
     res.json({ token, user: publicUser(u), publicKey: u.public_key, wrappedPriv: u.wrapped_priv, wrappedPrivIv: u.wrapped_priv_iv });
   }));
@@ -178,7 +186,7 @@ app.post('/api/auth/logout', auth, wrap(async (req, res) => {
 
 app.get('/api/me', auth, wrap(async (req, res) => {
   const r = await q('select public_key,wrapped_priv,wrapped_priv_iv from users where id=$1', [req.user.id]);
-  res.json({ user: publicUser(req.user), publicKey: r.rows[0].public_key, wrappedPriv: r.rows[0].wrapped_priv, wrappedPrivIv: r.rows[0].wrapped_priv_iv });
+  res.json({ user: publicUser(req.user), ttlHours: TTL_HOURS, publicKey: r.rows[0].public_key, wrappedPriv: r.rows[0].wrapped_priv, wrappedPrivIv: r.rows[0].wrapped_priv_iv });
 }));
 
 app.patch('/api/me', auth, byUser('me-patch', 20, 60_000), wrap(async (req, res) => {
@@ -186,10 +194,93 @@ app.patch('/api/me', auth, byUser('me-patch', 20, 60_000), wrap(async (req, res)
   if (typeof req.body.displayName === 'string') { vals.push(req.body.displayName.trim().slice(0, 32) || req.user.username); sets.push(`display_name=$${vals.length}`); }
   if (typeof req.body.shareActivity === 'boolean') { vals.push(req.body.shareActivity); sets.push(`share_activity=$${vals.length}`); }
   if (!sets.length) return bad(res, 'nothing to update');
-  const r = await q(`update users set ${sets.join(',')} where id=$1 returning id,username,display_name,share_activity`, vals);
+  const r = await q(`update users set ${sets.join(',')} where id=$1 returning *`, vals);
   broadcastPresence(req.user.id).catch(() => {});
   res.json({ user: publicUser(r.rows[0]) });
 }));
+
+
+// ---------- custom status ----------
+app.put('/api/me/status', auth, byUser('status', 20, 60_000), wrap(async (req, res) => {
+  const b = req.body || {};
+  const text = String(b.text || '').trim().slice(0, 48);                       // short blurb
+  const icon = STATUS_ICONS.includes(b.icon) ? b.icon : '';                     // only known icons
+  const mode = STATUS_MODES.includes(b.mode) ? b.mode : 'online';
+  const mins = Math.min(Math.max(parseInt(b.expiresMinutes, 10) || 0, 0), 60 * 24 * 7);
+  const r = await q(`update users set status_text=$2,status_icon=$3,status_mode=$4,status_expires=${mins ? "now()+make_interval(mins=>$5)" : 'null'} where id=$1 returning *`,
+    mins ? [req.user.id, text || null, icon || null, mode, mins] : [req.user.id, text || null, icon || null, mode]);
+  broadcastPresence(req.user.id).catch(() => {});
+  res.json({ user: publicUser(r.rows[0]) });
+}));
+
+// ---------- admin ----------
+const adminOnly = (req, res, next) => (req.user.is_admin ? next() : bad(res, 'forbidden', 403));
+const ownerOnly = (req, res, next) => (req.user.username === ADMIN_USERNAME ? next() : bad(res, 'only the owner can do that', 403));
+const adminRow = (u) => ({ id: u.id, username: u.username, displayName: u.display_name, isAdmin: u.is_admin, isOwner: u.username === ADMIN_USERNAME, banned: u.banned, online: sockets.has(u.id), createdAt: u.created_at, messages: Number(u.msgs || 0) });
+
+app.get('/api/admin/stats', auth, adminOnly, wrap(async (req, res) => {
+  const r = await q(`select (select count(*) from users)::int users, (select count(*) from users where banned)::int banned,
+    (select count(*) from messages)::int messages, (select count(*) from conversations where type='group')::int groups,
+    (select count(*) from plays)::int plays, pg_database_size(current_database())::bigint bytes`);
+  res.json({ ...r.rows[0], bytes: Number(r.rows[0].bytes), online: sockets.size, ttlHours: TTL_HOURS });
+}));
+
+app.get('/api/admin/users', auth, adminOnly, wrap(async (req, res) => {
+  const needle = String(req.query.q || '').toLowerCase().replace(/[^a-z0-9_]/g, '');
+  const r = await q(`select u.*, (select count(*) from messages where sender_id=u.id) msgs from users u where u.username like $1 order by u.is_admin desc, u.created_at limit 100`, [needle + '%']);
+  res.json({ users: r.rows.map(adminRow) });
+}));
+
+app.post('/api/admin/users/:id/admin', auth, adminOnly, ownerOnly, wrap(async (req, res) => {
+  const t = await q('select username from users where id=$1', [req.params.id]);
+  if (!t.rows[0]) return bad(res, 'not found', 404);
+  if (t.rows[0].username === ADMIN_USERNAME) return bad(res, 'the owner stays admin');
+  await q('update users set is_admin=$2 where id=$1', [req.params.id, !!req.body.admin]);
+  sendTo(req.params.id, { t: 'me_update' });
+  res.json({ ok: true });
+}));
+
+app.post('/api/admin/users/:id/ban', auth, adminOnly, wrap(async (req, res) => {
+  const t = await q('select username,is_admin from users where id=$1', [req.params.id]);
+  if (!t.rows[0]) return bad(res, 'not found', 404);
+  if (t.rows[0].username === ADMIN_USERNAME) return bad(res, 'cannot touch the owner', 403);
+  if (t.rows[0].is_admin && req.user.username !== ADMIN_USERNAME) return bad(res, 'only the owner can suspend admins', 403);
+  const banned = !!req.body.banned;
+  await q('update users set banned=$2 where id=$1', [req.params.id, banned]);
+  if (banned) {
+    await q('delete from sessions where user_id=$1', [req.params.id]);
+    for (const ws of [...(sockets.get(req.params.id) || [])]) ws.close(4001, 'suspended');
+  }
+  res.json({ ok: true });
+}));
+
+app.delete('/api/admin/users/:id', auth, adminOnly, wrap(async (req, res) => {
+  const t = await q('select username,is_admin from users where id=$1', [req.params.id]);
+  if (!t.rows[0]) return bad(res, 'not found', 404);
+  if (t.rows[0].username === ADMIN_USERNAME) return bad(res, 'cannot touch the owner', 403);
+  if (t.rows[0].is_admin && req.user.username !== ADMIN_USERNAME) return bad(res, 'only the owner can remove admins', 403);
+  for (const ws of [...(sockets.get(req.params.id) || [])]) ws.close(4001, 'removed');
+  await q('delete from users where id=$1', [req.params.id]);
+  res.json({ ok: true });
+}));
+
+app.post('/api/admin/purge', auth, adminOnly, wrap(async (req, res) => {
+  const what = req.body.what;
+  if (what === 'plays') await q('delete from plays where ended_at is not null');
+  else if (what === 'messages') await sweepExpired();
+  else return bad(res, 'unknown');
+  res.json({ ok: true });
+}));
+
+// ---------- expiry: messages vanish after TTL_HOURS ----------
+async function sweepExpired() {
+  const m = await q(`delete from messages where created_at < now() - make_interval(hours=>$1)`, [TTL_HOURS]);
+  await q(`delete from notifications where created_at < now() - make_interval(hours=>$1)`, [TTL_HOURS]);
+  await q(`delete from plays where ended_at is not null and ended_at < now() - interval '14 days'`);
+  const ex = await q(`update users set status_text=null,status_icon=null,status_mode='online',status_expires=null where status_expires is not null and status_expires<now() returning id`);
+  for (const u of ex.rows) broadcastPresence(u.id).catch(() => {});
+  if (m.rowCount) console.log(`expiry: removed ${m.rowCount} messages`);
+}
 
 // ---------- users ----------
 app.get('/api/users/search', auth, byUser('usearch', 30, 60_000), wrap(async (req, res) => {
@@ -200,7 +291,7 @@ app.get('/api/users/search', auth, byUser('usearch', 30, 60_000), wrap(async (re
 }));
 
 app.get('/api/users/:username', auth, byUser('uprofile', 60, 60_000), wrap(async (req, res) => {
-  const r = await q('select id,username,display_name,public_key,share_activity,created_at from users where username=$1', [req.params.username.toLowerCase()]);
+  const r = await q('select id,username,display_name,public_key,share_activity,created_at,status_text,status_icon,status_mode,is_admin from users where username=$1', [req.params.username.toLowerCase()]);
   const u = r.rows[0];
   if (!u) return bad(res, 'not found', 404);
   let stats = null;
@@ -210,7 +301,7 @@ app.get('/api/users/:username', auth, byUser('uprofile', 60, 60_000), wrap(async
     stats = { totalSeconds: t.rows[0].total, gamesPlayed: t.rows[0].games, top: top.rows.map((x) => ({ path: x.game_path, title: x.game_title, seconds: x.seconds })) };
   }
   const blocked = await q('select 1 from blocks where blocker=$1 and blocked=$2', [req.user.id, u.id]);
-  res.json({ id: u.id, username: u.username, displayName: u.display_name, publicKey: u.public_key, createdAt: u.created_at, online: sockets.has(u.id), blocked: !!blocked.rows[0], stats, activity: u.share_activity && activityNow.get(u.id) ? { title: activityNow.get(u.id).title, path: activityNow.get(u.id).path } : null });
+  res.json({ id: u.id, username: u.username, displayName: u.display_name, publicKey: u.public_key, createdAt: u.created_at, online: sockets.has(u.id) && u.status_mode !== 'invisible', mode: u.status_mode, status: statusOf(u), isAdmin: u.is_admin, isOwner: u.username === ADMIN_USERNAME, blocked: !!blocked.rows[0], stats, activity: u.share_activity && activityNow.get(u.id) ? { title: activityNow.get(u.id).title, path: activityNow.get(u.id).path } : null });
 }));
 
 app.post('/api/blocks/:username', auth, byUser('block', 20, 3_600_000), wrap(async (req, res) => {
@@ -230,9 +321,9 @@ const isBlockedEitherWay = async (a, b) => (await q('select 1 from blocks where 
 async function loadConversations(userId, onlyId) {
   const convs = await q(
     `select c.id,c.type,c.name,c.key_version,c.created_at,m.role,m.muted,m.last_read_at,m.joined_at,
-       (select count(*) from messages x where x.conv_id=c.id and x.created_at>m.last_read_at and x.created_at>=m.joined_at and x.sender_id is distinct from $1 and not x.deleted)::int unread,
-       (select row_to_json(l) from (select id,sender_id "senderId",ciphertext,iv,key_version "keyVersion",created_at "createdAt",deleted from messages where conv_id=c.id and created_at>=m.joined_at order by id desc limit 1) l) last_message,
-       (select max(created_at) from messages where conv_id=c.id and created_at>=m.joined_at) last_at
+       (select count(*) from messages x where x.conv_id=c.id and x.created_at>m.last_read_at and x.created_at>=m.joined_at and x.sender_id is distinct from $1 and not x.deleted and x.created_at>now()-interval '${TTL_HOURS} hours')::int unread,
+       (select row_to_json(l) from (select id,sender_id "senderId",ciphertext,iv,key_version "keyVersion",created_at "createdAt",deleted from messages where conv_id=c.id and created_at>=m.joined_at and created_at>now()-interval '${TTL_HOURS} hours' order by id desc limit 1) l) last_message,
+       (select max(created_at) from messages where conv_id=c.id and created_at>=m.joined_at and created_at>now()-interval '${TTL_HOURS} hours') last_at
      from conversations c join members m on m.conv_id=c.id and m.user_id=$1
      ${onlyId ? 'where c.id=$2' : ''}
      order by coalesce((select max(created_at) from messages where conv_id=c.id), c.created_at) desc`,
@@ -240,7 +331,7 @@ async function loadConversations(userId, onlyId) {
   const ids = convs.rows.map((c) => c.id);
   if (!ids.length) return { conversations: [], keyUsers: {} };
   const mem = await q(
-    `select cm.conv_id,cm.role,cm.last_read_at,u.id,u.username,u.display_name,u.public_key from members cm join users u on u.id=cm.user_id where cm.conv_id=any($1) order by cm.joined_at`, [ids]);
+    `select cm.conv_id,cm.role,cm.last_read_at,u.id,u.username,u.display_name,u.public_key,u.status_text,u.status_icon,u.status_mode,u.is_admin from members cm join users u on u.id=cm.user_id where cm.conv_id=any($1) order by cm.joined_at`, [ids]);
   const keys = await q('select conv_id,version,wrapped_key,iv,wrapped_by from group_keys where user_id=$1 and conv_id=any($2)', [userId, ids]);
   const wrappers = [...new Set(keys.rows.map((k) => k.wrapped_by).filter(Boolean))];
   const ku = wrappers.length ? await q('select id,username,public_key from users where id=any($1)', [wrappers]) : { rows: [] };
@@ -249,7 +340,7 @@ async function loadConversations(userId, onlyId) {
   const conversations = convs.rows.map((c) => ({
     id: c.id, type: c.type, name: c.name, keyVersion: c.key_version, createdAt: c.created_at, role: c.role, muted: c.muted,
     lastReadAt: c.last_read_at, joinedAt: c.joined_at, unread: c.unread, lastMessage: c.last_message,
-    members: mem.rows.filter((m) => m.conv_id === c.id).map((m) => ({ id: m.id, username: m.username, displayName: m.display_name, publicKey: m.public_key, role: m.role, lastReadAt: m.last_read_at, online: sockets.has(m.id) })),
+    members: mem.rows.filter((m) => m.conv_id === c.id).map((m) => ({ id: m.id, username: m.username, displayName: m.display_name, publicKey: m.public_key, role: m.role, lastReadAt: m.last_read_at, online: sockets.has(m.id) && m.status_mode !== 'invisible', mode: m.status_mode, status: statusOf(m), isAdmin: m.is_admin })),
     keys: keys.rows.filter((k) => k.conv_id === c.id).map((k) => ({ version: k.version, wrappedKey: k.wrapped_key, iv: k.iv, wrappedBy: k.wrapped_by })),
   }));
   return { conversations, keyUsers };
@@ -396,7 +487,7 @@ app.get('/api/conversations/:id/messages', auth, byUser('msg-read', 120, 60_000)
   const before = parseInt(req.query.before, 10) || 9e15;
   const r = await q(
     `select id,sender_id "senderId",ciphertext,iv,key_version "keyVersion",created_at "createdAt",deleted from messages
-     where conv_id=$1 and id<$2 and created_at>=$3 order by id desc limit $4`, [req.params.id, before, m.joined_at, limit]);
+     where conv_id=$1 and id<$2 and created_at>=$3 and created_at>now()-make_interval(hours=>$5) order by id desc limit $4`, [req.params.id, before, m.joined_at, limit, TTL_HOURS]);
   res.json({ messages: r.rows.reverse(), hasMore: r.rows.length === limit });
 }));
 
@@ -605,7 +696,7 @@ wss.on('connection', (ws) => {
     try {
       if (!ws.userId) {
         if (m.t !== 'auth' || typeof m.token !== 'string') return ws.close(4001, 'auth required');
-        const r = await q('select u.id from sessions s join users u on u.id=s.user_id where s.token_hash=$1 and s.expires_at>now()', [sha256(m.token)]);
+        const r = await q('select u.id from sessions s join users u on u.id=s.user_id where s.token_hash=$1 and s.expires_at>now() and not u.banned', [sha256(m.token)]);
         if (!r.rows[0]) return ws.close(4001, 'bad token');
         const set = sockets.get(r.rows[0].id) || new Set();
         if (set.size >= 6) return ws.close(4002, 'too many connections');
@@ -663,5 +754,8 @@ async function getSetting(key, make) {
   setInterval(() => games.refresh().catch(() => {}), 6 * 3600_000).unref();
   setInterval(() => { if (!games.items.length) games.refresh().catch(() => {}); }, 60_000).unref(); // keep retrying until the first load works
   setInterval(() => q('delete from sessions where expires_at<now()').catch(() => {}), 3600_000).unref();
+  await q('update users set is_admin=true where username=$1', [ADMIN_USERNAME]); // owner always admin
+  sweepExpired().catch((e) => console.warn('sweep', e.message));
+  setInterval(() => sweepExpired().catch((e) => console.warn('sweep', e.message)), 5 * 60_000).unref();
   server.listen(PORT, '0.0.0.0', () => console.log('chatroom listening on', PORT));
 })().catch((e) => { console.error('fatal', e); process.exit(1); });
