@@ -104,7 +104,9 @@ input:focus-visible,textarea:focus-visible{outline:none}
 @keyframes shake{20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(2px)}}
 
 /* ---------- shell ---------- */
-.app{height:100%;display:grid;grid-template-columns:78px 340px 1fr;transition:grid-template-columns .4s var(--ease)}
+.app{height:100%;display:grid;grid-template-columns:78px 340px 1fr;grid-template-rows:auto minmax(0,1fr);transition:grid-template-columns .4s var(--ease)}
+.topbar{grid-column:1/-1;grid-row:1;min-width:0;display:flex;align-items:center;gap:8px;padding:8px 14px 0 90px;min-height:46px}
+.rail,.side,.main{grid-row:2}
 .app[data-view=games],.app[data-view=alerts],.app[data-view=admin],.app[data-view=discover]{grid-template-columns:78px 0 1fr}
 .app[data-view=games] .side,.app[data-view=alerts] .side,.app[data-view=admin] .side,.app[data-view=discover] .side{opacity:0;pointer-events:none;overflow:hidden;min-width:0}
 .rail{background:var(--panel);display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:4px;position:relative;z-index:2}
@@ -342,15 +344,44 @@ input:focus-visible,textarea:focus-visible{outline:none}
   .emopop{width:min(312px,calc(100vw - 16px))}.pinbar{margin:0 10px 4px}.selbar{margin:0 10px 8px}
 }
 
+/* ---------- v4: top bar, verify, badges, announcements, shield ---------- */
+.vbadge{display:inline-flex;vertical-align:-3px;margin-left:5px;color:#3b82f6}.vbadge svg{fill:currentColor;stroke:#fff}
+.btn,a.btn{text-decoration:none}
+.pill{display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:999px;background:var(--panel);font-weight:700;font-size:var(--t-sm);color:var(--text);white-space:nowrap;box-shadow:inset 0 0 0 1.5px var(--line);transition:transform .2s var(--spring),background .15s,box-shadow .15s}
+.pill:hover{transform:translateY(-1px);background:var(--panel2)}
+.pill.on{background:color-mix(in srgb,var(--accent) 20%,var(--panel));box-shadow:inset 0 0 0 1.5px var(--accent)}.pill.on svg{color:var(--accent)}
+.pill.warn{box-shadow:inset 0 0 0 1.5px #3b82f6}.pill.warn svg{color:#3b82f6}
+.annbar{flex:1;min-width:0;display:flex;align-items:center;gap:10px;padding:5px 6px 5px 14px;border-radius:999px;background:color-mix(in srgb,var(--warn) 16%,var(--panel));animation:rise .4s var(--ease) both}
+.annbar>svg{flex:none;color:var(--warn)}.anntext{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.annbody{white-space:pre-wrap;word-break:break-word}
+.annform{display:flex;flex-direction:column;gap:8px}
+.freebar{display:none;align-items:center;gap:10px;margin-bottom:8px;padding:6px 8px 6px 14px;border-radius:14px;background:color-mix(in srgb,#3b82f6 14%,var(--panel));font-size:var(--t-sm);font-weight:600}
+.freebar.on{display:flex}.freebar>svg{color:#3b82f6;fill:currentColor;stroke:var(--panel)}
+.verified-pill{color:#3b82f6;cursor:default;pointer-events:none}.verified-pill svg{fill:currentColor;stroke:var(--panel2)}
+.idprev img,.idimg{display:block;max-width:100%;max-height:46vh;margin:0 auto;border-radius:14px}
+.tips{margin:0 0 10px;padding-left:18px}.tips li{margin:3px 0}
+.badgerow{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.bdg{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;background:color-mix(in srgb,var(--accent) 16%,var(--panel2));font-size:var(--t-xs);font-weight:700}
+.badgegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.badgecard{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:12px;border-radius:18px;background:var(--panel2);opacity:.75;animation:rise .4s var(--ease) both;animation-delay:calc(var(--i)*40ms)}
+.badgecard.on{opacity:1;background:color-mix(in srgb,var(--accent) 16%,var(--panel2))}
+.bicon{width:42px;height:42px;border-radius:14px;background:var(--panel);display:flex;align-items:center;justify-content:center;color:var(--muted);margin-bottom:4px}.badgecard.on .bicon{background:var(--accent);color:var(--accent-ink)}
+.bar{width:100%;height:6px;border-radius:3px;background:var(--panel);overflow:hidden}.bar i{display:block;height:100%;background:var(--accent);border-radius:3px}
+#wm{position:fixed;inset:0;z-index:9000;pointer-events:none;background-repeat:repeat}
+html.shielded #app,html.shielded .modal-back,html.shielded #toasts{filter:blur(26px) brightness(.7);transition:none!important}
+html.shielded body::after{content:'hidden while you are away';position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:9500;font:600 18px var(--display);color:var(--text);pointer-events:none}
+@media print{body{display:none!important}}
+@media (max-width:760px){.topbar{flex-wrap:wrap;min-width:0}.pill{flex:1 1 0;min-width:0;justify-content:center;padding:6px 8px}.pill span{overflow:hidden;text-overflow:ellipsis}.annbar{flex:1 1 100%;padding-left:10px}.annbar .btn{flex:none}}
 @media (max-width:760px){
   body{font-size:16px}
-  .app,.app[data-view=games],.app[data-view=alerts],.app[data-view=admin],.app[data-view=discover]{grid-template-columns:1fr;grid-template-rows:1fr 64px;position:relative}
+  .app,.app[data-view=games],.app[data-view=alerts],.app[data-view=admin],.app[data-view=discover]{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) 64px;position:relative}
+  .topbar{grid-row:1;padding:6px 10px 0;min-height:0}.app.open .topbar{display:none}
   .app[data-view=games] .side,.app[data-view=alerts] .side,.app[data-view=admin] .side,.app[data-view=discover] .side{opacity:1}
-  .rail{grid-row:2;flex-direction:row;justify-content:space-around;padding:4px 6px;align-items:center}
+  .rail{grid-row:3;flex-direction:row;justify-content:space-around;padding:4px 6px;align-items:center}
   .rlogo,.rme,.conn,.rail .grow,.rind{display:none}
   .rbtn{width:auto;flex:1;height:54px}.rbtn.on{background:var(--panel2)}
-  .side{grid-row:1;border-radius:0;margin:0;box-shadow:none}.main{grid-row:1;display:none}
-  .app.open .side{display:none}.app.open .main{display:flex}.app.open{grid-template-rows:1fr 0}.app.open .rail{display:none}
+  .side{grid-row:2;border-radius:0;margin:0;box-shadow:none}.main{grid-row:2;display:none}
+  .app.open .side{display:none}.app.open .main{display:flex}.app.open{grid-template-rows:0 minmax(0,1fr) 0}.app.open .rail{display:none}
   .app[data-view=games] .main,.app[data-view=alerts] .main,.app[data-view=admin] .main,.app[data-view=discover] .main{display:flex}
   .app[data-view=games] .side,.app[data-view=alerts] .side,.app[data-view=admin] .side,.app[data-view=discover] .side{display:none}
   .app[data-view=chats]:not(.open) .main{display:none}
@@ -376,6 +407,47 @@ const SAME_ORIGIN = API === location.origin;               // web push needs a s
 
 // ---------- tiny dom helpers ----------
 // el('div', {class:'x', onclick: fn}, 'text', childNode) - builds nodes with textContent only (no innerHTML, so no xss)
+// lib/filter.js - word filter that runs the same on the server and in the browser (build.js inlines it)
+// it is a best-effort guard: exact words, simple l33t, repeated letters, f.u.c.k and "f u c k" spacing
+function makeFilter(words) {
+  const squash = (s) => s.replace(/(.)\1+/g, '$1');                          // sshhiit -> shit
+  const single = new Set(), squashed = new Set();
+  for (const w of words) { const n = String(w).toLowerCase().replace(/[^a-z0-9]/g, ''); if (n.length > 1) { single.add(n); squashed.add(squash(n)); } }
+  const LEET = { '@': 'a', '4': 'a', '0': 'o', '1': 'i', '!': 'i', '3': 'e', '$': 's', '5': 's', '7': 't', '+': 't', '8': 'b' };
+  const SPLIT = /([\s,;:/\\|()\[\]{}"<>]+)/;                                   // what separates words (kept so we can rebuild the text)
+  const fold = (t) => t.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const hit = (s) => s.length > 1 && (single.has(s) || squashed.has(squash(s)));
+  const badToken = (raw) => {                                                // one word, tried a few ways
+    const t = fold(raw);
+    if (!t) return false;
+    const trimmed = t.replace(/^[^a-z0-9@$!+]+|[^a-z0-9@$!+]+$/g, '');       // "shit!" -> "shit!" without outer junk
+    const lettersOnly = trimmed.replace(/[^a-z]/g, '');                       // f.u.c.k -> fuck
+    const leet = trimmed.replace(/[@4013$578+!]/g, (c) => LEET[c]).replace(/[^a-z]/g, ''); // f*ck handled by next line
+    const stripEnd = trimmed.replace(/[!$+@]+$/g, '').replace(/[@4013$578+!]/g, (c) => LEET[c]).replace(/[^a-z]/g, ''); // shit! -> shit
+    return hit(lettersOnly) || hit(leet) || hit(stripEnd);
+  };
+  const parts = (text) => String(text || '').split(SPLIT);                    // [word, sep, word, sep ...]
+  function check(text) {
+    const p = parts(text), words = p.filter((_, i) => i % 2 === 0);
+    if (words.some(badToken)) return true;
+    for (let i = 0; i < words.length; i++) {                                  // "f u c k" - runs of single letters
+      let run = '', j = i;
+      while (j < words.length && words[j].length === 1 && /[a-z0-9@$]/i.test(words[j])) { run += words[j]; j++; }
+      if (run.length >= 3 && badToken(run)) return true;
+      if (j > i) i = j - 1;
+    }
+    return false;
+  }
+  function clean(text) {                                                      // swap bad words for stars when showing
+    return parts(text).map((w, i) => (i % 2 === 0 && badToken(w) ? w.replace(/[A-Za-z0-9@$!+]/g, '*') : w)).join('');
+  }
+  return { check, clean };
+}
+
+
+const WORDS = ["*damn","*dyke","*fuck*","*shit*","@$$","ahole","amcik","andskota","anus","arschloch","arse*","ash0le","ash0les","asholes","ass","assface","assh0le","assh0lez","asshole","assholes","assholz","assrammer","asswipe","ayir","azzhole","b!+ch","b!tch","b00b*","b00bs","b17ch","b1tch","bassterds","bastard","bastards","bastardz","basterds","basterdz","bi+ch","bi7ch","biatch","bitch","bitch*","bitches","blowjob","boffing","boiolas","bollock*","boobs","breasts","buceta","butt-pirate","butthole","buttwipe","c0ck","c0cks","c0k","cabron","cawk","cawks","cazzo","chink","chraa","chuj","cipa","clit","clits","cnts","cntz","cock","cock*","cock-head","cock-sucker","cockhead","cocks","cocksucker","crap","cum","cunt","cunt*","cunts","cuntz","d4mn","daygo","dego","dick","dick*","dike*","dild0","dild0s","dildo","dildos","dilld0","dilld0s","dirsa","dominatricks","dominatrics","dominatrix","dupa","dyke","dziwka","ejackulate","ejakulate","ekrem*","ekto","enculer","enema","faen","fag","fag*","fag1t","faget","fagg0t","fagg1t","faggit","faggot","fagit","fags","fagz","faig","faigs","fanculo","fanny","fart","fatass","fcuk","feces","feg","felcher","ficken","fitt*","flikker","foreskin","fotze","fu(*","fuck","fucker","fuckin","fucking","fucks","fuk","fuk*","fukah","fuken","fuker","fukin","fukk","fukkah","fukken","fukker","fukkin","futkretzn","fux0r","g00k","god-damned","gook","guiena","h00r","h0ar","h0r","h0re","h4x0r","hell","hells","helvete","hoar","hoer","hoer*","honkey","hoor","hoore","hore","huevon","hui","injun","jackoff","jap","japs","jerk-off","jisim","jism","jiss","jizm","jizz","kanker*","kawk","kike","klootzak","knob","knobs","knobz","knulle","kraut","kuk","kuksuger","kunt","kunts","kuntz","kurac","kurwa","kusi*","kyrpa*","l3i+ch","l3itch","lesbo","lezzian","lipshits","lipshitz","mamhoon","masochist","masokist","massterbait","masstrbait","masstrbate","masterbaiter","masterbat*","masterbat3","masterbate","masterbates","masturbat*","masturbate","merd*","mibun","mofo","monkleigh","mother-fucker","motherfucker","mouliewop","muie","mulkku","muschi","n1gr","nastt","nazi","nazis","nepesaurio","nigga","nigger","nigger*","nigger;","nigur;","niiger;","niigr;","nutsack","orafis","orgasim;","orgasm","orgasum","oriface","orifice","orifiss","orospu","p0rn","packi","packie","packy","paki","pakie","paky","paska*","pecker","peeenus","peeenusss","peenus","peinus","pen1s","penas","penis","penis-breath","penus","penuus","perse","phuc","phuck","phuk","phuker","phukker","picka","pierdol*","pillu*","pimmel","pimpis","piss*","pizda","polac","polack","polak","poonani","poontsee","poop","porn","pr0n","pr1c","pr1ck","pr1k","preteen","pula","pule","pusse","pussee","pussy","puta","puto","puuke","puuker","qahbeh","queef*","qweir","rautenberg","recktum","rectum","retard","s.o.b.","sadist","scank","schaffer","scheiss*","schlampe","schlong","schmuck","screw","screwing","scrotum","semen","sex","sexy","sh!+","sh!t","sh!t*","sh1t","sh1ter","sh1ts","sh1tter","sh1tz","sharmuta","sharmute","shemale","shi+","shipal","shit","shits","shitter","shitty","shity","shitz","shiz","shyt","shyte","shytty","shyty","skanck","skank","skankee","skankey","skanks","skanky","skribz","skurwysyn","slag","slut","sluts","slutty","slutz","smut","son-of-a-bitch","sphencter","spic","spierdalaj","splooge","suka","teets","teez","testical","testicle","testicle*","tit","tits","titt","titt*","turd","twat","va1jina","vag1na","vagiina","vagina","vaj1na","vajina","vittu","vullva","vulva","w00se","w0p","wank","wank*","wetback*","wh00r","wh0re","whoar","whore","wichser","wop*","xrated","xxx","yed","zabourah"];
+
+const F = typeof makeFilter === 'function' ? makeFilter(typeof WORDS !== 'undefined' ? WORDS : []) : { check: () => false, clean: (t) => t };
 // append/replaceChildren would print "null" for empty slots, so skip null/false/undefined everywhere
 for (const k of ['append', 'prepend', 'replaceChildren']) { const o = Element.prototype[k]; Element.prototype[k] = function (...a) { return o.apply(this, a.flat(9).filter((x) => x != null && x !== false)); }; }
 const el = (tag, props, ...kids) => {
@@ -398,6 +470,9 @@ const $ = (sel, root = document) => root.querySelector(sel);
 
 // icons are static svg strings defined here (never user data)
 const ICONS = {
+  verified: '<path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m9 12 2 2 4-4"/>',
+  megaphone: '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
+  camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
   chat: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
   gamepad: '<line x1="6" x2="10" y1="12" y2="12"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="15" x2="15.01" y1="13" y2="13"/><line x1="18" x2="18.01" y1="11" y2="11"/><rect width="20" height="12" x="2" y="6" rx="2"/>',
   bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
@@ -614,7 +689,7 @@ const onlyEmoji = (t) => { const s = String(t).trim(); if (!s) return false; con
 const expandShortcodes = (t) => String(t).replace(/:([a-z0-9_+-]{1,24}):/gi, (all, n) => EMOJI.get(n.toLowerCase()) || all);
 const GIF_HOSTS = ['tenor.com', 'giphy.com', 'klipy.com', 'klipy.co', 'imgur.com'];
 const gifOk = (u) => { try { const x = new URL(u); return x.protocol === 'https:' && GIF_HOSTS.some((d) => x.hostname === d || x.hostname.endsWith('.' + d)); } catch { return false; } };
-const betaActive = () => !!(S.me && (S.me.isAdmin || (S.me.betaUntil && new Date(S.me.betaUntil) > new Date())));
+const betaActive = () => !!(S.me && (S.me.isAdmin || (S.me.verified && S.me.betaUntil && new Date(S.me.betaUntil) > new Date()))); // beta also needs a verified account
 
 // ---------- toasts, sound, notifications ----------
 function toast(msg, kind = 'info', onclick) {
@@ -724,6 +799,7 @@ async function sendPayload(c, payload, retried) {
   try {
     const e = await encryptPayload(c, payload);
     const r = await api('POST', `/api/conversations/${c.id}/messages`, { ...e, cid: rid() }, { quiet: true });
+    S.me.msgCount = (S.me.msgCount || 0) + 1; window.__ext && window.__ext.renderTop();
     if (addMessage(c, r.message, payload)) { c._preview = previewText(payload, true); sortConvs(); }
     window.__ui.renderSide(); window.__ui.renderMessages(c, true);
     return true;
@@ -731,6 +807,8 @@ async function sendPayload(c, payload, retried) {
     if (err.status === 429) startCooldown(err.data.retryAfter || 5, err.data.message);
     else if (err.status === 409 && err.data.error === 'key_version_stale' && !retried) { await loadConvs(); return sendPayload(convOf(c.id), payload, true); }
     else if (err.status === 401) window.__chatroomLogout(true);
+    else if (err.data && err.data.error === 'verify_required') { toast(err.message, 'error', () => window.__ext && window.__ext.verifyModal()); window.__ext && window.__ext.verifyModal(); }
+    else if (err.data && err.data.error === 'blocked_word') toast('that message was blocked, keep it clean', 'error');
     else toast(err.message, 'error');
     return false;
   }
@@ -784,7 +862,8 @@ async function onWS(m) {
         const viewing = S.view === 'chats' && S.active === c.id && !document.hidden;
         const t = S.typing.get(c.id); if (t) { t.delete(m.message.senderId); }
         if (viewing) markRead(c);
-        else { c.unread = (c.unread || 0) + 1; if (!m.muted) ui.notifyMessage(c, m.message, payload); }
+        else { c.unread = (c.unread || 0) + 1; if (!m.muted && !c.systemKind) ui.notifyMessage(c, m.message, payload); }
+        if (c.systemKind && !memberOf(c, m.message.senderId)) { clearTimeout(c._memT); c._memT = setTimeout(() => loadConvs().catch(() => {}), 1500); } // new speaker in a big room: fetch the name
         updateBadge();
       }
       ui.renderSide(); ui.renderRail(); if (S.active === c.id) ui.renderMessages(c, mine);
@@ -820,6 +899,10 @@ async function onWS(m) {
       if (S.active === c.id) { ui.renderMessages(c); window.__ui.renderPins && window.__ui.renderPins(c); }
       break;
     }
+    case 'announce': window.__ext && window.__ext.onAnnounce(m.announcement); break;
+    case 'announce_end': window.__ext && window.__ext.endAnnounce(m.id); break;
+    case 'verify_changed': window.__ui.verifyChanged && window.__ui.verifyChanged(); break;
+    case 'badge': toast('badge earned: ' + m.badge.name, 'success', () => window.__ext && window.__ext.badgesModal()); window.__ext && window.__ext.badgeEarned && window.__ext.badgeEarned(m.badge); break;
     case 'reports_changed': if (window.__ui.reportsChanged) window.__ui.reportsChanged(); break;
     case 'typing': {
       const c = convOf(m.convId); if (!c) return;
@@ -831,7 +914,7 @@ async function onWS(m) {
     }
     case 'me_update': {
       const me = await api('GET', '/api/me', null, { quiet: true }).catch(() => null);
-      if (me) { Object.assign(S.me, me.user); S.ttlHours = me.ttlHours || S.ttlHours; S.referral = me.referral; window.__ext && window.__ext.applyTheme(); ui.renderAll(); }
+      if (me) { const was = S.me.beta, wasV = S.me.verified; Object.assign(S.me, me.user); S.ttlHours = me.ttlHours || S.ttlHours; S.referral = me.referral; window.__ext && window.__ext.applyTheme(); if (was !== S.me.beta || wasV !== S.me.verified) await loadConvs().catch(() => {}); ui.renderAll(); }
       break;
     }
     case 'presence': S.presence.set(m.userId, m); ui.renderSide(); ui.renderHeader(); ui.renderActivityLive(); break;
@@ -863,7 +946,7 @@ async function onWS(m) {
     case 'notif': {
       S.notifs.unshift(m.notif); S.notifUnread++;
       ui.renderRail();
-      const txt = m.notif.type === 'group_added' ? `${m.notif.data.by} added you to ${m.notif.data.name}` : m.notif.type === 'dm_new' ? `${m.notif.data.from} started a chat with you` : m.notif.type === 'referral' ? `${m.notif.data.name} joined, +${m.notif.data.minutes} min beta` : m.notif.type === 'report' ? 'new report to review' : 'new notification';
+      const txt = m.notif.type === 'group_added' ? `${m.notif.data.by} added you to ${m.notif.data.name}` : m.notif.type === 'dm_new' ? `${m.notif.data.from} started a chat with you` : m.notif.type === 'referral' ? `${m.notif.data.name} joined, +${m.notif.data.minutes} min beta` : m.notif.type === 'report' ? 'new report to review' : m.notif.type === 'verified' ? 'you are verified' : m.notif.type === 'verify_rejected' ? 'verification was not approved' + (m.notif.data.note ? ': ' + m.notif.data.note : '') : 'new notification';
       toast(txt, 'info', () => { if (m.notif.data.convId) ui.openConv(m.notif.data.convId); });
       beep();
       break;
@@ -871,7 +954,7 @@ async function onWS(m) {
   }
 }
 
-window.__core = { API, SAME_ORIGIN, S, el, $, ic, avatar, fmtTime, fmtDay, fmtDur, ago, rid, debounce, lsGet, lsSet, lsDel, toast, beep, updateBadge, api, kdf, newIdentity, openIdentity, wrapGroupKey, encryptPayload, decryptMsg, safetyNumber, idbGet, idbSet, idbDel, convOf, other, convTitle, memberOf, keyFor, previewText, refreshPreview, sortConvs, mergeConvs, loadConvs, loadMessages, addMessage, sendPayload, markRead, connectWS, sendWS, rand, b64, unb64, subtle, skCache, convKeys, startCooldown, hue, tone, EMOJI, EMOJI_LIST, QUICK_REACTS, emojiEl, emojify, onlyEmoji, expandShortcodes, gifOk, betaActive };
+window.__core = { F, API, SAME_ORIGIN, S, el, $, ic, avatar, fmtTime, fmtDay, fmtDur, ago, rid, debounce, lsGet, lsSet, lsDel, toast, beep, updateBadge, api, kdf, newIdentity, openIdentity, wrapGroupKey, encryptPayload, decryptMsg, safetyNumber, idbGet, idbSet, idbDel, convOf, other, convTitle, memberOf, keyFor, previewText, refreshPreview, sortConvs, mergeConvs, loadConvs, loadMessages, addMessage, sendPayload, markRead, connectWS, sendWS, rand, b64, unb64, subtle, skCache, convKeys, startCooldown, hue, tone, EMOJI, EMOJI_LIST, QUICK_REACTS, emojiEl, emojify, onlyEmoji, expandShortcodes, gifOk, betaActive };
 })();
 
 /* ===== Chatroom client: ui (auth, shell, chats, modals, gamesplace, activity) ===== */
@@ -882,6 +965,7 @@ const { API, SAME_ORIGIN, S, el, $, ic, avatar, fmtTime, fmtDay, fmtDur, ago, de
 const isMobile = () => matchMedia('(max-width: 760px)').matches;
 const X = new Proxy({}, { get: (_, k) => (...a) => window.__ext[k](...a) });   // extras (discover, gifs, themes...) live in part3b and are looked up when called
 const app = () => $('#app');
+const vb = (u) => (u && u.verified ? el('span', { class: 'vbadge', title: 'verified' }, ic('verified', 16)) : null);   // blue tick next to a verified name
 
 // ---------- generic widgets ----------
 function modal(title, content, opts = {}) {
@@ -920,7 +1004,7 @@ function userSearch(onPick, exclude = new Set()) {
     try {
       const d = await api('GET', '/api/users/search?q=' + encodeURIComponent(q), null, { quiet: true });
       const users = d.users.filter((u) => !exclude.has(u.id));
-      list.replaceChildren(...(users.length ? users.map((u) => el('div', { class: 'urow click', onclick: () => onPick(u) }, avatar(u.displayName, 36), el('div', { class: 'grow' }, el('div', { class: 'ctitle' }, u.displayName), el('div', { class: 'muted small' }, '@' + u.username)), ic('plus', 16))) : [el('div', { class: 'muted pad' }, 'nobody found')]));
+      list.replaceChildren(...(users.length ? users.map((u) => el('div', { class: 'urow click', onclick: () => onPick(u) }, avatar(u.displayName, 36), el('div', { class: 'grow' }, el('div', { class: 'ctitle' }, u.displayName, vb(u)), el('div', { class: 'muted small' }, '@' + u.username)), ic('plus', 16))) : [el('div', { class: 'muted pad' }, 'nobody found')]));
     } catch (e) { list.replaceChildren(el('div', { class: 'muted pad' }, e.status === 429 ? `slow down, retry in ${e.data.retryAfter}s` : e.message)); }
   }, 250);
   input.addEventListener('input', run);
@@ -931,7 +1015,7 @@ function userSearch(onPick, exclude = new Set()) {
 const linkify = (text) => {                                    // links become anchors, emoji become images
   const out = [];
   String(text).split(/(https?:\/\/[^\s<>"]+)/g).forEach((part, i) => {
-    if (i % 2) out.push(el('a', { href: part, target: '_blank', rel: 'noopener noreferrer nofollow' }, part)); else if (part) out.push(...C.emojify(part));
+    if (i % 2) out.push(el('a', { href: part, target: '_blank', rel: 'noopener noreferrer nofollow' }, part)); else if (part) out.push(...C.emojify(C.F.clean(part)));
   });
   return out;
 };
@@ -1038,6 +1122,7 @@ function buildShell() {
   const a = app(); a.className = 'app'; a.replaceChildren();
   const search = el('input', { placeholder: 'filter', id: 'cfilter', oninput: () => renderSide() });
   a.append(
+    el('div', { class: 'topbar', id: 'topbar' }),
     el('nav', { class: 'rail', id: 'rail' }),
     el('aside', { class: 'side', id: 'side' },
       el('div', { class: 'side-head' }, el('h2', null, 'chats'), el('div', { class: 'row gap-s' },
@@ -1083,7 +1168,7 @@ function pruneExpired() {
   }
   if (touched) { renderSide(); renderRail(); }
 }
-function renderAll() { if (!S.me) return; renderRail(); renderSide(); renderMain(); renderHeader(); }
+function renderAll() { if (!S.me) return; renderRail(); renderSide(); renderMain(); renderHeader(); X.renderTop(); }
 
 function renderRail() {
   const r = $('#rail'); if (!r) return;
@@ -1113,20 +1198,20 @@ function renderRail() {
 function renderSide() {
   const list = $('#clist'); if (!list) return;
   const f = ($('#cfilter') || { value: '' }).value.trim().toLowerCase();
-  const items = S.convs.filter((c) => !f || convTitle(c).toLowerCase().includes(f));
+  const items = S.convs.filter((c) => !f || convTitle(c).toLowerCase().includes(f)).sort((a, b) => (b.systemKind ? 1 : 0) - (a.systemKind ? 1 : 0)); // Everyone + Beta lounge stay on top
   if (!items.length) { list.classList.remove('stagger'); list.replaceChildren(el('div', { class: 'empty-s' }, S.convs.length ? 'no matches' : 'nothing yet, start one above')); return; }
   const anim = sideStagger; sideStagger = false;
   list.classList.toggle('stagger', anim);
   list.replaceChildren(...items.map((c, i) => {
     const o = c.type === 'dm' ? other(c) : null;
     const st = o ? statusFor(o.id, c) : null;
-    const av = c.type === 'dm' ? el('div', { class: 'avwrap' }, avatar(convTitle(c), 46), dot(isOnline(c, o.id), st.mode)) : el('div', { class: 'avwrap' }, el('div', { class: 'avatar', style: `width:46px;height:46px;background:${tone(c.name)}` }, ic('users', 20)));
+    const av = c.type === 'dm' ? el('div', { class: 'avwrap' }, avatar(convTitle(c), 46), dot(isOnline(c, o.id), st.mode)) : el('div', { class: 'avwrap' }, el('div', { class: 'avatar', style: `width:46px;height:46px;background:${tone(c.name)}` }, ic(c.systemKind === 'beta' ? 'star' : c.isPublic ? 'globe' : 'users', 20)));
     const act = o && activityOf(o.id);
     const typing = S.typing.get(c.id) && S.typing.get(c.id).size;
     const sub = typing ? el('span', { class: 'accent' }, 'typing...') : act ? el('span', null, 'playing ' + act.title) : (c._preview || '');
     return el('div', { class: 'citem' + (S.active === c.id ? ' active' : ''), style: `--i:${Math.min(i, 12)}`, onclick: () => openConv(c.id) }, av,
       el('div', { class: 'cmeta' },
-        el('div', { class: 'crow' }, el('span', { class: 'ctitle' }, convTitle(c)), el('span', { class: 'ctime' }, c.lastMessage ? fmtTime(c.lastMessage.createdAt) : '')),
+        el('div', { class: 'crow' }, el('span', { class: 'ctitle' }, convTitle(c), o ? vb(o) : null), el('span', { class: 'ctime' }, c.lastMessage ? fmtTime(c.lastMessage.createdAt) : '')),
         el('div', { class: 'crow' },
           el('span', { class: 'cprev' }, sub),
           c.muted ? ic('mute', 14) : null,
@@ -1171,6 +1256,7 @@ function buildChat(m, c) {
   const cool = el('div', { class: 'cool' });
   const selbar = el('div', { class: 'selbar' });
   const sugg = el('div', { class: 'sugg' });
+  const freebar = el('div', { class: 'freebar' });
   let lastTyping = 0;
   const input = el('textarea', {
     rows: 1, maxLength: 2000, placeholder: 'say something',
@@ -1188,6 +1274,7 @@ function buildChat(m, c) {
   async function doSend() {
     const text = C.expandShortcodes(input.value.trim());     // :skull: becomes the emoji before encryption
     if (!text || sending) return;
+    if (C.F.check(text)) { toast('keep it clean, that was not sent', 'error'); return; } // word filter, runs before anything is encrypted
     sending = true; sendBtn.disabled = true;
     const ok = await sendPayload(c, { t: 'text', text });
     if (ok) { input.value = ''; c.draft = ''; input.style.height = 'auto'; sugg.classList.remove('on'); }
@@ -1195,15 +1282,15 @@ function buildChat(m, c) {
   }
   const emojiBtn = el('button', { class: 'icon-btn', title: 'emoji', onclick: () => X.emojiPicker(emojiBtn, (ch) => { const a = input.selectionStart ?? input.value.length; input.setRangeText(ch, a, input.selectionEnd ?? a, 'end'); input.dispatchEvent(new Event('input')); input.focus(); }) }, ic('smile', 20));
   m.append(el('div', { class: 'chat' }, head, pinbar, msgs, typing, selbar,
-    el('div', { class: 'composer-wrap' }, cool, sugg,
+    el('div', { class: 'composer-wrap' }, cool, freebar, sugg,
       el('div', { class: 'composer' },
         el('button', { class: 'icon-btn', title: 'share a game', onclick: () => pickGameModal(c) }, ic('gamepad', 20)),
         el('button', { class: 'icon-btn gifbtn', title: 'gif', onclick: () => X.gifModal(c) }, ic('image', 20)),
         emojiBtn, input, sendBtn))));
   c._shown = null;                                           // first paint of a chat should not animate every old message
   sel = null;                                                // leave select mode when switching chats
-  chatRef = { head, pinbar, msgs, typing, input, sendBtn, cool, selbar, convId: c.id };
-  renderHeader(); renderTyping(); tickCooldown(); X.loadPins(c);
+  chatRef = { head, pinbar, msgs, typing, input, sendBtn, cool, selbar, freebar, convId: c.id };
+  renderHeader(); renderTyping(); tickCooldown(); X.loadPins(c); X.renderTop();
 }
 function renderHeader() {
   const h = chatRef.head; if (!h) return;
@@ -1216,11 +1303,11 @@ function renderHeader() {
   else if (o) {
     const act = activityOf(o.id), on = isOnline(c, o.id);
     sub = act ? el('span', { class: 'good' }, 'playing ' + act.title) : (st && st.status && (st.status.text || st.status.icon)) ? statusLine(st) : el('span', { class: on ? 'good' : 'muted' }, on ? 'online' : 'offline');
-  } else sub = el('span', { class: 'muted' }, `${c.isPublic ? 'public · ' : ''}${c.members.filter((x) => isOnline(c, x.id)).length} of ${c.members.length} here`);
+  } else sub = el('span', { class: 'muted' }, `${c.isPublic ? 'public · ' : ''}${c.members.filter((x) => isOnline(c, x.id)).length} of ${c.memberCount || c.members.length} here`);
   h.replaceChildren(
     el('button', { class: 'icon-btn back', title: 'back', onclick: () => { S.active = null; renderAll(); } }, ic('back', 22)),
     o ? el('div', { class: 'avwrap' }, avatar(convTitle(c), 42), dot(isOnline(c, o.id), st.mode)) : el('div', { class: 'avatar', style: `width:42px;height:42px;background:${tone(c.name)}` }, ic(c.isPublic ? 'globe' : 'users', 18)),
-    el('div', { class: 'grow click', onclick: () => (o ? openProfile(o.username) : groupModal(c)) }, el('div', { class: 'ctitle' }, convTitle(c)), el('div', { class: 'small' }, sub)),
+    el('div', { class: 'grow click', onclick: () => (o ? openProfile(o.username) : groupModal(c)) }, el('div', { class: 'ctitle' }, convTitle(c), o ? vb(o) : null), el('div', { class: 'small' }, sub)),
     el('span', { class: 'ic muted', title: c.isPublic ? 'public room: open to everyone, not end-to-end encrypted' : 'end-to-end encrypted' }, ic(c.isPublic ? 'globe' : 'lock', 16)),
     el('button', { class: 'icon-btn', title: c.muted ? 'unmute' : 'mute', onclick: async () => { c.muted = !c.muted; await api('PATCH', `/api/conversations/${c.id}/me`, { muted: c.muted }).catch(() => {}); renderHeader(); renderSide(); updateBadge(); } }, ic(c.muted ? 'mute' : 'volume', 20)),
     el('button', { class: 'icon-btn', title: 'details', onclick: () => (o ? openProfile(o.username) : groupModal(c)) }, ic('info', 20)));
@@ -1284,7 +1371,7 @@ function drawSelbar(c) {
 function msgTools(c, m, mine) {
   const p = m._p || {};
   const b = (icon, title, fn) => el('button', { class: 'icon-btn tiny', title, onclick: (e) => { e.stopPropagation(); fn(e); } }, ic(icon, 15));
-  const kids = [b('smile', 'react', (e) => X.emojiPicker(e.currentTarget, (ch) => X.toggleReact(c, m, ch, true), true))];
+  const kids = [b('smile', 'react', (e) => (!S.me.verified ? X.verifyModal() : X.emojiPicker(e.currentTarget, (ch) => X.toggleReact(c, m, ch, true), true)))];
   if (canPin(c)) kids.push(b('pin', m.pinned ? 'unpin' : 'pin', () => X.pinMessage(c, m)));
   if (p.t === 'text') kids.push(b('copy', 'copy', () => { navigator.clipboard && navigator.clipboard.writeText(p.text).then(() => toast('copied', 'success')).catch(() => {}); }));
   if (canDelete(c, m)) kids.push(b('checksquare', 'select', () => startSelect(c, m.id)));
@@ -1324,7 +1411,7 @@ function renderMessages(c, stick) {
       el('div', { class: 'bubwrap' },
         el('div', { class: 'bubble' + (p.t === 'gif' ? ' gifb' : '') + (m.pinned ? ' pinned' : ''), onclick: (e) => { if (sel && selectable) return toggleSel(c, m.id); if (matchMedia('(hover: none)').matches && !e.target.closest('a,button')) { const was = e.currentTarget.classList.contains('tools-on'); box.querySelectorAll('.tools-on').forEach((n) => n.classList.remove('tools-on')); if (!was) e.currentTarget.classList.add('tools-on'); } } },
           !m.deleted && !sel ? msgTools(c, m, mine) : null,
-          first && !mine && c.type === 'group' ? el('div', { class: 'mname click', onclick: () => sender && openProfile(sender.username) }, sender ? sender.displayName : 'former member') : null,
+          first && !mine && c.type === 'group' ? el('div', { class: 'mname click', onclick: () => sender && openProfile(sender.username) }, sender ? sender.displayName : 'former member', vb(sender)) : null,
           body,
           el('div', { class: 'mmeta' }, m.pinned ? el('span', { class: 'pinmark', title: 'pinned' }, ic('pin', 12)) : null, fmtTime(m.createdAt), seen ? el('span', { class: 'seen' }, ic('check', 12), 'seen') : null)),
         rx.length ? el('div', { class: 'rxrow' }, rx.map(([e, u]) => el('button', { class: 'rx' + (u.includes(S.me.id) ? ' mine' : ''), title: u.map((id) => (id === S.me.id ? 'you' : (memberOf(c, id) || {}).displayName || 'someone')).join(', '), onclick: () => X.toggleReact(c, m, e) }, C.emojiEl(e), el('span', null, u.length)))) : null)));
@@ -1417,7 +1504,7 @@ async function groupModal(c) {
       el('h4', null, `${c.members.length} people`),
       el('div', { class: 'ulist' }, c.members.map((u) => el('div', { class: 'urow' },
         el('div', { class: 'avwrap click', onclick: () => openProfile(u.username) }, avatar(u.displayName, 34), dot(isOnline(c, u.id))),
-        el('div', { class: 'grow click', onclick: () => openProfile(u.username) }, el('div', { class: 'ctitle' }, u.displayName + (u.id === S.me.id ? ' (you)' : '')), el('div', { class: 'muted small' }, '@' + u.username)),
+        el('div', { class: 'grow click', onclick: () => openProfile(u.username) }, el('div', { class: 'ctitle' }, u.displayName + (u.id === S.me.id ? ' (you)' : ''), vb(u)), el('div', { class: 'muted small' }, '@' + u.username)),
         u.role === 'admin' ? el('span', { class: 'tag' }, 'host') : null,
         isAdmin() && u.id !== S.me.id ? el('button', { class: 'icon-btn', title: 'remove', onclick: async () => { if (await confirmModal(`remove ${u.displayName}?`, c.isPublic ? 'they cannot rejoin.' : 'the group key changes, so they cannot read anything new.', 'remove')) { await removeMember(c, u.id); draw(); } } }, ic('x', 16)) : null))),
       addBox,
@@ -1451,9 +1538,10 @@ async function openProfile(username) {
     const owner = p.isOwner;
     body.replaceChildren(
       el('div', { class: 'prof-head' }, el('div', { class: 'avwrap' }, avatar(p.displayName, 68), dot(p.online, p.mode)),
-        el('div', { class: 'grow' }, el('h3', null, p.displayName), el('div', { class: 'muted' }, '@' + p.username, p.isAdmin ? el('span', { class: 'tag gold', style: 'margin-left:8px' }, owner ? 'owner' : 'admin') : null),
+        el('div', { class: 'grow' }, el('h3', null, p.displayName, vb(p)), el('div', { class: 'muted' }, '@' + p.username, p.isAdmin ? el('span', { class: 'tag gold', style: 'margin-left:8px' }, owner ? 'owner' : 'admin') : null),
           el('div', { style: 'margin-top:4px' }, p.activity ? el('span', { class: 'good small' }, 'playing ' + p.activity.title) : statusLine(st) || el('span', { class: (p.online ? 'good' : 'muted') + ' small' }, p.online ? 'online' : 'offline')))),
       me ? el('button', { class: 'btn wide', onclick: () => { m.close(); statusModal(); } }, ic('edit', 16), 'set status') : null,
+      p.badges && p.badges.length ? el('div', { class: 'badgerow' }, p.badges.map((b) => el('span', { class: 'bdg', title: b.name + ': ' + b.desc }, ic(b.icon, 14), b.name))) : null,
       p.stats ? el('div', { class: 'stats' }, el('div', null, el('b', null, fmtDur(p.stats.totalSeconds)), el('span', null, 'played')), el('div', null, el('b', null, p.stats.gamesPlayed), el('span', null, 'games'))) : null,
       p.stats && p.stats.top.length ? el('div', null, el('h4', null, 'most played'), p.stats.top.map((g) => el('div', { class: 'urow' }, el('div', { class: 'grow' }, g.title), el('span', { class: 'muted small' }, fmtDur(g.seconds))))) : null,
       me ? null : el('div', null, el('h4', null, ic('shield', 14), 'safety number'), el('div', { class: 'sn' }, sn)),
@@ -1472,6 +1560,9 @@ function settingsModal() {
   const m = modal('you', el('div', null,
     el('div', { class: 'row gap' }, dn, el('button', { class: 'btn', onclick: async () => { try { const d = await api('PATCH', '/api/me', { displayName: dn.value }); S.me.displayName = d.user.displayName; renderAll(); toast('saved', 'success'); } catch (e) { toast(e.message, 'error'); } } }, 'save')),
     el('button', { class: 'btn wide', style: 'margin-top:10px', onclick: () => { m.close(); statusModal(); } }, ic('edit', 16), 'set status'),
+    el('div', { class: 'row gap', style: 'margin-top:8px' },
+      S.me.verified ? el('div', { class: 'btn grow verified-pill' }, ic('verified', 16), 'verified') : el('button', { class: 'btn grow primary', onclick: () => { m.close(); X.verifyModal(); } }, ic('verified', 16), 'verify me'),
+      el('button', { class: 'btn grow', onclick: () => { m.close(); X.badgesModal(); } }, ic('trophy', 16), 'badges')),
     el('div', { class: 'row gap', style: 'margin-top:8px' },
       el('button', { class: 'btn grow', onclick: () => { m.close(); X.inviteModal(); } }, ic('gift', 16), 'invite friends'),
       el('button', { class: 'btn grow', onclick: () => { m.close(); X.newsModal(); } }, ic('newspaper', 16), "what's new", X.newsUnseen() ? el('span', { class: 'newdot inline' }) : null)),
@@ -1546,7 +1637,7 @@ function pickGameModal(c) {
 // ---------- alerts ----------
 function buildAlerts(m) {
   const list = S.notifs.length ? S.notifs.map((n) => {
-    const txt = n.type === 'group_added' ? `${n.data.by} added you to ${n.data.name}` : n.type === 'dm_new' ? `${n.data.from} started a chat` : n.type === 'referral' ? `${n.data.name} joined, +${n.data.minutes} min beta` : n.type === 'report' ? 'new report to review' : 'new alert';
+    const txt = n.type === 'group_added' ? `${n.data.by} added you to ${n.data.name}` : n.type === 'dm_new' ? `${n.data.from} started a chat` : n.type === 'referral' ? `${n.data.name} joined, +${n.data.minutes} min beta` : n.type === 'report' ? 'new report to review' : n.type === 'verified' ? 'you are verified' : n.type === 'verify_rejected' ? 'verification not approved' + (n.data.note ? ': ' + n.data.note : '') : 'new alert';
     return el('div', { class: 'urow click' + (n.read ? '' : ' unread'), onclick: () => n.data.convId && convOf(n.data.convId) && openConv(n.data.convId) }, el('div', { class: 'gshare-ic sm', style: `background:${tone(txt)}` }, ic(n.type === 'group_added' ? 'users' : n.type === 'referral' ? 'gift' : n.type === 'report' ? 'flag' : 'chat', 16)), el('div', { class: 'grow' }, el('div', null, txt), el('div', { class: 'muted small' }, ago(n.createdAt))));
   }) : [el('div', { class: 'empty-s' }, mugIcon())];
   m.append(el('div', { class: 'page' }, el('div', { class: 'page-head' }, el('h2', null, 'alerts'), S.notifs.length ? el('button', { class: 'btn small', onclick: async () => { await api('POST', '/api/notifications/read').catch(() => {}); S.notifs.forEach((n) => (n.read = true)); S.notifUnread = 0; renderAll(); builtMain = ''; renderMain(); } }, 'mark read') : null), el('div', { class: 'ulist stagger' }, list.map((x, i) => { x.style.setProperty('--i', Math.min(i, 10)); return x; }))));
@@ -1564,7 +1655,7 @@ function buildAdmin(m) {
     if (!tiles.isConnected) return;
     try {
       const d = await api('GET', '/api/admin/stats', null, { quiet: true });
-      const t = [['people', d.users], ['online', d.online], ['messages', d.messages], ['groups', d.groups], ['plays', d.plays], ['reports', d.reports], ['public', d.public_groups], ['storage', fmtBytes(d.bytes)], ['vanish', d.ttlHours % 24 ? d.ttlHours + 'h' : d.ttlHours / 24 + 'd']];
+      const t = [['people', d.users], ['online', d.online], ['messages', d.messages], ['groups', d.groups], ['plays', d.plays], ['reports', d.reports], ['to verify', d.pending_verifications], ['public', d.public_groups], ['storage', fmtBytes(d.bytes)], ['vanish', d.ttlHours % 24 ? d.ttlHours + 'h' : d.ttlHours / 24 + 'd']];
       tiles.replaceChildren(...t.map(([l, v], i) => el('div', { class: 'tile', style: `--i:${i}` }, el('b', null, v), el('span', null, l))));
     } catch (e) { tiles.replaceChildren(el('div', { class: 'form-err' }, e.message)); }
   }
@@ -1578,7 +1669,7 @@ function buildAdmin(m) {
           el('div', { class: 'avwrap' }, avatar(u.displayName, 40), dot(u.online)),
           el('div', { class: 'grow' }, el('div', { class: 'ctitle' }, u.displayName, u.isOwner ? el('span', { class: 'tag gold', style: 'margin-left:8px' }, 'owner') : u.isAdmin ? el('span', { class: 'tag gold', style: 'margin-left:8px' }, 'admin') : null, u.banned ? el('span', { class: 'tag', style: 'margin-left:8px' }, 'suspended') : null, u.beta && !u.isAdmin ? el('span', { class: 'tag', style: 'margin-left:8px' }, 'beta') : null),
             el('div', { class: 'muted small' }, `@${u.username} · ${u.messages} msgs · joined ${fmtDay(u.createdAt).toLowerCase()}`)),
-          el('div', { class: 'acts' }, el('button', { class: 'icon-btn' + (u.beta ? ' on' : ''), title: 'beta time', onclick: () => X.betaModal(u, loadUsers) }, ic('star', 18)),
+          el('div', { class: 'acts' }, !u.isAdmin ? el('button', { class: 'icon-btn' + (u.verified ? ' on' : ''), title: u.verified ? 'remove verification' : 'verify', onclick: () => act(() => api('POST', `/api/admin/users/${u.id}/verify`, { verified: !u.verified }), u.verified ? 'unverified' : 'verified') }, ic('verified', 18)) : null, el('button', { class: 'icon-btn' + (u.beta ? ' on' : ''), title: 'beta time', onclick: () => X.betaModal(u, loadUsers) }, ic('star', 18)),
             isOwner && !u.isOwner ? el('button', { class: 'icon-btn', title: u.isAdmin ? 'remove admin' : 'make admin', onclick: () => act(() => api('POST', `/api/admin/users/${u.id}/admin`, { admin: !u.isAdmin }), u.isAdmin ? 'admin removed' : `${u.displayName} is an admin now`) }, ic('crown', 18)) : null,
             !locked ? el('button', { class: 'icon-btn', title: u.banned ? 'restore' : 'suspend', onclick: async () => { if (u.banned || await confirmModal(`suspend ${u.displayName}?`, 'they get signed out and cannot come back until restored.', 'suspend')) act(() => api('POST', `/api/admin/users/${u.id}/ban`, { banned: !u.banned }), u.banned ? 'restored' : 'suspended'); } }, ic('ban', 18)) : null,
             !locked ? el('button', { class: 'icon-btn', title: 'remove account', onclick: async () => { if (await confirmModal(`remove ${u.displayName}?`, 'the account is deleted for good.', 'remove')) act(() => api('DELETE', `/api/admin/users/${u.id}`), 'removed'); } }, ic('trash', 18)) : null));
@@ -1593,10 +1684,13 @@ function buildAdmin(m) {
         el('button', { class: 'btn small', onclick: async () => { if (await confirmModal('clear play history?', 'finished sessions are removed.', 'clear')) act(() => api('POST', '/api/admin/purge', { what: 'plays' }), 'cleared'); } }, ic('database', 14), 'clear plays'))),
     tiles,
     (() => {
-      const people = el('div', null, el('div', { class: 'searchbox' }, ic('search', 16), q), list), reports = el('div', { style: 'display:none' });
-      const tab = (k, label) => el('button', { class: k === 'people' ? 'on' : '', onclick: (e) => { e.currentTarget.parentNode.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b === e.currentTarget)); people.style.display = k === 'people' ? '' : 'none'; reports.style.display = k === 'reports' ? '' : 'none'; if (k === 'reports') X.adminReports(reports, loadStats); } }, label);
-      window.__ui.reportsChanged = () => { loadStats(); if (reports.isConnected && reports.style.display !== 'none') X.adminReports(reports, loadStats); };
-      return el('div', null, el('div', { class: 'seg' }, tab('people', 'people'), tab('reports', 'reports')), people, reports);
+      const people = el('div', null, el('div', { class: 'searchbox' }, ic('search', 16), q), list);
+      const panes = { people, reports: el('div', { style: 'display:none' }), verify: el('div', { style: 'display:none' }), announce: el('div', { style: 'display:none' }) };
+      const loaders = { reports: () => X.adminReports(panes.reports, loadStats), verify: () => X.adminVerify(panes.verify, loadStats), announce: () => X.adminAnnounce(panes.announce) };
+      const tab = (k, label) => el('button', { class: k === 'people' ? 'on' : '', onclick: (e) => { e.currentTarget.parentNode.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b === e.currentTarget)); for (const [n, node] of Object.entries(panes)) node.style.display = n === k ? '' : 'none'; if (loaders[k]) loaders[k](); } }, label);
+      window.__ui.reportsChanged = () => { loadStats(); if (panes.reports.isConnected && panes.reports.style.display !== 'none') loaders.reports(); };
+      window.__ui.verifyChanged = () => { loadStats(); if (panes.verify.isConnected && panes.verify.style.display !== 'none') loaders.verify(); };
+      return el('div', null, el('div', { class: 'seg wrapseg' }, tab('people', 'people'), tab('reports', 'reports'), tab('verify', 'verify'), tab('announce', 'announce')), people, panes.reports, panes.verify, panes.announce);
     })()));
   loadStats(); loadUsers();
   nowTimer = setInterval(loadStats, 20000);
@@ -1751,6 +1845,7 @@ async function announce() {
     else if (newsUnseen()) toast("what's new: " + news[0].title, 'info', newsModal);
     U.renderRail();
   } catch {}
+  api('GET', '/api/announcements', null, { quiet: true }).then((d) => { anns = d.announcements; renderTop(); }).catch(() => {});
   if (S.me && S.me.isAdmin) refreshReportCount();
 }
 async function newsModal() {
@@ -1796,6 +1891,7 @@ function applyTheme(draft) {
 }
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme());
 function lockedBox(what) {
+  if (!S.me.verified) return el('div', { class: 'locked' }, ic('verified', 28), el('h3', null, what + ' needs a verified account'), el('p', { class: 'muted' }, 'verify first, then beta unlocks'), el('button', { class: 'btn primary', onclick: () => { document.querySelectorAll('.modal-back').forEach((n) => n.querySelector('.modal-head button') && n.querySelector('.modal-head button').click()); verifyModal(); } }, ic('verified', 16), 'verify me'));
   return el('div', { class: 'locked' }, ic('star', 28), el('h3', null, what + ' is in beta'),
     el('p', { class: 'muted' }, 'invite friends to earn beta time'),
     el('button', { class: 'btn primary', onclick: () => { document.querySelectorAll('.modal-back').forEach((n) => n.querySelector('.modal-head button') && n.querySelector('.modal-head button').click()); inviteModal(); } }, ic('gift', 16), 'invite friends'));
@@ -1838,6 +1934,7 @@ async function inviteModal() {
     const active = C.betaActive();
     const left = S.me.isAdmin ? 'always on' : active ? 'until ' + new Date(S.me.betaUntil).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : 'off';
     body.replaceChildren(
+      !S.me.verified ? el('div', { class: 'betacard' }, ic('verified', 20), el('div', { class: 'grow' }, el('b', null, 'verify to use beta'), el('div', { class: 'muted small' }, 'friends still earn you time, it switches on once you are verified')), el('button', { class: 'btn small primary', onclick: () => verifyModal() }, 'verify')) : null,
       el('div', { class: 'betacard' + (active ? ' on' : '') }, ic('star', 20), el('div', { class: 'grow' }, el('b', null, 'beta ' + (active ? 'active' : 'off')), el('div', { class: 'muted small' }, left))),
       el('h4', null, 'your link'), field(link),
       el('h4', null, 'your code'), field(r.code),
@@ -1913,7 +2010,7 @@ async function toggleReact(c, m, emoji, forceOn) {
   const mine = ((m.reactions || {})[emoji] || []).includes(S.me.id);
   if (forceOn && mine) return;
   try { await api('PUT', `/api/messages/${m.id}/reactions`, { emoji, on: forceOn ? true : !mine }, { quiet: true }); }
-  catch (e) { toast(e.status === 429 ? 'easy on the reactions' : e.message, 'error'); }
+  catch (e) { if (e.data && e.data.error === 'verify_required') verifyModal(); else toast(e.status === 429 ? 'easy on the reactions' : e.message, 'error'); }
 }
 async function pinMessage(c, m) {
   try { await api('POST', `/api/messages/${m.id}/pin`, { on: !m.pinned }, { quiet: true }); }
@@ -2112,7 +2209,180 @@ async function gifModal(c) {
   draw();
 }
 
-window.__ext = { newsUnseen, announce, newsModal, applyTheme, themeModal, inviteModal, betaModal, emojiPicker, suggest, suggestKey, toggleReact, pinMessage, loadPins, reportModal, adminReports, buildDiscover, createPublicModal, editPublic, gifModal, gifBody };
+// ---------- top bar: announcements, verify nudge, invite + beta pill ----------
+let anns = [];
+const dismissedAnn = () => { try { return JSON.parse(lsGet('chatroom.ann') || '[]'); } catch { return []; } };
+function betaLeft() {                                        // short text for the pill
+  if (S.me.isAdmin) return 'beta on';
+  if (!C.betaActive()) return null;
+  const ms = new Date(S.me.betaUntil) - Date.now();
+  const m = Math.max(1, Math.ceil(ms / 60000));
+  return 'beta ' + (m >= 1440 ? Math.floor(m / 1440) + 'd' : m >= 60 ? Math.floor(m / 60) + 'h ' + (m % 60) + 'm' : m + 'm') + ' left';
+}
+function renderTop() {
+  const bar = $('#topbar'); if (!bar || !S.me) return;
+  const cur = anns.find((a) => !dismissedAnn().includes(a.id));
+  const left = cur
+    ? el('div', { class: 'annbar' }, ic('megaphone', 16), el('div', { class: 'anntext' }, el('b', null, cur.title)),
+      el('button', { class: 'btn small', onclick: () => annModal(cur) }, 'read'),
+      cur.buttonUrl ? el('a', { class: 'btn small primary', href: cur.buttonUrl, target: '_blank', rel: 'noopener noreferrer' }, cur.buttonLabel || 'open') : null,
+      el('button', { class: 'icon-btn tiny', title: 'close', onclick: () => { lsSet('chatroom.ann', JSON.stringify([...dismissedAnn(), cur.id].slice(-30))); renderTop(); } }, ic('x', 14)))
+    : el('div', { class: 'grow' });
+  const bl = betaLeft();
+  const free = Math.max(0, (S.me.freeMessages || 20) - (S.me.msgCount || 0));
+  bar.replaceChildren(left,
+    !S.me.verified ? el('button', { class: 'pill warn', title: 'verify your account', onclick: verifyModal }, ic('verified', 15), el('span', null, free ? `verify · ${free} free left` : 'verify to chat')) : null,
+    el('button', { class: 'pill' + (bl ? ' on' : ''), title: 'invite friends, earn beta time', onclick: inviteModal }, ic(bl ? 'star' : 'gift', 15), el('span', null, bl || 'invite · +30m beta')));
+  const r = U.chatRef(); if (r && r.freebar) drawFree(r.freebar);
+  watermark();
+}
+function drawFree(box) {                                     // small reminder above the composer while unverified
+  if (S.me.verified) { box.classList.remove('on'); box.replaceChildren(); return; }
+  const free = Math.max(0, (S.me.freeMessages || 20) - (S.me.msgCount || 0));
+  box.classList.add('on');
+  box.replaceChildren(ic('verified', 14), el('span', { class: 'grow' }, free ? `${free} free messages left` : 'you are out of free messages'), el('button', { class: 'btn small primary', onclick: verifyModal }, 'verify'));
+}
+setInterval(() => { if (S.me) renderTop(); }, 30000);        // keeps the beta countdown fresh
+function onAnnounce(a) { anns = [a, ...anns.filter((x) => x.id !== a.id)]; renderTop(); }
+function endAnnounce(id) { anns = anns.filter((x) => x.id !== id); renderTop(); }
+function annModal(a) {
+  modal(a.title, el('div', null, el('div', { class: 'annbody' }, C.F.clean(a.body || '')),
+    a.buttonUrl ? el('div', { class: 'row end', style: 'margin-top:16px' }, el('a', { class: 'btn primary', href: a.buttonUrl, target: '_blank', rel: 'noopener noreferrer' }, a.buttonLabel || 'open')) : null));
+}
+
+// ---------- verification ----------
+async function verifyModal() {
+  const body = el('div', null, el('div', { class: 'muted pad' }, '...'));
+  const m = modal('verify your account', body);
+  let st = null;
+  try { st = await api('GET', '/api/verify/status', null, { quiet: true }); } catch (e) { return body.replaceChildren(el('div', { class: 'form-err' }, e.message)); }
+  if (st.verified) { S.me.verified = true; return body.replaceChildren(el('div', { class: 'locked' }, ic('verified', 34), el('h3', null, 'you are verified'), el('p', { class: 'muted' }, 'the blue tick shows next to your name'))); }
+  if (st.last && st.last.status === 'pending') return body.replaceChildren(el('div', { class: 'locked' }, ic('timer', 30), el('h3', null, 'waiting for review'), el('p', { class: 'muted' }, 'an admin will look at it soon. your photo is deleted as soon as they decide.')));
+  let dataUrl = '';
+  const prev = el('div', { class: 'idprev' });
+  const send = el('button', { class: 'btn primary wide', disabled: true, onclick: async () => {
+    send.disabled = true;
+    try { await api('POST', '/api/verify', { image: dataUrl }, { quiet: true }); toast('sent for review', 'success'); m.close(); }
+    catch (e) { toast(e.message, 'error'); send.disabled = false; }
+  } }, ic('send', 16), 'send for review');
+  const file = el('input', { type: 'file', accept: 'image/*', capture: 'environment', style: 'display:none', onchange: async () => {
+    const f = file.files && file.files[0]; if (!f) return;
+    try {
+      const bmp = await createImageBitmap(f);
+      let w = bmp.width, h = bmp.height; const k = Math.min(1, 1100 / Math.max(w, h)); w = Math.round(w * k); h = Math.round(h * k);
+      const cv = document.createElement('canvas'); cv.width = w; cv.height = h; cv.getContext('2d').drawImage(bmp, 0, 0, w, h);
+      let q = 0.78; dataUrl = cv.toDataURL('image/jpeg', q);
+      while (dataUrl.length > 700_000 && q > 0.3) { q -= 0.1; dataUrl = cv.toDataURL('image/jpeg', q); }   // keep it small
+      prev.replaceChildren(el('img', { src: dataUrl, alt: 'your photo' })); send.disabled = false;
+    } catch { toast('could not read that photo', 'error'); }
+  } });
+  body.replaceChildren(
+    st.last && st.last.status === 'rejected' ? el('div', { class: 'form-err' }, 'last try was not approved' + (st.last.note ? ': ' + st.last.note : '')) : null,
+    el('p', { style: 'margin-top:0' }, 'take a photo of your school or bus pass so an admin can check you are real.'),
+    el('ul', { class: 'tips' }, el('li', null, 'show your name and photo'), el('li', null, 'cover your id number, birthday and address'), el('li', null, 'an admin looks at it, then the photo is deleted for good')),
+    el('p', { class: 'muted small' }, `unverified accounts get ${st.freeMessages} messages (${st.used} used), no reactions and no beta. verified accounts get a blue tick.`),
+    prev, file,
+    el('div', { class: 'row gap', style: 'margin:12px 0' }, el('button', { class: 'btn grow', onclick: () => file.click() }, ic('camera', 16), 'choose or take a photo')),
+    send);
+}
+
+// ---------- badges ----------
+async function badgesModal() {
+  const body = el('div', null, el('div', { class: 'muted pad' }, '...'));
+  modal('badges', body, { wide: true });
+  try {
+    const d = await api('GET', '/api/badges/mine', null, { quiet: true });
+    body.replaceChildren(el('div', { class: 'badgegrid' }, d.badges.map((b, i) => el('div', { class: 'badgecard' + (b.earned ? ' on' : ''), style: `--i:${i}` },
+      el('div', { class: 'bicon' }, ic(b.icon, 24)), el('b', null, b.name), el('span', { class: 'muted small' }, b.desc),
+      b.earned ? el('span', { class: 'tag gold' }, 'earned') : el('div', { class: 'bar' }, el('i', { style: `width:${Math.round(b.progress / b.target * 100)}%` })),
+      !b.earned ? el('span', { class: 'muted small' }, `${b.progress} / ${b.target}`) : null))));
+  } catch (e) { body.replaceChildren(el('div', { class: 'form-err' }, e.message)); }
+}
+
+// ---------- admin: verification queue + announcements ----------
+async function adminVerify(box, reload) {
+  box.replaceChildren(el('div', { class: 'muted pad' }, '...'));
+  try {
+    const d = await api('GET', '/api/admin/verifications', null, { quiet: true });
+    if (!d.items.length) return box.replaceChildren(el('div', { class: 'empty-s' }, mug(), el('div', null, 'nobody waiting')));
+    box.replaceChildren(...d.items.map((v, i) => el('div', { class: 'arow', style: `--i:${Math.min(i, 12)}` },
+      avatar(v.displayName, 40), el('div', { class: 'grow' }, el('div', { class: 'ctitle' }, v.displayName), el('div', { class: 'muted small' }, `@${v.username} · ${v.messages} msgs · ${ago(v.createdAt)}`)),
+      el('button', { class: 'btn small primary', onclick: () => reviewModal(v, () => { adminVerify(box, reload); reload && reload(); }) }, 'review'))));
+  } catch (e) { box.replaceChildren(el('div', { class: 'form-err' }, e.message)); }
+}
+async function reviewModal(v, done) {
+  const body = el('div', null, el('div', { class: 'muted pad' }, '...'));
+  let url = '';
+  const m = modal(v.displayName + ' (@' + v.username + ')', body, { wide: true, onClose: () => { if (url) URL.revokeObjectURL(url); } });
+  try {
+    const r = await fetch(`${C.API}/api/admin/verifications/${v.id}/image`, { headers: { Authorization: 'Bearer ' + S.token } });
+    if (!r.ok) throw new Error('that one is already handled');
+    url = URL.createObjectURL(await r.blob());
+  } catch (e) { return body.replaceChildren(el('div', { class: 'form-err' }, e.message)); }
+  let note = '';
+  const reasons = ['photo unclear', 'name does not match', 'not an id'];
+  const chips = el('div', { class: 'presets' }, reasons.map((t) => el('button', { class: 'chip-b', onclick: (e) => { note = note === t ? '' : t; chips.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.textContent === note)); } }, t)));
+  const decide = async (approve) => {
+    try { await api('POST', `/api/admin/verifications/${v.id}`, { approve, note: approve ? '' : note }, { quiet: true }); toast(approve ? 'verified' : 'rejected', 'success'); m.close(); done && done(); }
+    catch (e) { toast(e.message, 'error'); }
+  };
+  body.replaceChildren(el('img', { class: 'idimg', src: url, alt: 'id photo' }), el('p', { class: 'muted small' }, 'the photo is deleted the moment you decide'),
+    el('h4', null, 'if rejecting'), chips,
+    el('div', { class: 'row gap end', style: 'margin-top:14px' }, el('button', { class: 'btn danger', onclick: () => decide(false) }, ic('x', 16), 'reject'), el('button', { class: 'btn primary', onclick: () => decide(true) }, ic('verified', 16), 'approve')));
+}
+async function adminAnnounce(box) {
+  const title = el('input', { placeholder: 'title', maxLength: 80 });
+  const text = el('textarea', { rows: 4, maxLength: 1000, placeholder: 'the full message' });
+  const label = el('input', { placeholder: 'button name (optional)', maxLength: 24 });
+  const link = el('input', { placeholder: 'button link, https://... (optional)', maxLength: 300 });
+  const past = el('div', { class: 'ulist tall', style: 'margin-top:14px' });
+  const send = el('button', { class: 'btn primary', onclick: async () => {
+    send.disabled = true;
+    try { await api('POST', '/api/admin/announcements', { title: title.value, body: text.value, buttonLabel: label.value, buttonUrl: link.value }, { quiet: true }); toast('sent to everyone', 'success'); title.value = text.value = label.value = link.value = ''; loadPast(); }
+    catch (e) { toast(e.message, 'error'); }
+    send.disabled = false;
+  } }, ic('megaphone', 16), 'send to everyone');
+  async function loadPast() {
+    try {
+      const d = await api('GET', '/api/admin/announcements', null, { quiet: true });
+      past.replaceChildren(...d.announcements.map((a) => el('div', { class: 'arow' + (a.active ? '' : ' banned') }, el('div', { class: 'grow' }, el('div', { class: 'ctitle' }, a.title), el('div', { class: 'muted small' }, ago(a.createdAt) + (a.active ? '' : ' · ended'))),
+        a.active ? el('button', { class: 'btn small', onclick: async () => { try { await api('DELETE', `/api/admin/announcements/${a.id}`); loadPast(); } catch (e) { toast(e.message, 'error'); } } }, 'end') : null)));
+    } catch {}
+  }
+  box.replaceChildren(el('div', { class: 'annform' }, title, text, el('div', { class: 'row gap' }, label, link), el('div', { class: 'row end' }, send)), el('h4', null, 'recent'), past);
+  loadPast();
+}
+
+// ---------- anti-surveillance (a deterrent: a website cannot truly stop screenshots or recording) ----------
+const root = document.documentElement;
+let shieldT = 0;
+function hide() { clearTimeout(shieldT); root.classList.add('shielded'); }
+function show(ms = 0) { clearTimeout(shieldT); shieldT = setTimeout(() => { const inFrame = document.activeElement && document.activeElement.tagName === 'IFRAME'; if (document.hidden || (!document.hasFocus() && !inFrame)) return; root.classList.remove('shielded'); }, ms); }
+window.addEventListener('blur', () => setTimeout(() => { if (document.activeElement && document.activeElement.tagName === 'IFRAME') return; hide(); }, 0));   // switched window or snipping tool opened, but not when playing a game
+window.addEventListener('focus', () => show(200));
+document.addEventListener('visibilitychange', () => (document.hidden ? hide() : show(200)));
+window.addEventListener('beforeprint', hide); window.addEventListener('afterprint', () => show(200));
+document.addEventListener('contextmenu', (e) => { if (!/INPUT|TEXTAREA/.test(e.target.tagName)) e.preventDefault(); });
+document.addEventListener('dragstart', (e) => e.preventDefault());
+const clip = () => { try { navigator.clipboard.writeText('chatroom is private'); } catch {} };   // overwrite whatever a screenshot key put there
+function capKey(e) {
+  const k = e.key, meta = e.metaKey || e.ctrlKey;
+  const snip = k === 'PrintScreen' || (e.shiftKey && (e.metaKey) && ['3', '4', '5', 's', 'S'].includes(k)) || (e.shiftKey && e.getModifierState && e.getModifierState('OS') && /^s$/i.test(k)) || (meta && /^[ps]$/i.test(k) && !/INPUT|TEXTAREA/.test(document.activeElement ? document.activeElement.tagName : ''));
+  if (snip) { hide(); clip(); if (k === 'PrintScreen') e.preventDefault(); show(2500); }
+}
+window.addEventListener('keydown', capKey, true); window.addEventListener('keyup', capKey, true);
+let wmUser = '';
+function watermark() {                                       // faint name tiled over everything, so a leaked screenshot points back to its owner
+  let w = document.getElementById('wm');
+  if (!S.me) { if (w) w.style.display = 'none'; return; }
+  if (!w) { w = el('div', { id: 'wm' }); document.body.append(w); }
+  w.style.display = '';
+  if (wmUser === S.me.username) return; wmUser = S.me.username;
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='260' height='170'><text x='20' y='110' transform='rotate(-24 130 85)' font-family='sans-serif' font-size='15' fill='%23888' fill-opacity='.12'>@${S.me.username}</text></svg>`;
+  w.style.backgroundImage = `url("data:image/svg+xml;utf8,${svg.replace(/#/g, '%23')}")`;
+}
+
+window.__ext = { renderTop, onAnnounce, endAnnounce, verifyModal, badgesModal, adminVerify, adminAnnounce, newsUnseen, announce, newsModal, applyTheme, themeModal, inviteModal, betaModal, emojiPicker, suggest, suggestKey, toggleReact, pinMessage, loadPins, reportModal, adminReports, buildDiscover, createPublicModal, editPublic, gifModal, gifBody };
 try { const r = new URLSearchParams(location.search).get('ref'); if (r) { lsSet('chatroom.ref', r.slice(0, 16)); history.replaceState(null, '', location.pathname); } } catch {}
 U.boot();                                                    // everything is defined, start the app
 })();
