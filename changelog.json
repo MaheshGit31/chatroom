@@ -1,5 +1,20 @@
 [
   {
+    "id": "2026-10-23-a",
+    "date": "2026-10-23",
+    "title": "safety and verification",
+    "items": [
+      "chat filter: messages with inappropriate words are blocked, and names, groups and statuses are checked too",
+      "announcements: admins can post a banner that shows at the top for everyone, with an optional button",
+      "verification: scan your school or bus id, an admin approves it, and you get a blue tick. the photo is deleted as soon as it is reviewed",
+      "unverified accounts get 20 messages, no reactions and no beta until they verify",
+      "badges: earn them by doing things, like Yapper for sending 200 messages. see them under you, then badges",
+      "invite friends and your beta time now live in the top bar",
+      "two built-in servers: Everyone for all members, and the Beta lounge for people with beta",
+      "privacy: the chat blurs when you switch windows or use screenshot shortcuts, and your name is faintly tiled over the screen. this deters casual screenshots but cannot stop a phone camera"
+    ]
+  },
+  {
     "id": "2026-10-21-a",
     "date": "2026-10-21",
     "title": "the big cozy update",

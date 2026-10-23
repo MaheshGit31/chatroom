@@ -12,6 +12,7 @@ const { q, pool, init } = require('./lib/db');
 const { limiter, rl } = require('./lib/limiter');
 const { Games } = require('./lib/games');
 
+const safety = require('./lib/safety');                      // filter, verification, announcements, badges, built-in servers
 const features = require('./lib/features');                  // reactions, pins, reports, public groups, referrals, gifs, themes
 const PORT = process.env.PORT || 3000;
 const ADMIN_USERNAME = (process.env.ADMIN_USERNAME || 'bart').toLowerCase();   // this username becomes the owner/admin
@@ -50,7 +51,8 @@ app.use((req, res, next) => {
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
-app.use(express.json({ limit: '64kb' }));                    // ciphertext is small, big bodies are rejected
+const smallJson = express.json({ limit: '64kb' });
+app.use((req, res, next) => (req.path === '/api/verify' ? next() : smallJson(req, res, next)));   // only the id photo upload may be bigger                    // ciphertext is small, big bodies are rejected
 app.use('/api', rl('api-ip', 300, 60_000));                  // global per-ip cap
 
 // ---------- realtime hub ----------
@@ -129,7 +131,7 @@ async function makeSession(userId, ua) {
   return token;
 }
 const statusOf = (u) => (u.status_text || u.status_icon ? { text: u.status_text || '', icon: u.status_icon || '' } : null);
-const publicUser = (u) => ({ id: u.id, username: u.username, displayName: u.display_name, shareActivity: u.share_activity, isAdmin: !!u.is_admin, isOwner: u.username === ADMIN_USERNAME, mode: u.status_mode || 'online', status: statusOf(u), statusExpires: u.status_expires || null, beta: features.betaOn(u), betaUntil: u.beta_until || null, theme: u.theme || null });
+const publicUser = (u) => ({ id: u.id, username: u.username, displayName: u.display_name, shareActivity: u.share_activity, isAdmin: !!u.is_admin, isOwner: u.username === ADMIN_USERNAME, mode: u.status_mode || 'online', status: statusOf(u), statusExpires: u.status_expires || null, beta: features.betaOn(u), betaUntil: u.beta_until || null, theme: u.theme || null, verified: safety.verifiedOn(u), msgCount: u.msg_count || 0, freeMessages: safety.FREE_MSGS });
 
 const SECS = "(case when p.ended_at is null then floor(extract(epoch from (now()-p.started_at)))::int else p.seconds end)"; // running sessions count live
 const USERNAME = /^[a-z0-9_]{3,20}$/;
@@ -147,6 +149,7 @@ app.post('/api/auth/register', rl('register', 5, 3_600_000), wrap(async (req, re
   const username = String(b.username || '').toLowerCase();
   const displayName = String(b.displayName || username).trim().slice(0, 32) || username;
   if (!USERNAME.test(username)) return bad(res, 'username must be 3-20 chars: a-z 0-9 _');
+  if (safety.F.check(username) || safety.F.check(displayName)) return bad(res, 'pick a cleaner name');
   if (username === ADMIN_USERNAME && ADMIN_SETUP_KEY && sha256(String(b.setupKey || '')) !== sha256(ADMIN_SETUP_KEY)) return res.status(403).json({ error: 'setup_key_required', message: 'this name is reserved, enter the setup key' });
   if (![b.kdfSalt, b.authSecret, b.publicKey, b.wrappedPriv, b.wrappedPrivIv].every((x) => isB64(x, 2000))) return bad(res, 'bad key material');
   const authSalt = crypto.randomBytes(16).toString('hex');
@@ -158,6 +161,7 @@ app.post('/api/auth/register', rl('register', 5, 3_600_000), wrap(async (req, re
       `insert into users(username,display_name,kdf_salt,auth_salt,auth_hash,public_key,wrapped_priv,wrapped_priv_iv,is_admin,referred_by)
        values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) returning *`,
       [username, displayName, b.kdfSalt, authSalt, hash, b.publicKey, b.wrappedPriv, b.wrappedPrivIv, username === ADMIN_USERNAME, referredBy]);
+    await safety.ensureSystem(q, r.rows[0]);
     const token = await makeSession(r.rows[0].id, req.headers['user-agent']);
     res.json({ token, user: publicUser(r.rows[0]) });
   } catch (e) {
@@ -178,6 +182,7 @@ app.post('/api/auth/login',
     const ok = u && crypto.timingSafeEqual(Buffer.from(given), Buffer.from(u.auth_hash));
     if (!ok) return bad(res, 'wrong username or password', 401);
     if (u.banned) return bad(res, 'this account is suspended', 403);
+    await safety.ensureSystem(q, u);
     const token = await makeSession(u.id, req.headers['user-agent']);
     res.json({ token, user: publicUser(u), publicKey: u.public_key, wrappedPriv: u.wrapped_priv, wrappedPrivIv: u.wrapped_priv_iv });
   }));
@@ -188,12 +193,14 @@ app.post('/api/auth/logout', auth, wrap(async (req, res) => {
 }));
 
 app.get('/api/me', auth, wrap(async (req, res) => {
+  await safety.ensureSystem(q, req.user);                    // keeps the Everyone / Beta lounge rooms in sync
   const r = await q('select public_key,wrapped_priv,wrapped_priv_iv from users where id=$1', [req.user.id]);
   res.json({ user: publicUser(req.user), ttlHours: TTL_HOURS, referral: await features.refInfo(q, req.user), publicKey: r.rows[0].public_key, wrappedPriv: r.rows[0].wrapped_priv, wrappedPrivIv: r.rows[0].wrapped_priv_iv });
 }));
 
 app.patch('/api/me', auth, byUser('me-patch', 20, 60_000), wrap(async (req, res) => {
   const sets = [], vals = [req.user.id];
+  if (typeof req.body.displayName === 'string' && safety.F.check(req.body.displayName)) return bad(res, 'pick a cleaner name');
   if (typeof req.body.displayName === 'string') { vals.push(req.body.displayName.trim().slice(0, 32) || req.user.username); sets.push(`display_name=$${vals.length}`); }
   if (typeof req.body.shareActivity === 'boolean') { vals.push(req.body.shareActivity); sets.push(`share_activity=$${vals.length}`); }
   if (!sets.length) return bad(res, 'nothing to update');
@@ -207,6 +214,7 @@ app.patch('/api/me', auth, byUser('me-patch', 20, 60_000), wrap(async (req, res)
 app.put('/api/me/status', auth, byUser('status', 20, 60_000), wrap(async (req, res) => {
   const b = req.body || {};
   const text = String(b.text || '').trim().slice(0, 48);                       // short blurb
+  if (safety.F.check(text)) return bad(res, 'keep your status clean');
   const icon = STATUS_ICONS.includes(b.icon) ? b.icon : '';                     // only known icons
   const mode = STATUS_MODES.includes(b.mode) ? b.mode : 'online';
   const mins = Math.min(Math.max(parseInt(b.expiresMinutes, 10) || 0, 0), 60 * 24 * 7);
@@ -219,12 +227,12 @@ app.put('/api/me/status', auth, byUser('status', 20, 60_000), wrap(async (req, r
 // ---------- admin ----------
 const adminOnly = (req, res, next) => (req.user.is_admin ? next() : bad(res, 'forbidden', 403));
 const ownerOnly = (req, res, next) => (req.user.username === ADMIN_USERNAME ? next() : bad(res, 'only the owner can do that', 403));
-const adminRow = (u) => ({ id: u.id, username: u.username, displayName: u.display_name, isAdmin: u.is_admin, isOwner: u.username === ADMIN_USERNAME, banned: u.banned, online: sockets.has(u.id), createdAt: u.created_at, messages: Number(u.msgs || 0), beta: features.betaOn(u), betaUntil: u.beta_until || null });
+const adminRow = (u) => ({ id: u.id, username: u.username, displayName: u.display_name, isAdmin: u.is_admin, isOwner: u.username === ADMIN_USERNAME, banned: u.banned, online: sockets.has(u.id), createdAt: u.created_at, messages: Number(u.msgs || 0), verified: safety.verifiedOn(u), beta: features.betaOn(u), betaUntil: u.beta_until || null });
 
 app.get('/api/admin/stats', auth, adminOnly, wrap(async (req, res) => {
   const r = await q(`select (select count(*) from users)::int users, (select count(*) from users where banned)::int banned,
     (select count(*) from messages)::int messages, (select count(*) from conversations where type='group')::int groups,
-    (select count(*) from plays)::int plays, (select count(*) from reports where status='open')::int reports, (select count(*) from conversations where is_public)::int public_groups, pg_database_size(current_database())::bigint bytes`);
+    (select count(*) from plays)::int plays, (select count(*) from reports where status='open')::int reports, (select count(*) from conversations where is_public and system_kind is null)::int public_groups, (select count(*) from verifications where status='pending' and image is not null)::int pending_verifications, pg_database_size(current_database())::bigint bytes`);
   res.json({ ...r.rows[0], bytes: Number(r.rows[0].bytes), online: sockets.size, ttlHours: TTL_HOURS });
 }));
 
@@ -239,6 +247,7 @@ app.post('/api/admin/users/:id/admin', auth, adminOnly, ownerOnly, wrap(async (r
   if (!t.rows[0]) return bad(res, 'not found', 404);
   if (t.rows[0].username === ADMIN_USERNAME) return bad(res, 'the owner stays admin');
   await q('update users set is_admin=$2 where id=$1', [req.params.id, !!req.body.admin]);
+  safety.ensureSystem(q, (await q('select * from users where id=$1', [req.params.id])).rows[0]).catch(() => {});
   sendTo(req.params.id, { t: 'me_update' });
   res.json({ ok: true });
 }));
@@ -281,6 +290,7 @@ async function sweepExpired() {
   await q(`delete from notifications where created_at < now() - make_interval(hours=>$1)`, [TTL_HOURS]);
   await q(`delete from plays where ended_at is not null and ended_at < now() - interval '14 days'`);
   await features.pruneOldPlays(q);                         // only the newest 12 game sessions per person are kept
+  await q(`update verifications set status='expired', image=null where status='pending' and created_at < now() - interval '14 days'`); // old id photos never linger
   const ex = await q(`update users set status_text=null,status_icon=null,status_mode='online',status_expires=null where status_expires is not null and status_expires<now() returning id`);
   for (const u of ex.rows) broadcastPresence(u.id).catch(() => {});
   if (m.rowCount) console.log(`expiry: removed ${m.rowCount} messages`);
@@ -290,12 +300,12 @@ async function sweepExpired() {
 app.get('/api/users/search', auth, byUser('usearch', 30, 60_000), wrap(async (req, res) => {
   const s = String(req.query.q || '').toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 20);
   if (s.length < 2) return res.json({ users: [] });
-  const r = await q(`select id,username,display_name from users where username like $1 and id<>$2 order by username limit 10`, [s + '%', req.user.id]);
-  res.json({ users: r.rows.map((u) => ({ id: u.id, username: u.username, displayName: u.display_name })) });
+  const r = await q(`select id,username,display_name,verified,is_admin from users where username like $1 and id<>$2 order by username limit 10`, [s + '%', req.user.id]);
+  res.json({ users: r.rows.map((u) => ({ id: u.id, username: u.username, displayName: u.display_name, verified: safety.verifiedOn(u) })) });
 }));
 
 app.get('/api/users/:username', auth, byUser('uprofile', 60, 60_000), wrap(async (req, res) => {
-  const r = await q('select id,username,display_name,public_key,share_activity,created_at,status_text,status_icon,status_mode,is_admin from users where username=$1', [req.params.username.toLowerCase()]);
+  const r = await q('select id,username,display_name,public_key,share_activity,created_at,status_text,status_icon,status_mode,is_admin,verified from users where username=$1', [req.params.username.toLowerCase()]);
   const u = r.rows[0];
   if (!u) return bad(res, 'not found', 404);
   let stats = null;
@@ -305,7 +315,7 @@ app.get('/api/users/:username', auth, byUser('uprofile', 60, 60_000), wrap(async
     stats = { totalSeconds: t.rows[0].total, gamesPlayed: t.rows[0].games, top: top.rows.map((x) => ({ path: x.game_path, title: x.game_title, seconds: x.seconds })) };
   }
   const blocked = await q('select 1 from blocks where blocker=$1 and blocked=$2', [req.user.id, u.id]);
-  res.json({ id: u.id, username: u.username, displayName: u.display_name, publicKey: u.public_key, createdAt: u.created_at, online: sockets.has(u.id) && u.status_mode !== 'invisible', mode: u.status_mode, status: statusOf(u), isAdmin: u.is_admin, isOwner: u.username === ADMIN_USERNAME, blocked: !!blocked.rows[0], stats, activity: u.share_activity && activityNow.get(u.id) ? { title: activityNow.get(u.id).title, path: activityNow.get(u.id).path } : null });
+  res.json({ id: u.id, username: u.username, displayName: u.display_name, publicKey: u.public_key, createdAt: u.created_at, online: sockets.has(u.id) && u.status_mode !== 'invisible', mode: u.status_mode, status: statusOf(u), isAdmin: u.is_admin, verified: safety.verifiedOn(u), badges: await safety.badgesOf(q, u.id), isOwner: u.username === ADMIN_USERNAME, blocked: !!blocked.rows[0], stats, activity: u.share_activity && activityNow.get(u.id) ? { title: activityNow.get(u.id).title, path: activityNow.get(u.id).path } : null });
 }));
 
 app.post('/api/blocks/:username', auth, byUser('block', 20, 3_600_000), wrap(async (req, res) => {
@@ -323,28 +333,32 @@ const isBlockedEitherWay = async (a, b) => (await q('select 1 from blocks where 
 
 // ---------- conversations ----------
 async function loadConversations(userId, onlyId) {
+  const me = (await q('select * from users where id=$1', [userId])).rows[0];
+  const hasBeta = features.betaOn(me);                       // the Beta lounge only shows while beta is on
   const convs = await q(
-    `select c.id,c.type,c.name,c.key_version,c.created_at,c.is_public,c.description,c.topic,m.role,m.muted,m.last_read_at,m.joined_at,
+    `select c.id,c.type,c.name,c.key_version,c.created_at,c.is_public,c.system_kind,c.description,c.topic,m.role,m.muted,m.last_read_at,m.joined_at,
+       (select count(*) from members where conv_id=c.id)::int member_count,
        (select count(*) from messages x where x.conv_id=c.id and x.created_at>m.last_read_at and x.created_at>=m.joined_at and x.sender_id is distinct from $1 and not x.deleted and x.created_at>now()-interval '${TTL_HOURS} hours')::int unread,
        (select row_to_json(l) from (select id,sender_id "senderId",ciphertext,iv,key_version "keyVersion",created_at "createdAt",deleted from messages where conv_id=c.id and created_at>=m.joined_at and created_at>now()-interval '${TTL_HOURS} hours' order by id desc limit 1) l) last_message,
        (select max(created_at) from messages where conv_id=c.id and created_at>=m.joined_at and created_at>now()-interval '${TTL_HOURS} hours') last_at
      from conversations c join members m on m.conv_id=c.id and m.user_id=$1
-     ${onlyId ? 'where c.id=$2' : ''}
+     where (c.system_kind is distinct from 'beta' or ${hasBeta ? 'true' : 'false'}) ${onlyId ? 'and c.id=$2' : ''}
      order by coalesce((select max(created_at) from messages where conv_id=c.id), c.created_at) desc`,
     onlyId ? [userId, onlyId] : [userId]);
   const ids = convs.rows.map((c) => c.id);
   if (!ids.length) return { conversations: [], keyUsers: {} };
   const mem = await q(
-    `select cm.conv_id,cm.role,cm.last_read_at,u.id,u.username,u.display_name,u.public_key,u.status_text,u.status_icon,u.status_mode,u.is_admin from members cm join users u on u.id=cm.user_id where cm.conv_id=any($1) order by cm.joined_at`, [ids]);
+    `select cm.conv_id,cm.role,cm.last_read_at,u.id,u.username,u.display_name,u.public_key,u.status_text,u.status_icon,u.status_mode,u.is_admin,u.verified from members cm join users u on u.id=cm.user_id join conversations cc on cc.id=cm.conv_id
+     where cm.conv_id=any($1) and (cc.system_kind is null or u.id=$2 or u.is_admin or exists(select 1 from messages mm where mm.conv_id=cm.conv_id and mm.sender_id=u.id)) order by cm.joined_at`, [ids, userId]); // the big built-in rooms only list people who have spoken, plus admins
   const keys = await q('select conv_id,version,wrapped_key,iv,wrapped_by from group_keys where user_id=$1 and conv_id=any($2)', [userId, ids]);
   const wrappers = [...new Set(keys.rows.map((k) => k.wrapped_by).filter(Boolean))];
   const ku = wrappers.length ? await q('select id,username,public_key from users where id=any($1)', [wrappers]) : { rows: [] };
   const keyUsers = {};
   for (const u of ku.rows) keyUsers[u.id] = { username: u.username, publicKey: u.public_key };
   const conversations = convs.rows.map((c) => ({
-    id: c.id, type: c.type, name: c.name, isPublic: c.is_public, description: c.description || '', topic: c.topic || '', keyVersion: c.key_version, createdAt: c.created_at, role: c.role, muted: c.muted,
+    id: c.id, type: c.type, name: c.name, memberCount: c.member_count, isPublic: c.is_public, systemKind: c.system_kind || null, description: c.description || '', topic: c.topic || '', keyVersion: c.key_version, createdAt: c.created_at, role: c.role, muted: c.muted,
     lastReadAt: c.last_read_at, joinedAt: c.joined_at, unread: c.unread, lastMessage: c.last_message,
-    members: mem.rows.filter((m) => m.conv_id === c.id).map((m) => ({ id: m.id, username: m.username, displayName: m.display_name, publicKey: m.public_key, role: m.role, lastReadAt: m.last_read_at, online: sockets.has(m.id) && m.status_mode !== 'invisible', mode: m.status_mode, status: statusOf(m), isAdmin: m.is_admin })),
+    members: mem.rows.filter((m) => m.conv_id === c.id).map((m) => ({ id: m.id, username: m.username, displayName: m.display_name, publicKey: m.public_key, role: m.role, lastReadAt: m.last_read_at, online: sockets.has(m.id) && m.status_mode !== 'invisible', mode: m.status_mode, verified: safety.verifiedOn(m), status: statusOf(m), isAdmin: m.is_admin })),
     keys: keys.rows.filter((k) => k.conv_id === c.id).map((k) => ({ version: k.version, wrappedKey: k.wrapped_key, iv: k.iv, wrappedBy: k.wrapped_by })),
   }));
   return { conversations, keyUsers };
@@ -384,6 +398,7 @@ app.post('/api/conversations/group', auth, byUser('conv-create', 15, 3_600_000),
   const members = Array.isArray(req.body.members) ? req.body.members : [];
   const self = req.body.self || {};
   if (!name) return bad(res, 'group needs a name');
+  if (safety.F.check(name)) return bad(res, 'keep the name clean');
   if (members.length < 1 || members.length > 49) return bad(res, 'pick 1-49 members');
   if (!isB64(self.wrappedKey, 400) || !isB64(self.iv, 40)) return bad(res, 'bad key');
   const ids = new Set();
@@ -416,8 +431,9 @@ app.post('/api/conversations/group', auth, byUser('conv-create', 15, 3_600_000),
 
 async function requireMember(req, res) {
   if (!isUuid(req.params.id)) { bad(res, 'bad id'); return null; }
-  const r = await q('select m.role,m.joined_at,c.type,c.key_version,c.name,c.is_public from members m join conversations c on c.id=m.conv_id where m.conv_id=$1 and m.user_id=$2', [req.params.id, req.user.id]);
+  const r = await q('select m.role,m.joined_at,c.type,c.key_version,c.name,c.is_public,c.system_kind from members m join conversations c on c.id=m.conv_id where m.conv_id=$1 and m.user_id=$2', [req.params.id, req.user.id]);
   if (!r.rows[0]) { bad(res, 'not a member', 403); return null; }
+  if (r.rows[0].system_kind === 'beta' && !features.betaOn(req.user)) { bad(res, 'the Beta lounge is for people with beta', 403); return null; }
   return r.rows[0];
 }
 
@@ -426,6 +442,8 @@ app.patch('/api/conversations/:id', auth, byUser('conv-edit', 20, 60_000), wrap(
   if (m.type !== 'group' || m.role !== 'admin') return bad(res, 'admins only', 403);
   const name = String(req.body.name || '').trim().slice(0, 40);
   if (!name) return bad(res, 'bad name');
+  if (m.system_kind) return bad(res, 'the built-in rooms keep their names', 403);
+  if (safety.F.check(name)) return bad(res, 'keep the name clean');
   await q('update conversations set name=$2 where id=$1', [req.params.id, name]);
   await sendToConv(req.params.id, { t: 'conv_update', convId: req.params.id, name });
   res.json({ ok: true });
@@ -460,6 +478,7 @@ app.post('/api/conversations/:id/members', auth, byUser('member-add', 30, 3_600_
 app.delete('/api/conversations/:id/members/:userId', auth, byUser('member-del', 30, 3_600_000), wrap(async (req, res) => {
   const m = await requireMember(req, res); if (!m) return;
   if (m.type !== 'group') return bad(res, 'not a group');
+  if (m.system_kind) return bad(res, 'the built-in rooms cannot be left', 403);
   const target = req.params.userId;
   if (!isUuid(target)) return bad(res, 'bad user');
   if (target !== req.user.id && m.role !== 'admin') return bad(res, 'admins only', 403);
@@ -524,13 +543,20 @@ app.post('/api/conversations/:id/messages', auth, wrap(async (req, res, next) =>
   const { ciphertext, iv, keyVersion } = req.body;
   if (!isB64(ciphertext, 16000) || !isB64(iv, 40)) return bad(res, 'bad message');
   if (keyVersion !== m.key_version) return res.status(409).json({ error: 'key_version_stale', current: m.key_version });
+  if (!safety.verifiedOn(req.user) && (req.user.msg_count || 0) >= safety.FREE_MSGS) return res.status(403).json({ error: 'verify_required', message: `you used your ${safety.FREE_MSGS} free messages, verify to keep chatting` });
+  if (m.is_public) {                                         // public rooms are readable by the server, so they are filtered here too
+    const p = safety.decryptPublic(req.params.id, uid, keyVersion, ciphertext, iv);
+    if (!p) return bad(res, 'could not read that message');
+    if (safety.payloadDirty(p)) return res.status(400).json({ error: 'blocked_word', message: 'keep it clean' });
+  }
   if (m.type === 'dm') {                                       // blocked users cannot message
     const other = (await q('select user_id from members where conv_id=$1 and user_id<>$2', [req.params.id, uid])).rows[0];
     if (other && (await isBlockedEitherWay(uid, other.user_id))) return bad(res, 'blocked', 403);
   }
   const r = await q('insert into messages(conv_id,sender_id,ciphertext,iv,key_version) values($1,$2,$3,$4,$5) returning id,created_at', [req.params.id, uid, ciphertext, iv, keyVersion]);
   const message = { id: Number(r.rows[0].id), senderId: uid, ciphertext, iv, keyVersion, createdAt: r.rows[0].created_at, deleted: false };
-  features.creditReferral({ q, sendTo, notify }, req.user).catch(() => {});
+  q('update users set msg_count=msg_count+1 where id=$1', [uid]).then(() => safety.badgeCheck(q, uid)).catch(() => {});
+  features.creditReferral({ q, sendTo, notify, ensureFor: (u) => safety.ensureSystem(q, u) }, req.user).catch(() => {});
   const mems = await q('select user_id,muted from members where conv_id=$1', [req.params.id]);
   for (const mm of mems.rows) {
     sendTo(mm.user_id, { t: 'msg', convId: req.params.id, message, cid: req.body.cid || null, muted: mm.muted });
@@ -622,6 +648,7 @@ async function endPlay(userId) {
   if (!a) return;
   activityNow.delete(userId);
   await q('update plays set ended_at=now(), last_ping=now(), seconds=floor(extract(epoch from (now()-started_at)))::int where id=$1 and ended_at is null', [a.playId]);
+  q('update users set play_count=play_count+1 where id=$1', [userId]).then(() => safety.badgeCheck(q, userId)).catch(() => {});
   broadcastPresence(userId).catch(() => {});
   features.pruneOldPlays(q, userId).catch(() => {});
 }
@@ -664,7 +691,9 @@ app.get('/api/activity/mine', auth, wrap(async (req, res) => {
   res.json({ totalSeconds: t.rows[0].total, history: r.rows.map((p) => ({ id: Number(p.id), path: p.game_path, title: p.game_title, startedAt: p.started_at, seconds: p.seconds })) });
 }));
 
-features.mount(app, { q, pool, auth, byUser, bad, wrap, sendTo, sendToConv, notify, isUuid, loadConversations, adminOnly });
+const ensureFor = (u) => safety.ensureSystem(q, u);
+features.mount(app, { q, pool, auth, byUser, bad, wrap, sendTo, sendToConv, notify, isUuid, loadConversations, adminOnly, ensureFor });
+safety.mount(app, { q, auth, adminOnly, byUser, bad, wrap, sendTo, notify, sockets, isUuid, ensureFor });
 
 // ---------- static client ----------
 const PUB = path.join(__dirname, 'public');
@@ -752,6 +781,7 @@ async function getSetting(key, make) {
 (async () => {
   if (!process.env.DATABASE_URL) { console.error('DATABASE_URL is missing'); process.exit(1); }
   await init();
+  await safety.initSystem(q);                                // Everyone + Beta lounge
   SERVER_SECRET = await getSetting('server_secret', () => crypto.randomBytes(32).toString('hex'));
   try {                                                      // web push keys are generated once and kept in the db
     const keys = JSON.parse(await getSetting('vapid', () => JSON.stringify(webpush.generateVAPIDKeys())));
