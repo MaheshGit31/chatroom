@@ -1,5 +1,16 @@
 [
   {
+    "id": "2026-10-23-b",
+    "date": "2026-10-23",
+    "title": "profile pictures and fixes",
+    "items": [
+      "profile pictures: pick a preset picture in you, everyone sees it next to your name",
+      "chats with admins are always free, even if you are unverified, and the verify screen has a 'talk to an admin' option",
+      "removed the faint name pattern over the app",
+      "admins no longer get the screen blur"
+    ]
+  },
+  {
     "id": "2026-10-23-a",
     "date": "2026-10-23",
     "title": "safety and verification",

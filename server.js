@@ -131,7 +131,7 @@ async function makeSession(userId, ua) {
   return token;
 }
 const statusOf = (u) => (u.status_text || u.status_icon ? { text: u.status_text || '', icon: u.status_icon || '' } : null);
-const publicUser = (u) => ({ id: u.id, username: u.username, displayName: u.display_name, shareActivity: u.share_activity, isAdmin: !!u.is_admin, isOwner: u.username === ADMIN_USERNAME, mode: u.status_mode || 'online', status: statusOf(u), statusExpires: u.status_expires || null, beta: features.betaOn(u), betaUntil: u.beta_until || null, theme: u.theme || null, verified: safety.verifiedOn(u), msgCount: u.msg_count || 0, freeMessages: safety.FREE_MSGS });
+const publicUser = (u) => ({ id: u.id, username: u.username, displayName: u.display_name, shareActivity: u.share_activity, isAdmin: !!u.is_admin, isOwner: u.username === ADMIN_USERNAME, mode: u.status_mode || 'online', status: statusOf(u), statusExpires: u.status_expires || null, beta: features.betaOn(u), betaUntil: u.beta_until || null, theme: u.theme || null, avatar: u.avatar || null, verified: safety.verifiedOn(u), msgCount: u.msg_count || 0, freeMessages: safety.FREE_MSGS });
 
 const SECS = "(case when p.ended_at is null then floor(extract(epoch from (now()-p.started_at)))::int else p.seconds end)"; // running sessions count live
 const USERNAME = /^[a-z0-9_]{3,20}$/;
@@ -203,6 +203,11 @@ app.patch('/api/me', auth, byUser('me-patch', 20, 60_000), wrap(async (req, res)
   if (typeof req.body.displayName === 'string' && safety.F.check(req.body.displayName)) return bad(res, 'pick a cleaner name');
   if (typeof req.body.displayName === 'string') { vals.push(req.body.displayName.trim().slice(0, 32) || req.user.username); sets.push(`display_name=$${vals.length}`); }
   if (typeof req.body.shareActivity === 'boolean') { vals.push(req.body.shareActivity); sets.push(`share_activity=$${vals.length}`); }
+  if ('avatar' in req.body) {                                 // only preset ids are accepted, never uploads
+    const a = req.body.avatar;
+    if (a !== null && !(typeof a === 'string' && /^p([1-9]|1[0-6])$/.test(a))) return bad(res, 'pick one of the presets');
+    vals.push(a); sets.push(`avatar=$${vals.length}`);
+  }
   if (!sets.length) return bad(res, 'nothing to update');
   const r = await q(`update users set ${sets.join(',')} where id=$1 returning *`, vals);
   broadcastPresence(req.user.id).catch(() => {});
@@ -300,12 +305,12 @@ async function sweepExpired() {
 app.get('/api/users/search', auth, byUser('usearch', 30, 60_000), wrap(async (req, res) => {
   const s = String(req.query.q || '').toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 20);
   if (s.length < 2) return res.json({ users: [] });
-  const r = await q(`select id,username,display_name,verified,is_admin from users where username like $1 and id<>$2 order by username limit 10`, [s + '%', req.user.id]);
-  res.json({ users: r.rows.map((u) => ({ id: u.id, username: u.username, displayName: u.display_name, verified: safety.verifiedOn(u) })) });
+  const r = await q(`select id,username,display_name,verified,is_admin,avatar from users where username like $1 and id<>$2 order by username limit 10`, [s + '%', req.user.id]);
+  res.json({ users: r.rows.map((u) => ({ id: u.id, username: u.username, displayName: u.display_name, avatar: u.avatar || null, verified: safety.verifiedOn(u) })) });
 }));
 
 app.get('/api/users/:username', auth, byUser('uprofile', 60, 60_000), wrap(async (req, res) => {
-  const r = await q('select id,username,display_name,public_key,share_activity,created_at,status_text,status_icon,status_mode,is_admin,verified from users where username=$1', [req.params.username.toLowerCase()]);
+  const r = await q('select id,username,display_name,public_key,share_activity,created_at,status_text,status_icon,status_mode,is_admin,verified,avatar from users where username=$1', [req.params.username.toLowerCase()]);
   const u = r.rows[0];
   if (!u) return bad(res, 'not found', 404);
   let stats = null;
@@ -315,7 +320,7 @@ app.get('/api/users/:username', auth, byUser('uprofile', 60, 60_000), wrap(async
     stats = { totalSeconds: t.rows[0].total, gamesPlayed: t.rows[0].games, top: top.rows.map((x) => ({ path: x.game_path, title: x.game_title, seconds: x.seconds })) };
   }
   const blocked = await q('select 1 from blocks where blocker=$1 and blocked=$2', [req.user.id, u.id]);
-  res.json({ id: u.id, username: u.username, displayName: u.display_name, publicKey: u.public_key, createdAt: u.created_at, online: sockets.has(u.id) && u.status_mode !== 'invisible', mode: u.status_mode, status: statusOf(u), isAdmin: u.is_admin, verified: safety.verifiedOn(u), badges: await safety.badgesOf(q, u.id), isOwner: u.username === ADMIN_USERNAME, blocked: !!blocked.rows[0], stats, activity: u.share_activity && activityNow.get(u.id) ? { title: activityNow.get(u.id).title, path: activityNow.get(u.id).path } : null });
+  res.json({ id: u.id, username: u.username, displayName: u.display_name, avatar: u.avatar || null, publicKey: u.public_key, createdAt: u.created_at, online: sockets.has(u.id) && u.status_mode !== 'invisible', mode: u.status_mode, status: statusOf(u), isAdmin: u.is_admin, verified: safety.verifiedOn(u), badges: await safety.badgesOf(q, u.id), isOwner: u.username === ADMIN_USERNAME, blocked: !!blocked.rows[0], stats, activity: u.share_activity && activityNow.get(u.id) ? { title: activityNow.get(u.id).title, path: activityNow.get(u.id).path } : null });
 }));
 
 app.post('/api/blocks/:username', auth, byUser('block', 20, 3_600_000), wrap(async (req, res) => {
@@ -348,7 +353,7 @@ async function loadConversations(userId, onlyId) {
   const ids = convs.rows.map((c) => c.id);
   if (!ids.length) return { conversations: [], keyUsers: {} };
   const mem = await q(
-    `select cm.conv_id,cm.role,cm.last_read_at,u.id,u.username,u.display_name,u.public_key,u.status_text,u.status_icon,u.status_mode,u.is_admin,u.verified from members cm join users u on u.id=cm.user_id join conversations cc on cc.id=cm.conv_id
+    `select cm.conv_id,cm.role,cm.last_read_at,u.id,u.username,u.display_name,u.public_key,u.status_text,u.status_icon,u.status_mode,u.is_admin,u.verified,u.avatar from members cm join users u on u.id=cm.user_id join conversations cc on cc.id=cm.conv_id
      where cm.conv_id=any($1) and (cc.system_kind is null or u.id=$2 or u.is_admin or exists(select 1 from messages mm where mm.conv_id=cm.conv_id and mm.sender_id=u.id)) order by cm.joined_at`, [ids, userId]); // the big built-in rooms only list people who have spoken, plus admins
   const keys = await q('select conv_id,version,wrapped_key,iv,wrapped_by from group_keys where user_id=$1 and conv_id=any($2)', [userId, ids]);
   const wrappers = [...new Set(keys.rows.map((k) => k.wrapped_by).filter(Boolean))];
@@ -358,7 +363,7 @@ async function loadConversations(userId, onlyId) {
   const conversations = convs.rows.map((c) => ({
     id: c.id, type: c.type, name: c.name, memberCount: c.member_count, isPublic: c.is_public, systemKind: c.system_kind || null, description: c.description || '', topic: c.topic || '', keyVersion: c.key_version, createdAt: c.created_at, role: c.role, muted: c.muted,
     lastReadAt: c.last_read_at, joinedAt: c.joined_at, unread: c.unread, lastMessage: c.last_message,
-    members: mem.rows.filter((m) => m.conv_id === c.id).map((m) => ({ id: m.id, username: m.username, displayName: m.display_name, publicKey: m.public_key, role: m.role, lastReadAt: m.last_read_at, online: sockets.has(m.id) && m.status_mode !== 'invisible', mode: m.status_mode, verified: safety.verifiedOn(m), status: statusOf(m), isAdmin: m.is_admin })),
+    members: mem.rows.filter((m) => m.conv_id === c.id).map((m) => ({ id: m.id, username: m.username, displayName: m.display_name, avatar: m.avatar || null, publicKey: m.public_key, role: m.role, lastReadAt: m.last_read_at, online: sockets.has(m.id) && m.status_mode !== 'invisible', mode: m.status_mode, verified: safety.verifiedOn(m), status: statusOf(m), isAdmin: m.is_admin })),
     keys: keys.rows.filter((k) => k.conv_id === c.id).map((k) => ({ version: k.version, wrappedKey: k.wrapped_key, iv: k.iv, wrappedBy: k.wrapped_by })),
   }));
   return { conversations, keyUsers };
@@ -543,7 +548,9 @@ app.post('/api/conversations/:id/messages', auth, wrap(async (req, res, next) =>
   const { ciphertext, iv, keyVersion } = req.body;
   if (!isB64(ciphertext, 16000) || !isB64(iv, 40)) return bad(res, 'bad message');
   if (keyVersion !== m.key_version) return res.status(409).json({ error: 'key_version_stale', current: m.key_version });
-  if (!safety.verifiedOn(req.user) && (req.user.msg_count || 0) >= safety.FREE_MSGS) return res.status(403).json({ error: 'verify_required', message: `you used your ${safety.FREE_MSGS} free messages, verify to keep chatting` });
+  let adminDm = false;                                       // chatting with an admin is always free, so people can ask for help or for a manual verify
+  if (m.type === 'dm' && !safety.verifiedOn(req.user) && (req.user.msg_count || 0) >= safety.FREE_MSGS) adminDm = !!(await q('select 1 from members mm join users uu on uu.id=mm.user_id where mm.conv_id=$1 and mm.user_id<>$2 and uu.is_admin', [req.params.id, uid])).rows[0];
+  if (!adminDm && !safety.verifiedOn(req.user) && (req.user.msg_count || 0) >= safety.FREE_MSGS) return res.status(403).json({ error: 'verify_required', message: `you used your ${safety.FREE_MSGS} free messages, verify to keep chatting` });
   if (m.is_public) {                                         // public rooms are readable by the server, so they are filtered here too
     const p = safety.decryptPublic(req.params.id, uid, keyVersion, ciphertext, iv);
     if (!p) return bad(res, 'could not read that message');
