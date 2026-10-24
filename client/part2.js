@@ -37,6 +37,15 @@ const ICONS = {
   verified: '<path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m9 12 2 2 4-4"/>',
   megaphone: '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
   camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
+  mic: '<rect x="9" y="2" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v4"/>',
+  poll: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  grid: '<path d="M8 3v18M16 3v18M3 8h18M3 16h18"/>',
+  folder: '<path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2z"/>',
+  calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  sparkle: '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.7 1.8L21.5 17.5l-1.8.7L19 20l-.7-1.8-1.8-.7 1.8-.7z"/>',
+  more: '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
+  stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>',
+  sticker: '<path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h9l7-7V5a2 2 0 0 0-2-2z" transform="translate(0 0)"/><path d="M14 21v-5a2 2 0 0 1 2-2h5"/>',
   chat: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
   gamepad: '<line x1="6" x2="10" y1="12" y2="12"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="15" x2="15.01" y1="13" y2="13"/><line x1="18" x2="18.01" y1="11" y2="11"/><rect width="20" height="12" x="2" y="6" rx="2"/>',
   bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
@@ -319,6 +328,10 @@ function previewText(p, mine) {
   if (p.t === 'text') return pre + p.text;
   if (p.t === 'game') return pre + 'shared a game: ' + p.title;
   if (p.t === 'gif') return pre + 'sent a gif';
+  if (p.t === 'voice') return pre + 'sent a voice note';
+  if (p.t === 'sticker') return pre + 'sent a sticker';
+  if (p.t === 'poll') return pre + 'made a poll: ' + p.q;
+  if (p.t === 'g2') return pre + (p.kind === 'rps' ? 'started rock paper scissors' : 'started tic-tac-toe');
   if (p.t === 'deleted') return 'message deleted';
   return 'encrypted message';
 }
@@ -353,6 +366,7 @@ async function loadMessages(c, older) {
   await Promise.all(d.messages.map((m) => decryptMsg(c, m)));
   c.msgs = older ? d.messages.concat(c.msgs) : d.messages;
   c.hasMore = d.hasMore; c.loaded = true;
+  if (window.__ext && window.__ext.loadExtras) await window.__ext.loadExtras(c);   // polls and games state
 }
 function addMessage(c, msg, payload) {
   if (c.msgs.some((m) => m.id === msg.id)) return false;
@@ -472,6 +486,14 @@ async function onWS(m) {
       if (S.active === c.id) { ui.renderMessages(c); window.__ui.renderPins && window.__ui.renderPins(c); }
       break;
     }
+    case 'msg_edit': {                                       // someone edited a message
+      const c = convOf(m.convId); if (!c) return;
+      const x = c.msgs.find((y) => y.id === m.msgId) || (c.lastMessage && c.lastMessage.id === m.msgId ? c.lastMessage : null);
+      if (x) { x.ciphertext = m.ciphertext; x.iv = m.iv; x.keyVersion = m.keyVersion; x.editedAt = m.editedAt; delete x._p; const p = await decryptMsg(c, x); if (c.lastMessage && c.lastMessage.id === x.id) { c.lastMessage = x; c._preview = previewText(p, x.senderId === S.me.id); } }
+      ui.renderSide(); if (S.active === c.id) ui.renderMessages(c);
+      break;
+    }
+    case 'extra': window.__ext && window.__ext.onExtra(m); break;
     case 'announce': window.__ext && window.__ext.onAnnounce(m.announcement); break;
     case 'announce_end': window.__ext && window.__ext.endAnnounce(m.id); break;
     case 'verify_changed': window.__ui.verifyChanged && window.__ui.verifyChanged(); break;
@@ -487,7 +509,7 @@ async function onWS(m) {
     }
     case 'me_update': {
       const me = await api('GET', '/api/me', null, { quiet: true }).catch(() => null);
-      if (me) { const was = S.me.beta, wasV = S.me.verified; Object.assign(S.me, me.user); S.ttlHours = me.ttlHours || S.ttlHours; S.referral = me.referral; window.__ext && window.__ext.applyTheme(); if (was !== S.me.beta || wasV !== S.me.verified) await loadConvs().catch(() => {}); ui.renderAll(); }
+      if (me) { const was = S.me.beta, wasV = S.me.verified; Object.assign(S.me, me.user); S.ttlHours = me.ttlHours || S.ttlHours; S.referral = me.referral; window.__ext && window.__ext.applyTheme(); if (was !== S.me.beta || wasV !== S.me.verified) await loadConvs().catch(() => {}); ui.renderAll(); window.__ext && window.__ext.betaChanged && window.__ext.betaChanged(); }
       break;
     }
     case 'presence': S.presence.set(m.userId, m); ui.renderSide(); ui.renderHeader(); ui.renderActivityLive(); break;
@@ -519,7 +541,7 @@ async function onWS(m) {
     case 'notif': {
       S.notifs.unshift(m.notif); S.notifUnread++;
       ui.renderRail();
-      const txt = m.notif.type === 'group_added' ? `${m.notif.data.by} added you to ${m.notif.data.name}` : m.notif.type === 'dm_new' ? `${m.notif.data.from} started a chat with you` : m.notif.type === 'referral' ? `${m.notif.data.name} joined, +${m.notif.data.minutes} min beta` : m.notif.type === 'report' ? 'new report to review' : m.notif.type === 'verified' ? 'you are verified' : m.notif.type === 'verify_rejected' ? 'verification was not approved' + (m.notif.data.note ? ': ' + m.notif.data.note : '') : 'new notification';
+      const txt = m.notif.type === 'group_added' ? `${m.notif.data.by} added you to ${m.notif.data.name}` : m.notif.type === 'dm_new' ? `${m.notif.data.from} started a chat with you` : m.notif.type === 'sched_failed' ? 'a scheduled message could not be sent' : m.notif.type === 'referral' ? `${m.notif.data.name} joined, +${m.notif.data.minutes} min beta` : m.notif.type === 'report' ? 'new report to review' : m.notif.type === 'verified' ? 'you are verified' : m.notif.type === 'verify_rejected' ? 'verification was not approved' + (m.notif.data.note ? ': ' + m.notif.data.note : '') : 'new notification';
       toast(txt, 'info', () => { if (m.notif.data.convId) ui.openConv(m.notif.data.convId); });
       beep();
       break;

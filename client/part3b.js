@@ -67,8 +67,8 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => appl
 function lockedBox(what) {
   if (!S.me.verified) return el('div', { class: 'locked' }, ic('verified', 28), el('h3', null, what + ' needs a verified account'), el('p', { class: 'muted' }, 'verify first, then beta unlocks'), el('button', { class: 'btn primary', onclick: () => { document.querySelectorAll('.modal-back').forEach((n) => n.querySelector('.modal-head button') && n.querySelector('.modal-head button').click()); verifyModal(); } }, ic('verified', 16), 'verify me'));
   return el('div', { class: 'locked' }, ic('star', 28), el('h3', null, what + ' is in beta'),
-    el('p', { class: 'muted' }, 'invite friends to earn beta time'),
-    el('button', { class: 'btn primary', onclick: () => { document.querySelectorAll('.modal-back').forEach((n) => n.querySelector('.modal-head button') && n.querySelector('.modal-head button').click()); inviteModal(); } }, ic('gift', 16), 'invite friends'));
+    el('p', { class: 'muted' }, 'beta is $0.50 a week, or free time for inviting verified friends'),
+    el('button', { class: 'btn primary', onclick: () => { document.querySelectorAll('.modal-back').forEach((n) => n.querySelector('.modal-head button') && n.querySelector('.modal-head button').click()); S.view = 'beta'; U.renderAll(); } }, ic('star', 16), 'open the beta tab'));
 }
 function themeModal() {
   const body = el('div');
@@ -99,7 +99,8 @@ function themeModal() {
 // ---------- invites + beta ----------
 async function inviteModal() {
   const body = el('div', null, el('div', { class: 'muted pad' }, '...'));
-  modal('invite friends', body);
+  const im = modal('invite friends', body);
+  if (!S.me.verified) { body.replaceChildren(el('div', { class: 'locked' }, ic('verified', 30), el('h3', null, 'verify to get an invite link'), el('p', { class: 'muted' }, 'only verified people can invite friends. a friend counts once they get verified too, and you earn 30 minutes of beta each time.'), el('button', { class: 'btn primary', onclick: () => { im.close(); verifyModal(); } }, ic('verified', 16), 'verify me'))); return; }
   try {
     const r = S.referral && S.referral.code ? S.referral : await api('GET', '/api/referral');
     S.referral = r;
@@ -113,7 +114,7 @@ async function inviteModal() {
       el('h4', null, 'your link'), field(link),
       el('h4', null, 'your code'), field(r.code),
       el('div', { class: 'stats' }, el('div', null, el('b', null, r.referred), el('span', null, 'joined')), el('div', null, el('b', null, r.credited), el('span', null, `earned (max ${r.cap})`)), el('div', null, el('b', null, r.minutes), el('span', null, 'min each'))),
-      el('p', { class: 'muted small', style: 'margin-bottom:0' }, 'a friend counts once they join and send their first message'));
+      el('p', { class: 'muted small', style: 'margin-bottom:0' }, 'a friend counts once they join and get verified'));
   } catch (e) { body.replaceChildren(el('div', { class: 'form-err' }, e.message)); }
 }
 function betaModal(u, done) {
@@ -121,7 +122,7 @@ function betaModal(u, done) {
   const m = modal('beta for ' + u.displayName, body);
   const give = async (minutes) => { try { await api('POST', `/api/admin/users/${u.id}/beta`, { minutes }); toast(minutes ? 'beta added' : 'beta cleared', 'success'); m.close(); done && done(); } catch (e) { toast(e.message, 'error'); } };
   body.append(el('p', { class: 'muted', style: 'margin-top:0' }, u.isAdmin ? 'admins always have beta' : u.beta ? 'on until ' + new Date(u.betaUntil).toLocaleString() : 'off right now'),
-    el('div', { class: 'presets' }, [[30, '+30 min'], [60, '+1 hour'], [1440, '+1 day'], [10080, '+1 week']].map(([v, l]) => el('button', { class: 'chip-b', onclick: () => give(v) }, l))),
+    el('div', { class: 'presets' }, [[30, '+30 min'], [1440, '+1 day'], [10080, '+1 week ($0.50)'], [20160, '+2 weeks'], [40320, '+4 weeks']].map(([v, l]) => el('button', { class: 'chip-b', onclick: () => give(v) }, l))),
     el('button', { class: 'btn danger small', onclick: () => give(0) }, 'clear beta'));
 }
 
@@ -551,6 +552,4 @@ function capKey(e) {
 window.addEventListener('keydown', capKey, true); window.addEventListener('keyup', capKey, true);
 
 window.__ext = { renderTop, onAnnounce, endAnnounce, verifyModal, badgesModal, adminVerify, adminAnnounce, newsUnseen, announce, newsModal, applyTheme, themeModal, inviteModal, betaModal, emojiPicker, suggest, suggestKey, toggleReact, pinMessage, loadPins, reportModal, adminReports, buildDiscover, createPublicModal, editPublic, gifModal, gifBody };
-try { const r = new URLSearchParams(location.search).get('ref'); if (r) { lsSet('chatroom.ref', r.slice(0, 16)); history.replaceState(null, '', location.pathname); } } catch {}
-U.boot();                                                    // everything is defined, start the app
 })();
