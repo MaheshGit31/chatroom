@@ -1,5 +1,13 @@
 [
   {
+    "id": "2026-10-23-d",
+    "date": "2026-10-23",
+    "title": "sticker link fix",
+    "items": [
+      "stickers now accept any https image link, including google image thumbnails that have no .png or .jpg at the end"
+    ]
+  },
+  {
     "id": "2026-10-23-c",
     "date": "2026-10-23",
     "title": "the beta tab",
