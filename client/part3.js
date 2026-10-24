@@ -6,6 +6,7 @@ const { API, SAME_ORIGIN, S, el, $, ic, avatar, fmtTime, fmtDay, fmtDur, ago, de
 const isMobile = () => matchMedia('(max-width: 760px)').matches;
 const X = new Proxy({}, { get: (_, k) => (...a) => window.__ext[k](...a) });   // extras (discover, gifs, themes...) live in part3b and are looked up when called
 const app = () => $('#app');
+const vb = (u) => (u && u.verified ? el('span', { class: 'vbadge', title: 'verified' }, ic('verified', 16)) : null);   // blue tick next to a verified name
 
 // ---------- generic widgets ----------
 function modal(title, content, opts = {}) {
@@ -44,7 +45,7 @@ function userSearch(onPick, exclude = new Set()) {
     try {
       const d = await api('GET', '/api/users/search?q=' + encodeURIComponent(q), null, { quiet: true });
       const users = d.users.filter((u) => !exclude.has(u.id));
-      list.replaceChildren(...(users.length ? users.map((u) => el('div', { class: 'urow click', onclick: () => onPick(u) }, avatar(u.displayName, 36), el('div', { class: 'grow' }, el('div', { class: 'ctitle' }, u.displayName), el('div', { class: 'muted small' }, '@' + u.username)), ic('plus', 16))) : [el('div', { class: 'muted pad' }, 'nobody found')]));
+      list.replaceChildren(...(users.length ? users.map((u) => el('div', { class: 'urow click', onclick: () => onPick(u) }, avatar(u.displayName, 36), el('div', { class: 'grow' }, el('div', { class: 'ctitle' }, u.displayName, vb(u)), el('div', { class: 'muted small' }, '@' + u.username)), ic('plus', 16))) : [el('div', { class: 'muted pad' }, 'nobody found')]));
     } catch (e) { list.replaceChildren(el('div', { class: 'muted pad' }, e.status === 429 ? `slow down, retry in ${e.data.retryAfter}s` : e.message)); }
   }, 250);
   input.addEventListener('input', run);
@@ -55,7 +56,7 @@ function userSearch(onPick, exclude = new Set()) {
 const linkify = (text) => {                                    // links become anchors, emoji become images
   const out = [];
   String(text).split(/(https?:\/\/[^\s<>"]+)/g).forEach((part, i) => {
-    if (i % 2) out.push(el('a', { href: part, target: '_blank', rel: 'noopener noreferrer nofollow' }, part)); else if (part) out.push(...C.emojify(part));
+    if (i % 2) out.push(el('a', { href: part, target: '_blank', rel: 'noopener noreferrer nofollow' }, part)); else if (part) out.push(...C.emojify(C.F.clean(part)));
   });
   return out;
 };
@@ -162,6 +163,7 @@ function buildShell() {
   const a = app(); a.className = 'app'; a.replaceChildren();
   const search = el('input', { placeholder: 'filter', id: 'cfilter', oninput: () => renderSide() });
   a.append(
+    el('div', { class: 'topbar', id: 'topbar' }),
     el('nav', { class: 'rail', id: 'rail' }),
     el('aside', { class: 'side', id: 'side' },
       el('div', { class: 'side-head' }, el('h2', null, 'chats'), el('div', { class: 'row gap-s' },
@@ -207,7 +209,7 @@ function pruneExpired() {
   }
   if (touched) { renderSide(); renderRail(); }
 }
-function renderAll() { if (!S.me) return; renderRail(); renderSide(); renderMain(); renderHeader(); }
+function renderAll() { if (!S.me) return; renderRail(); renderSide(); renderMain(); renderHeader(); X.renderTop(); }
 
 function renderRail() {
   const r = $('#rail'); if (!r) return;
@@ -237,20 +239,20 @@ function renderRail() {
 function renderSide() {
   const list = $('#clist'); if (!list) return;
   const f = ($('#cfilter') || { value: '' }).value.trim().toLowerCase();
-  const items = S.convs.filter((c) => !f || convTitle(c).toLowerCase().includes(f));
+  const items = S.convs.filter((c) => !f || convTitle(c).toLowerCase().includes(f)).sort((a, b) => (b.systemKind ? 1 : 0) - (a.systemKind ? 1 : 0)); // Everyone + Beta lounge stay on top
   if (!items.length) { list.classList.remove('stagger'); list.replaceChildren(el('div', { class: 'empty-s' }, S.convs.length ? 'no matches' : 'nothing yet, start one above')); return; }
   const anim = sideStagger; sideStagger = false;
   list.classList.toggle('stagger', anim);
   list.replaceChildren(...items.map((c, i) => {
     const o = c.type === 'dm' ? other(c) : null;
     const st = o ? statusFor(o.id, c) : null;
-    const av = c.type === 'dm' ? el('div', { class: 'avwrap' }, avatar(convTitle(c), 46), dot(isOnline(c, o.id), st.mode)) : el('div', { class: 'avwrap' }, el('div', { class: 'avatar', style: `width:46px;height:46px;background:${tone(c.name)}` }, ic('users', 20)));
+    const av = c.type === 'dm' ? el('div', { class: 'avwrap' }, avatar(convTitle(c), 46), dot(isOnline(c, o.id), st.mode)) : el('div', { class: 'avwrap' }, el('div', { class: 'avatar', style: `width:46px;height:46px;background:${tone(c.name)}` }, ic(c.systemKind === 'beta' ? 'star' : c.isPublic ? 'globe' : 'users', 20)));
     const act = o && activityOf(o.id);
     const typing = S.typing.get(c.id) && S.typing.get(c.id).size;
     const sub = typing ? el('span', { class: 'accent' }, 'typing...') : act ? el('span', null, 'playing ' + act.title) : (c._preview || '');
     return el('div', { class: 'citem' + (S.active === c.id ? ' active' : ''), style: `--i:${Math.min(i, 12)}`, onclick: () => openConv(c.id) }, av,
       el('div', { class: 'cmeta' },
-        el('div', { class: 'crow' }, el('span', { class: 'ctitle' }, convTitle(c)), el('span', { class: 'ctime' }, c.lastMessage ? fmtTime(c.lastMessage.createdAt) : '')),
+        el('div', { class: 'crow' }, el('span', { class: 'ctitle' }, convTitle(c), o ? vb(o) : null), el('span', { class: 'ctime' }, c.lastMessage ? fmtTime(c.lastMessage.createdAt) : '')),
         el('div', { class: 'crow' },
           el('span', { class: 'cprev' }, sub),
           c.muted ? ic('mute', 14) : null,
@@ -295,6 +297,7 @@ function buildChat(m, c) {
   const cool = el('div', { class: 'cool' });
   const selbar = el('div', { class: 'selbar' });
   const sugg = el('div', { class: 'sugg' });
+  const freebar = el('div', { class: 'freebar' });
   let lastTyping = 0;
   const input = el('textarea', {
     rows: 1, maxLength: 2000, placeholder: 'say something',
@@ -312,6 +315,7 @@ function buildChat(m, c) {
   async function doSend() {
     const text = C.expandShortcodes(input.value.trim());     // :skull: becomes the emoji before encryption
     if (!text || sending) return;
+    if (C.F.check(text)) { toast('keep it clean, that was not sent', 'error'); return; } // word filter, runs before anything is encrypted
     sending = true; sendBtn.disabled = true;
     const ok = await sendPayload(c, { t: 'text', text });
     if (ok) { input.value = ''; c.draft = ''; input.style.height = 'auto'; sugg.classList.remove('on'); }
@@ -319,15 +323,15 @@ function buildChat(m, c) {
   }
   const emojiBtn = el('button', { class: 'icon-btn', title: 'emoji', onclick: () => X.emojiPicker(emojiBtn, (ch) => { const a = input.selectionStart ?? input.value.length; input.setRangeText(ch, a, input.selectionEnd ?? a, 'end'); input.dispatchEvent(new Event('input')); input.focus(); }) }, ic('smile', 20));
   m.append(el('div', { class: 'chat' }, head, pinbar, msgs, typing, selbar,
-    el('div', { class: 'composer-wrap' }, cool, sugg,
+    el('div', { class: 'composer-wrap' }, cool, freebar, sugg,
       el('div', { class: 'composer' },
         el('button', { class: 'icon-btn', title: 'share a game', onclick: () => pickGameModal(c) }, ic('gamepad', 20)),
         el('button', { class: 'icon-btn gifbtn', title: 'gif', onclick: () => X.gifModal(c) }, ic('image', 20)),
         emojiBtn, input, sendBtn))));
   c._shown = null;                                           // first paint of a chat should not animate every old message
   sel = null;                                                // leave select mode when switching chats
-  chatRef = { head, pinbar, msgs, typing, input, sendBtn, cool, selbar, convId: c.id };
-  renderHeader(); renderTyping(); tickCooldown(); X.loadPins(c);
+  chatRef = { head, pinbar, msgs, typing, input, sendBtn, cool, selbar, freebar, convId: c.id };
+  renderHeader(); renderTyping(); tickCooldown(); X.loadPins(c); X.renderTop();
 }
 function renderHeader() {
   const h = chatRef.head; if (!h) return;
@@ -340,11 +344,11 @@ function renderHeader() {
   else if (o) {
     const act = activityOf(o.id), on = isOnline(c, o.id);
     sub = act ? el('span', { class: 'good' }, 'playing ' + act.title) : (st && st.status && (st.status.text || st.status.icon)) ? statusLine(st) : el('span', { class: on ? 'good' : 'muted' }, on ? 'online' : 'offline');
-  } else sub = el('span', { class: 'muted' }, `${c.isPublic ? 'public · ' : ''}${c.members.filter((x) => isOnline(c, x.id)).length} of ${c.members.length} here`);
+  } else sub = el('span', { class: 'muted' }, `${c.isPublic ? 'public · ' : ''}${c.members.filter((x) => isOnline(c, x.id)).length} of ${c.memberCount || c.members.length} here`);
   h.replaceChildren(
     el('button', { class: 'icon-btn back', title: 'back', onclick: () => { S.active = null; renderAll(); } }, ic('back', 22)),
     o ? el('div', { class: 'avwrap' }, avatar(convTitle(c), 42), dot(isOnline(c, o.id), st.mode)) : el('div', { class: 'avatar', style: `width:42px;height:42px;background:${tone(c.name)}` }, ic(c.isPublic ? 'globe' : 'users', 18)),
-    el('div', { class: 'grow click', onclick: () => (o ? openProfile(o.username) : groupModal(c)) }, el('div', { class: 'ctitle' }, convTitle(c)), el('div', { class: 'small' }, sub)),
+    el('div', { class: 'grow click', onclick: () => (o ? openProfile(o.username) : groupModal(c)) }, el('div', { class: 'ctitle' }, convTitle(c), o ? vb(o) : null), el('div', { class: 'small' }, sub)),
     el('span', { class: 'ic muted', title: c.isPublic ? 'public room: open to everyone, not end-to-end encrypted' : 'end-to-end encrypted' }, ic(c.isPublic ? 'globe' : 'lock', 16)),
     el('button', { class: 'icon-btn', title: c.muted ? 'unmute' : 'mute', onclick: async () => { c.muted = !c.muted; await api('PATCH', `/api/conversations/${c.id}/me`, { muted: c.muted }).catch(() => {}); renderHeader(); renderSide(); updateBadge(); } }, ic(c.muted ? 'mute' : 'volume', 20)),
     el('button', { class: 'icon-btn', title: 'details', onclick: () => (o ? openProfile(o.username) : groupModal(c)) }, ic('info', 20)));
@@ -408,7 +412,7 @@ function drawSelbar(c) {
 function msgTools(c, m, mine) {
   const p = m._p || {};
   const b = (icon, title, fn) => el('button', { class: 'icon-btn tiny', title, onclick: (e) => { e.stopPropagation(); fn(e); } }, ic(icon, 15));
-  const kids = [b('smile', 'react', (e) => X.emojiPicker(e.currentTarget, (ch) => X.toggleReact(c, m, ch, true), true))];
+  const kids = [b('smile', 'react', (e) => (!S.me.verified ? X.verifyModal() : X.emojiPicker(e.currentTarget, (ch) => X.toggleReact(c, m, ch, true), true)))];
   if (canPin(c)) kids.push(b('pin', m.pinned ? 'unpin' : 'pin', () => X.pinMessage(c, m)));
   if (p.t === 'text') kids.push(b('copy', 'copy', () => { navigator.clipboard && navigator.clipboard.writeText(p.text).then(() => toast('copied', 'success')).catch(() => {}); }));
   if (canDelete(c, m)) kids.push(b('checksquare', 'select', () => startSelect(c, m.id)));
@@ -448,7 +452,7 @@ function renderMessages(c, stick) {
       el('div', { class: 'bubwrap' },
         el('div', { class: 'bubble' + (p.t === 'gif' ? ' gifb' : '') + (m.pinned ? ' pinned' : ''), onclick: (e) => { if (sel && selectable) return toggleSel(c, m.id); if (matchMedia('(hover: none)').matches && !e.target.closest('a,button')) { const was = e.currentTarget.classList.contains('tools-on'); box.querySelectorAll('.tools-on').forEach((n) => n.classList.remove('tools-on')); if (!was) e.currentTarget.classList.add('tools-on'); } } },
           !m.deleted && !sel ? msgTools(c, m, mine) : null,
-          first && !mine && c.type === 'group' ? el('div', { class: 'mname click', onclick: () => sender && openProfile(sender.username) }, sender ? sender.displayName : 'former member') : null,
+          first && !mine && c.type === 'group' ? el('div', { class: 'mname click', onclick: () => sender && openProfile(sender.username) }, sender ? sender.displayName : 'former member', vb(sender)) : null,
           body,
           el('div', { class: 'mmeta' }, m.pinned ? el('span', { class: 'pinmark', title: 'pinned' }, ic('pin', 12)) : null, fmtTime(m.createdAt), seen ? el('span', { class: 'seen' }, ic('check', 12), 'seen') : null)),
         rx.length ? el('div', { class: 'rxrow' }, rx.map(([e, u]) => el('button', { class: 'rx' + (u.includes(S.me.id) ? ' mine' : ''), title: u.map((id) => (id === S.me.id ? 'you' : (memberOf(c, id) || {}).displayName || 'someone')).join(', '), onclick: () => X.toggleReact(c, m, e) }, C.emojiEl(e), el('span', null, u.length)))) : null)));
@@ -541,7 +545,7 @@ async function groupModal(c) {
       el('h4', null, `${c.members.length} people`),
       el('div', { class: 'ulist' }, c.members.map((u) => el('div', { class: 'urow' },
         el('div', { class: 'avwrap click', onclick: () => openProfile(u.username) }, avatar(u.displayName, 34), dot(isOnline(c, u.id))),
-        el('div', { class: 'grow click', onclick: () => openProfile(u.username) }, el('div', { class: 'ctitle' }, u.displayName + (u.id === S.me.id ? ' (you)' : '')), el('div', { class: 'muted small' }, '@' + u.username)),
+        el('div', { class: 'grow click', onclick: () => openProfile(u.username) }, el('div', { class: 'ctitle' }, u.displayName + (u.id === S.me.id ? ' (you)' : ''), vb(u)), el('div', { class: 'muted small' }, '@' + u.username)),
         u.role === 'admin' ? el('span', { class: 'tag' }, 'host') : null,
         isAdmin() && u.id !== S.me.id ? el('button', { class: 'icon-btn', title: 'remove', onclick: async () => { if (await confirmModal(`remove ${u.displayName}?`, c.isPublic ? 'they cannot rejoin.' : 'the group key changes, so they cannot read anything new.', 'remove')) { await removeMember(c, u.id); draw(); } } }, ic('x', 16)) : null))),
       addBox,
@@ -575,9 +579,10 @@ async function openProfile(username) {
     const owner = p.isOwner;
     body.replaceChildren(
       el('div', { class: 'prof-head' }, el('div', { class: 'avwrap' }, avatar(p.displayName, 68), dot(p.online, p.mode)),
-        el('div', { class: 'grow' }, el('h3', null, p.displayName), el('div', { class: 'muted' }, '@' + p.username, p.isAdmin ? el('span', { class: 'tag gold', style: 'margin-left:8px' }, owner ? 'owner' : 'admin') : null),
+        el('div', { class: 'grow' }, el('h3', null, p.displayName, vb(p)), el('div', { class: 'muted' }, '@' + p.username, p.isAdmin ? el('span', { class: 'tag gold', style: 'margin-left:8px' }, owner ? 'owner' : 'admin') : null),
           el('div', { style: 'margin-top:4px' }, p.activity ? el('span', { class: 'good small' }, 'playing ' + p.activity.title) : statusLine(st) || el('span', { class: (p.online ? 'good' : 'muted') + ' small' }, p.online ? 'online' : 'offline')))),
       me ? el('button', { class: 'btn wide', onclick: () => { m.close(); statusModal(); } }, ic('edit', 16), 'set status') : null,
+      p.badges && p.badges.length ? el('div', { class: 'badgerow' }, p.badges.map((b) => el('span', { class: 'bdg', title: b.name + ': ' + b.desc }, ic(b.icon, 14), b.name))) : null,
       p.stats ? el('div', { class: 'stats' }, el('div', null, el('b', null, fmtDur(p.stats.totalSeconds)), el('span', null, 'played')), el('div', null, el('b', null, p.stats.gamesPlayed), el('span', null, 'games'))) : null,
       p.stats && p.stats.top.length ? el('div', null, el('h4', null, 'most played'), p.stats.top.map((g) => el('div', { class: 'urow' }, el('div', { class: 'grow' }, g.title), el('span', { class: 'muted small' }, fmtDur(g.seconds))))) : null,
       me ? null : el('div', null, el('h4', null, ic('shield', 14), 'safety number'), el('div', { class: 'sn' }, sn)),
@@ -596,6 +601,9 @@ function settingsModal() {
   const m = modal('you', el('div', null,
     el('div', { class: 'row gap' }, dn, el('button', { class: 'btn', onclick: async () => { try { const d = await api('PATCH', '/api/me', { displayName: dn.value }); S.me.displayName = d.user.displayName; renderAll(); toast('saved', 'success'); } catch (e) { toast(e.message, 'error'); } } }, 'save')),
     el('button', { class: 'btn wide', style: 'margin-top:10px', onclick: () => { m.close(); statusModal(); } }, ic('edit', 16), 'set status'),
+    el('div', { class: 'row gap', style: 'margin-top:8px' },
+      S.me.verified ? el('div', { class: 'btn grow verified-pill' }, ic('verified', 16), 'verified') : el('button', { class: 'btn grow primary', onclick: () => { m.close(); X.verifyModal(); } }, ic('verified', 16), 'verify me'),
+      el('button', { class: 'btn grow', onclick: () => { m.close(); X.badgesModal(); } }, ic('trophy', 16), 'badges')),
     el('div', { class: 'row gap', style: 'margin-top:8px' },
       el('button', { class: 'btn grow', onclick: () => { m.close(); X.inviteModal(); } }, ic('gift', 16), 'invite friends'),
       el('button', { class: 'btn grow', onclick: () => { m.close(); X.newsModal(); } }, ic('newspaper', 16), "what's new", X.newsUnseen() ? el('span', { class: 'newdot inline' }) : null)),
@@ -670,7 +678,7 @@ function pickGameModal(c) {
 // ---------- alerts ----------
 function buildAlerts(m) {
   const list = S.notifs.length ? S.notifs.map((n) => {
-    const txt = n.type === 'group_added' ? `${n.data.by} added you to ${n.data.name}` : n.type === 'dm_new' ? `${n.data.from} started a chat` : n.type === 'referral' ? `${n.data.name} joined, +${n.data.minutes} min beta` : n.type === 'report' ? 'new report to review' : 'new alert';
+    const txt = n.type === 'group_added' ? `${n.data.by} added you to ${n.data.name}` : n.type === 'dm_new' ? `${n.data.from} started a chat` : n.type === 'referral' ? `${n.data.name} joined, +${n.data.minutes} min beta` : n.type === 'report' ? 'new report to review' : n.type === 'verified' ? 'you are verified' : n.type === 'verify_rejected' ? 'verification not approved' + (n.data.note ? ': ' + n.data.note : '') : 'new alert';
     return el('div', { class: 'urow click' + (n.read ? '' : ' unread'), onclick: () => n.data.convId && convOf(n.data.convId) && openConv(n.data.convId) }, el('div', { class: 'gshare-ic sm', style: `background:${tone(txt)}` }, ic(n.type === 'group_added' ? 'users' : n.type === 'referral' ? 'gift' : n.type === 'report' ? 'flag' : 'chat', 16)), el('div', { class: 'grow' }, el('div', null, txt), el('div', { class: 'muted small' }, ago(n.createdAt))));
   }) : [el('div', { class: 'empty-s' }, mugIcon())];
   m.append(el('div', { class: 'page' }, el('div', { class: 'page-head' }, el('h2', null, 'alerts'), S.notifs.length ? el('button', { class: 'btn small', onclick: async () => { await api('POST', '/api/notifications/read').catch(() => {}); S.notifs.forEach((n) => (n.read = true)); S.notifUnread = 0; renderAll(); builtMain = ''; renderMain(); } }, 'mark read') : null), el('div', { class: 'ulist stagger' }, list.map((x, i) => { x.style.setProperty('--i', Math.min(i, 10)); return x; }))));
@@ -688,7 +696,7 @@ function buildAdmin(m) {
     if (!tiles.isConnected) return;
     try {
       const d = await api('GET', '/api/admin/stats', null, { quiet: true });
-      const t = [['people', d.users], ['online', d.online], ['messages', d.messages], ['groups', d.groups], ['plays', d.plays], ['reports', d.reports], ['public', d.public_groups], ['storage', fmtBytes(d.bytes)], ['vanish', d.ttlHours % 24 ? d.ttlHours + 'h' : d.ttlHours / 24 + 'd']];
+      const t = [['people', d.users], ['online', d.online], ['messages', d.messages], ['groups', d.groups], ['plays', d.plays], ['reports', d.reports], ['to verify', d.pending_verifications], ['public', d.public_groups], ['storage', fmtBytes(d.bytes)], ['vanish', d.ttlHours % 24 ? d.ttlHours + 'h' : d.ttlHours / 24 + 'd']];
       tiles.replaceChildren(...t.map(([l, v], i) => el('div', { class: 'tile', style: `--i:${i}` }, el('b', null, v), el('span', null, l))));
     } catch (e) { tiles.replaceChildren(el('div', { class: 'form-err' }, e.message)); }
   }
@@ -702,7 +710,7 @@ function buildAdmin(m) {
           el('div', { class: 'avwrap' }, avatar(u.displayName, 40), dot(u.online)),
           el('div', { class: 'grow' }, el('div', { class: 'ctitle' }, u.displayName, u.isOwner ? el('span', { class: 'tag gold', style: 'margin-left:8px' }, 'owner') : u.isAdmin ? el('span', { class: 'tag gold', style: 'margin-left:8px' }, 'admin') : null, u.banned ? el('span', { class: 'tag', style: 'margin-left:8px' }, 'suspended') : null, u.beta && !u.isAdmin ? el('span', { class: 'tag', style: 'margin-left:8px' }, 'beta') : null),
             el('div', { class: 'muted small' }, `@${u.username} · ${u.messages} msgs · joined ${fmtDay(u.createdAt).toLowerCase()}`)),
-          el('div', { class: 'acts' }, el('button', { class: 'icon-btn' + (u.beta ? ' on' : ''), title: 'beta time', onclick: () => X.betaModal(u, loadUsers) }, ic('star', 18)),
+          el('div', { class: 'acts' }, !u.isAdmin ? el('button', { class: 'icon-btn' + (u.verified ? ' on' : ''), title: u.verified ? 'remove verification' : 'verify', onclick: () => act(() => api('POST', `/api/admin/users/${u.id}/verify`, { verified: !u.verified }), u.verified ? 'unverified' : 'verified') }, ic('verified', 18)) : null, el('button', { class: 'icon-btn' + (u.beta ? ' on' : ''), title: 'beta time', onclick: () => X.betaModal(u, loadUsers) }, ic('star', 18)),
             isOwner && !u.isOwner ? el('button', { class: 'icon-btn', title: u.isAdmin ? 'remove admin' : 'make admin', onclick: () => act(() => api('POST', `/api/admin/users/${u.id}/admin`, { admin: !u.isAdmin }), u.isAdmin ? 'admin removed' : `${u.displayName} is an admin now`) }, ic('crown', 18)) : null,
             !locked ? el('button', { class: 'icon-btn', title: u.banned ? 'restore' : 'suspend', onclick: async () => { if (u.banned || await confirmModal(`suspend ${u.displayName}?`, 'they get signed out and cannot come back until restored.', 'suspend')) act(() => api('POST', `/api/admin/users/${u.id}/ban`, { banned: !u.banned }), u.banned ? 'restored' : 'suspended'); } }, ic('ban', 18)) : null,
             !locked ? el('button', { class: 'icon-btn', title: 'remove account', onclick: async () => { if (await confirmModal(`remove ${u.displayName}?`, 'the account is deleted for good.', 'remove')) act(() => api('DELETE', `/api/admin/users/${u.id}`), 'removed'); } }, ic('trash', 18)) : null));
@@ -717,10 +725,13 @@ function buildAdmin(m) {
         el('button', { class: 'btn small', onclick: async () => { if (await confirmModal('clear play history?', 'finished sessions are removed.', 'clear')) act(() => api('POST', '/api/admin/purge', { what: 'plays' }), 'cleared'); } }, ic('database', 14), 'clear plays'))),
     tiles,
     (() => {
-      const people = el('div', null, el('div', { class: 'searchbox' }, ic('search', 16), q), list), reports = el('div', { style: 'display:none' });
-      const tab = (k, label) => el('button', { class: k === 'people' ? 'on' : '', onclick: (e) => { e.currentTarget.parentNode.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b === e.currentTarget)); people.style.display = k === 'people' ? '' : 'none'; reports.style.display = k === 'reports' ? '' : 'none'; if (k === 'reports') X.adminReports(reports, loadStats); } }, label);
-      window.__ui.reportsChanged = () => { loadStats(); if (reports.isConnected && reports.style.display !== 'none') X.adminReports(reports, loadStats); };
-      return el('div', null, el('div', { class: 'seg' }, tab('people', 'people'), tab('reports', 'reports')), people, reports);
+      const people = el('div', null, el('div', { class: 'searchbox' }, ic('search', 16), q), list);
+      const panes = { people, reports: el('div', { style: 'display:none' }), verify: el('div', { style: 'display:none' }), announce: el('div', { style: 'display:none' }) };
+      const loaders = { reports: () => X.adminReports(panes.reports, loadStats), verify: () => X.adminVerify(panes.verify, loadStats), announce: () => X.adminAnnounce(panes.announce) };
+      const tab = (k, label) => el('button', { class: k === 'people' ? 'on' : '', onclick: (e) => { e.currentTarget.parentNode.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b === e.currentTarget)); for (const [n, node] of Object.entries(panes)) node.style.display = n === k ? '' : 'none'; if (loaders[k]) loaders[k](); } }, label);
+      window.__ui.reportsChanged = () => { loadStats(); if (panes.reports.isConnected && panes.reports.style.display !== 'none') loaders.reports(); };
+      window.__ui.verifyChanged = () => { loadStats(); if (panes.verify.isConnected && panes.verify.style.display !== 'none') loaders.verify(); };
+      return el('div', null, el('div', { class: 'seg wrapseg' }, tab('people', 'people'), tab('reports', 'reports'), tab('verify', 'verify'), tab('announce', 'announce')), people, panes.reports, panes.verify, panes.announce);
     })()));
   loadStats(); loadUsers();
   nowTimer = setInterval(loadStats, 20000);

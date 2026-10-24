@@ -10,6 +10,8 @@ const SAME_ORIGIN = API === location.origin;               // web push needs a s
 
 // ---------- tiny dom helpers ----------
 // el('div', {class:'x', onclick: fn}, 'text', childNode) - builds nodes with textContent only (no innerHTML, so no xss)
+/*__FILTER__*/
+const F = typeof makeFilter === 'function' ? makeFilter(typeof WORDS !== 'undefined' ? WORDS : []) : { check: () => false, clean: (t) => t };
 // append/replaceChildren would print "null" for empty slots, so skip null/false/undefined everywhere
 for (const k of ['append', 'prepend', 'replaceChildren']) { const o = Element.prototype[k]; Element.prototype[k] = function (...a) { return o.apply(this, a.flat(9).filter((x) => x != null && x !== false)); }; }
 const el = (tag, props, ...kids) => {
@@ -32,6 +34,9 @@ const $ = (sel, root = document) => root.querySelector(sel);
 
 // icons are static svg strings defined here (never user data)
 const ICONS = {
+  verified: '<path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m9 12 2 2 4-4"/>',
+  megaphone: '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
+  camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
   chat: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
   gamepad: '<line x1="6" x2="10" y1="12" y2="12"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="15" x2="15.01" y1="13" y2="13"/><line x1="18" x2="18.01" y1="11" y2="11"/><rect width="20" height="12" x="2" y="6" rx="2"/>',
   bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
@@ -248,7 +253,7 @@ const onlyEmoji = (t) => { const s = String(t).trim(); if (!s) return false; con
 const expandShortcodes = (t) => String(t).replace(/:([a-z0-9_+-]{1,24}):/gi, (all, n) => EMOJI.get(n.toLowerCase()) || all);
 const GIF_HOSTS = ['tenor.com', 'giphy.com', 'klipy.com', 'klipy.co', 'imgur.com'];
 const gifOk = (u) => { try { const x = new URL(u); return x.protocol === 'https:' && GIF_HOSTS.some((d) => x.hostname === d || x.hostname.endsWith('.' + d)); } catch { return false; } };
-const betaActive = () => !!(S.me && (S.me.isAdmin || (S.me.betaUntil && new Date(S.me.betaUntil) > new Date())));
+const betaActive = () => !!(S.me && (S.me.isAdmin || (S.me.verified && S.me.betaUntil && new Date(S.me.betaUntil) > new Date()))); // beta also needs a verified account
 
 // ---------- toasts, sound, notifications ----------
 function toast(msg, kind = 'info', onclick) {
@@ -358,6 +363,7 @@ async function sendPayload(c, payload, retried) {
   try {
     const e = await encryptPayload(c, payload);
     const r = await api('POST', `/api/conversations/${c.id}/messages`, { ...e, cid: rid() }, { quiet: true });
+    S.me.msgCount = (S.me.msgCount || 0) + 1; window.__ext && window.__ext.renderTop();
     if (addMessage(c, r.message, payload)) { c._preview = previewText(payload, true); sortConvs(); }
     window.__ui.renderSide(); window.__ui.renderMessages(c, true);
     return true;
@@ -365,6 +371,8 @@ async function sendPayload(c, payload, retried) {
     if (err.status === 429) startCooldown(err.data.retryAfter || 5, err.data.message);
     else if (err.status === 409 && err.data.error === 'key_version_stale' && !retried) { await loadConvs(); return sendPayload(convOf(c.id), payload, true); }
     else if (err.status === 401) window.__chatroomLogout(true);
+    else if (err.data && err.data.error === 'verify_required') { toast(err.message, 'error', () => window.__ext && window.__ext.verifyModal()); window.__ext && window.__ext.verifyModal(); }
+    else if (err.data && err.data.error === 'blocked_word') toast('that message was blocked, keep it clean', 'error');
     else toast(err.message, 'error');
     return false;
   }
@@ -418,7 +426,8 @@ async function onWS(m) {
         const viewing = S.view === 'chats' && S.active === c.id && !document.hidden;
         const t = S.typing.get(c.id); if (t) { t.delete(m.message.senderId); }
         if (viewing) markRead(c);
-        else { c.unread = (c.unread || 0) + 1; if (!m.muted) ui.notifyMessage(c, m.message, payload); }
+        else { c.unread = (c.unread || 0) + 1; if (!m.muted && !c.systemKind) ui.notifyMessage(c, m.message, payload); }
+        if (c.systemKind && !memberOf(c, m.message.senderId)) { clearTimeout(c._memT); c._memT = setTimeout(() => loadConvs().catch(() => {}), 1500); } // new speaker in a big room: fetch the name
         updateBadge();
       }
       ui.renderSide(); ui.renderRail(); if (S.active === c.id) ui.renderMessages(c, mine);
@@ -454,6 +463,10 @@ async function onWS(m) {
       if (S.active === c.id) { ui.renderMessages(c); window.__ui.renderPins && window.__ui.renderPins(c); }
       break;
     }
+    case 'announce': window.__ext && window.__ext.onAnnounce(m.announcement); break;
+    case 'announce_end': window.__ext && window.__ext.endAnnounce(m.id); break;
+    case 'verify_changed': window.__ui.verifyChanged && window.__ui.verifyChanged(); break;
+    case 'badge': toast('badge earned: ' + m.badge.name, 'success', () => window.__ext && window.__ext.badgesModal()); window.__ext && window.__ext.badgeEarned && window.__ext.badgeEarned(m.badge); break;
     case 'reports_changed': if (window.__ui.reportsChanged) window.__ui.reportsChanged(); break;
     case 'typing': {
       const c = convOf(m.convId); if (!c) return;
@@ -465,7 +478,7 @@ async function onWS(m) {
     }
     case 'me_update': {
       const me = await api('GET', '/api/me', null, { quiet: true }).catch(() => null);
-      if (me) { Object.assign(S.me, me.user); S.ttlHours = me.ttlHours || S.ttlHours; S.referral = me.referral; window.__ext && window.__ext.applyTheme(); ui.renderAll(); }
+      if (me) { const was = S.me.beta, wasV = S.me.verified; Object.assign(S.me, me.user); S.ttlHours = me.ttlHours || S.ttlHours; S.referral = me.referral; window.__ext && window.__ext.applyTheme(); if (was !== S.me.beta || wasV !== S.me.verified) await loadConvs().catch(() => {}); ui.renderAll(); }
       break;
     }
     case 'presence': S.presence.set(m.userId, m); ui.renderSide(); ui.renderHeader(); ui.renderActivityLive(); break;
@@ -497,7 +510,7 @@ async function onWS(m) {
     case 'notif': {
       S.notifs.unshift(m.notif); S.notifUnread++;
       ui.renderRail();
-      const txt = m.notif.type === 'group_added' ? `${m.notif.data.by} added you to ${m.notif.data.name}` : m.notif.type === 'dm_new' ? `${m.notif.data.from} started a chat with you` : m.notif.type === 'referral' ? `${m.notif.data.name} joined, +${m.notif.data.minutes} min beta` : m.notif.type === 'report' ? 'new report to review' : 'new notification';
+      const txt = m.notif.type === 'group_added' ? `${m.notif.data.by} added you to ${m.notif.data.name}` : m.notif.type === 'dm_new' ? `${m.notif.data.from} started a chat with you` : m.notif.type === 'referral' ? `${m.notif.data.name} joined, +${m.notif.data.minutes} min beta` : m.notif.type === 'report' ? 'new report to review' : m.notif.type === 'verified' ? 'you are verified' : m.notif.type === 'verify_rejected' ? 'verification was not approved' + (m.notif.data.note ? ': ' + m.notif.data.note : '') : 'new notification';
       toast(txt, 'info', () => { if (m.notif.data.convId) ui.openConv(m.notif.data.convId); });
       beep();
       break;
@@ -505,5 +518,5 @@ async function onWS(m) {
   }
 }
 
-window.__core = { API, SAME_ORIGIN, S, el, $, ic, avatar, fmtTime, fmtDay, fmtDur, ago, rid, debounce, lsGet, lsSet, lsDel, toast, beep, updateBadge, api, kdf, newIdentity, openIdentity, wrapGroupKey, encryptPayload, decryptMsg, safetyNumber, idbGet, idbSet, idbDel, convOf, other, convTitle, memberOf, keyFor, previewText, refreshPreview, sortConvs, mergeConvs, loadConvs, loadMessages, addMessage, sendPayload, markRead, connectWS, sendWS, rand, b64, unb64, subtle, skCache, convKeys, startCooldown, hue, tone, EMOJI, EMOJI_LIST, QUICK_REACTS, emojiEl, emojify, onlyEmoji, expandShortcodes, gifOk, betaActive };
+window.__core = { F, API, SAME_ORIGIN, S, el, $, ic, avatar, fmtTime, fmtDay, fmtDur, ago, rid, debounce, lsGet, lsSet, lsDel, toast, beep, updateBadge, api, kdf, newIdentity, openIdentity, wrapGroupKey, encryptPayload, decryptMsg, safetyNumber, idbGet, idbSet, idbDel, convOf, other, convTitle, memberOf, keyFor, previewText, refreshPreview, sortConvs, mergeConvs, loadConvs, loadMessages, addMessage, sendPayload, markRead, connectWS, sendWS, rand, b64, unb64, subtle, skCache, convKeys, startCooldown, hue, tone, EMOJI, EMOJI_LIST, QUICK_REACTS, emojiEl, emojify, onlyEmoji, expandShortcodes, gifOk, betaActive };
 })();
