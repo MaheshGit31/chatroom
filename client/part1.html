@@ -367,7 +367,6 @@ input:focus-visible,textarea:focus-visible{outline:none}
 .badgecard.on{opacity:1;background:color-mix(in srgb,var(--accent) 16%,var(--panel2))}
 .bicon{width:42px;height:42px;border-radius:14px;background:var(--panel);display:flex;align-items:center;justify-content:center;color:var(--muted);margin-bottom:4px}.badgecard.on .bicon{background:var(--accent);color:var(--accent-ink)}
 .bar{width:100%;height:6px;border-radius:3px;background:var(--panel);overflow:hidden}.bar i{display:block;height:100%;background:var(--accent);border-radius:3px}
-#wm{position:fixed;inset:0;z-index:9000;pointer-events:none;background-repeat:repeat}
 html.shielded #app,html.shielded .modal-back,html.shielded #toasts{filter:blur(26px) brightness(.7);transition:none!important}
 html.shielded body::after{content:'hidden while you are away';position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:9500;font:600 18px var(--display);color:var(--text);pointer-events:none}
 @media print{body{display:none!important}}
@@ -390,6 +389,11 @@ html.shielded body::after{content:'hidden while you are away';position:fixed;ins
   .status-grid{grid-template-columns:repeat(4,1fr)}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+.or{text-align:center;color:var(--muted,#8a7b6a);font-size:13px;margin:14px 0 8px}
+.avgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:10px}
+.avopt{background:none;border:2px solid transparent;border-radius:18px;padding:5px;display:flex;justify-content:center;cursor:pointer}
+.avopt:hover{background:var(--hover,rgba(0,0,0,.05))}
+.avopt.on{border-color:var(--accent,#c4572c)}
 </style>
 </head>
 <body>

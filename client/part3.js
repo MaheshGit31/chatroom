@@ -45,7 +45,7 @@ function userSearch(onPick, exclude = new Set()) {
     try {
       const d = await api('GET', '/api/users/search?q=' + encodeURIComponent(q), null, { quiet: true });
       const users = d.users.filter((u) => !exclude.has(u.id));
-      list.replaceChildren(...(users.length ? users.map((u) => el('div', { class: 'urow click', onclick: () => onPick(u) }, avatar(u.displayName, 36), el('div', { class: 'grow' }, el('div', { class: 'ctitle' }, u.displayName, vb(u)), el('div', { class: 'muted small' }, '@' + u.username)), ic('plus', 16))) : [el('div', { class: 'muted pad' }, 'nobody found')]));
+      list.replaceChildren(...(users.length ? users.map((u) => el('div', { class: 'urow click', onclick: () => onPick(u) }, avatar(u.displayName, 36, '', u.avatar), el('div', { class: 'grow' }, el('div', { class: 'ctitle' }, u.displayName, vb(u)), el('div', { class: 'muted small' }, '@' + u.username)), ic('plus', 16))) : [el('div', { class: 'muted pad' }, 'nobody found')]));
     } catch (e) { list.replaceChildren(el('div', { class: 'muted pad' }, e.status === 429 ? `slow down, retry in ${e.data.retryAfter}s` : e.message)); }
   }, 250);
   input.addEventListener('input', run);
@@ -226,7 +226,7 @@ function renderRail() {
     el('button', { class: 'rbtn', title: 'settings', onclick: settingsModal }, ic('sliders', 22), el('span', { class: 'rlabel' }, 'you'), X.newsUnseen() ? el('span', { class: 'newdot' }) : null),
     el('div', { class: 'grow' }),
     el('div', { class: 'conn ' + (S.wsOk ? 'ok' : 'bad'), title: S.wsOk ? 'connected' : 'reconnecting' }),
-    el('button', { class: 'rme', title: 'status', onclick: statusModal }, el('div', { class: 'avwrap' }, avatar(S.me.displayName, 38), dot(S.me.mode !== 'invisible', S.me.mode)))].filter(Boolean));
+    el('button', { class: 'rme', title: 'status', onclick: statusModal }, el('div', { class: 'avwrap' }, avatar(S.me.displayName, 38, '', S.me.avatar), dot(S.me.mode !== 'invisible', S.me.mode)))].filter(Boolean));
   requestAnimationFrame(() => {
     const on = r.querySelector('.rbtn.on');
     if (!on || isMobile()) { rind.style.opacity = 0; return; }
@@ -246,7 +246,7 @@ function renderSide() {
   list.replaceChildren(...items.map((c, i) => {
     const o = c.type === 'dm' ? other(c) : null;
     const st = o ? statusFor(o.id, c) : null;
-    const av = c.type === 'dm' ? el('div', { class: 'avwrap' }, avatar(convTitle(c), 46), dot(isOnline(c, o.id), st.mode)) : el('div', { class: 'avwrap' }, el('div', { class: 'avatar', style: `width:46px;height:46px;background:${tone(c.name)}` }, ic(c.systemKind === 'beta' ? 'star' : c.isPublic ? 'globe' : 'users', 20)));
+    const av = c.type === 'dm' ? el('div', { class: 'avwrap' }, avatar(convTitle(c), 46, '', o.avatar), dot(isOnline(c, o.id), st.mode)) : el('div', { class: 'avwrap' }, el('div', { class: 'avatar', style: `width:46px;height:46px;background:${tone(c.name)}` }, ic(c.systemKind === 'beta' ? 'star' : c.isPublic ? 'globe' : 'users', 20)));
     const act = o && activityOf(o.id);
     const typing = S.typing.get(c.id) && S.typing.get(c.id).size;
     const sub = typing ? el('span', { class: 'accent' }, 'typing...') : act ? el('span', null, 'playing ' + act.title) : (c._preview || '');
@@ -347,7 +347,7 @@ function renderHeader() {
   } else sub = el('span', { class: 'muted' }, `${c.isPublic ? 'public · ' : ''}${c.members.filter((x) => isOnline(c, x.id)).length} of ${c.memberCount || c.members.length} here`);
   h.replaceChildren(
     el('button', { class: 'icon-btn back', title: 'back', onclick: () => { S.active = null; renderAll(); } }, ic('back', 22)),
-    o ? el('div', { class: 'avwrap' }, avatar(convTitle(c), 42), dot(isOnline(c, o.id), st.mode)) : el('div', { class: 'avatar', style: `width:42px;height:42px;background:${tone(c.name)}` }, ic(c.isPublic ? 'globe' : 'users', 18)),
+    o ? el('div', { class: 'avwrap' }, avatar(convTitle(c), 42, '', o.avatar), dot(isOnline(c, o.id), st.mode)) : el('div', { class: 'avatar', style: `width:42px;height:42px;background:${tone(c.name)}` }, ic(c.isPublic ? 'globe' : 'users', 18)),
     el('div', { class: 'grow click', onclick: () => (o ? openProfile(o.username) : groupModal(c)) }, el('div', { class: 'ctitle' }, convTitle(c), o ? vb(o) : null), el('div', { class: 'small' }, sub)),
     el('span', { class: 'ic muted', title: c.isPublic ? 'public room: open to everyone, not end-to-end encrypted' : 'end-to-end encrypted' }, ic(c.isPublic ? 'globe' : 'lock', 16)),
     el('button', { class: 'icon-btn', title: c.muted ? 'unmute' : 'mute', onclick: async () => { c.muted = !c.muted; await api('PATCH', `/api/conversations/${c.id}/me`, { muted: c.muted }).catch(() => {}); renderHeader(); renderSide(); updateBadge(); } }, ic(c.muted ? 'mute' : 'volume', 20)),
@@ -448,7 +448,7 @@ function renderMessages(c, stick) {
     const rx = Object.entries(m.reactions || {}).filter(([, u]) => u.length);
     frag.append(el('div', { class: 'mrow' + (mine ? ' mine' : '') + (first ? ' first' : '') + (isNew ? ' new' : '') + (sel ? ' selecting' : '') + (picked ? ' picked' : '') },
       selectable ? el('span', { class: 'selbox' + (picked ? ' on' : ''), onclick: () => toggleSel(c, m.id) }, picked ? ic('check', 12) : null) : (sel ? el('span', { class: 'selbox off' }) : null),
-      !mine && c.type === 'group' ? (first ? el('div', { class: 'click', onclick: () => sender && openProfile(sender.username) }, avatar(sender ? sender.displayName : '?', 30)) : el('div', { style: 'width:30px;flex:none' })) : null,
+      !mine && c.type === 'group' ? (first ? el('div', { class: 'click', onclick: () => sender && openProfile(sender.username) }, avatar(sender ? sender.displayName : '?', 30, '', sender && sender.avatar)) : el('div', { style: 'width:30px;flex:none' })) : null,
       el('div', { class: 'bubwrap' },
         el('div', { class: 'bubble' + (p.t === 'gif' ? ' gifb' : '') + (m.pinned ? ' pinned' : ''), onclick: (e) => { if (sel && selectable) return toggleSel(c, m.id); if (matchMedia('(hover: none)').matches && !e.target.closest('a,button')) { const was = e.currentTarget.classList.contains('tools-on'); box.querySelectorAll('.tools-on').forEach((n) => n.classList.remove('tools-on')); if (!was) e.currentTarget.classList.add('tools-on'); } } },
           !m.deleted && !sel ? msgTools(c, m, mine) : null,
@@ -544,7 +544,7 @@ async function groupModal(c) {
       isAdmin() && c.isPublic ? el('button', { class: 'btn small', style: 'margin-top:8px', onclick: () => X.editPublic(c, draw) }, ic('edit', 14), 'about') : null,
       el('h4', null, `${c.members.length} people`),
       el('div', { class: 'ulist' }, c.members.map((u) => el('div', { class: 'urow' },
-        el('div', { class: 'avwrap click', onclick: () => openProfile(u.username) }, avatar(u.displayName, 34), dot(isOnline(c, u.id))),
+        el('div', { class: 'avwrap click', onclick: () => openProfile(u.username) }, avatar(u.displayName, 34, '', u.avatar), dot(isOnline(c, u.id))),
         el('div', { class: 'grow click', onclick: () => openProfile(u.username) }, el('div', { class: 'ctitle' }, u.displayName + (u.id === S.me.id ? ' (you)' : ''), vb(u)), el('div', { class: 'muted small' }, '@' + u.username)),
         u.role === 'admin' ? el('span', { class: 'tag' }, 'host') : null,
         isAdmin() && u.id !== S.me.id ? el('button', { class: 'icon-btn', title: 'remove', onclick: async () => { if (await confirmModal(`remove ${u.displayName}?`, c.isPublic ? 'they cannot rejoin.' : 'the group key changes, so they cannot read anything new.', 'remove')) { await removeMember(c, u.id); draw(); } } }, ic('x', 16)) : null))),
@@ -578,7 +578,7 @@ async function openProfile(username) {
     const st = me ? { status: S.me.status } : { status: p.status };
     const owner = p.isOwner;
     body.replaceChildren(
-      el('div', { class: 'prof-head' }, el('div', { class: 'avwrap' }, avatar(p.displayName, 68), dot(p.online, p.mode)),
+      el('div', { class: 'prof-head' }, el('div', { class: 'avwrap' }, avatar(p.displayName, 68, '', p.avatar), dot(p.online, p.mode)),
         el('div', { class: 'grow' }, el('h3', null, p.displayName, vb(p)), el('div', { class: 'muted' }, '@' + p.username, p.isAdmin ? el('span', { class: 'tag gold', style: 'margin-left:8px' }, owner ? 'owner' : 'admin') : null),
           el('div', { style: 'margin-top:4px' }, p.activity ? el('span', { class: 'good small' }, 'playing ' + p.activity.title) : statusLine(st) || el('span', { class: (p.online ? 'good' : 'muted') + ' small' }, p.online ? 'online' : 'offline')))),
       me ? el('button', { class: 'btn wide', onclick: () => { m.close(); statusModal(); } }, ic('edit', 16), 'set status') : null,
@@ -592,6 +592,18 @@ async function openProfile(username) {
         el('button', { class: 'btn ghost', onclick: () => { m.close(); X.reportModal({ kind: 'user', username: p.username, title: p.displayName }); } }, ic('flag', 16), 'report')));
   } catch (e) { body.replaceChildren(el('div', { class: 'form-err' }, e.message)); }
 }
+function avatarModal() {                                     // pick one of the preset pictures, or go back to the letter
+  const grid = el('div', { class: 'avgrid' });
+  const m = modal('profile picture', el('div', null, el('p', { class: 'muted small', style: 'margin-top:0' }, 'pick one. everyone sees it next to your name.'), grid));
+  const draw = () => grid.replaceChildren(
+    el('button', { class: 'avopt' + (!S.me.avatar ? ' on' : ''), title: 'letter', onclick: () => pick(null) }, avatar(S.me.displayName, 52)),
+    ...Object.keys(C.PRESETS).map((id) => el('button', { class: 'avopt' + (S.me.avatar === id ? ' on' : ''), title: C.PRESETS[id][0], onclick: () => pick(id) }, avatar('', 52, '', id))));
+  async function pick(id) {
+    try { const d = await api('PATCH', '/api/me', { avatar: id }); S.me.avatar = d.user.avatar; draw(); renderAll(); }
+    catch (e) { toast(e.message, 'error'); }
+  }
+  draw();
+}
 function settingsModal() {
   const dn = el('input', { value: S.me.displayName, maxLength: 32 });
   const savePrefs = () => lsSet('chatroom.prefs', JSON.stringify(S.prefs));
@@ -600,7 +612,9 @@ function settingsModal() {
   const themeBtn = (v, label) => el('button', { class: (S.prefs.theme || 'auto') === v ? 'on' : '', onclick: (e) => { S.prefs.theme = v; savePrefs(); applyTheme(); e.target.parentNode.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b === e.target)); } }, label);
   const m = modal('you', el('div', null,
     el('div', { class: 'row gap' }, dn, el('button', { class: 'btn', onclick: async () => { try { const d = await api('PATCH', '/api/me', { displayName: dn.value }); S.me.displayName = d.user.displayName; renderAll(); toast('saved', 'success'); } catch (e) { toast(e.message, 'error'); } } }, 'save')),
-    el('button', { class: 'btn wide', style: 'margin-top:10px', onclick: () => { m.close(); statusModal(); } }, ic('edit', 16), 'set status'),
+    el('div', { class: 'row gap', style: 'margin-top:10px' },
+      el('button', { class: 'btn grow', onclick: () => { m.close(); avatarModal(); } }, avatar(S.me.displayName, 22, '', S.me.avatar), 'profile picture'),
+      el('button', { class: 'btn grow', onclick: () => { m.close(); statusModal(); } }, ic('edit', 16), 'set status')),
     el('div', { class: 'row gap', style: 'margin-top:8px' },
       S.me.verified ? el('div', { class: 'btn grow verified-pill' }, ic('verified', 16), 'verified') : el('button', { class: 'btn grow primary', onclick: () => { m.close(); X.verifyModal(); } }, ic('verified', 16), 'verify me'),
       el('button', { class: 'btn grow', onclick: () => { m.close(); X.badgesModal(); } }, ic('trophy', 16), 'badges')),
@@ -707,7 +721,7 @@ function buildAdmin(m) {
       list.replaceChildren(...d.users.map((u, i) => {
         const locked = u.isOwner || (u.isAdmin && !isOwner);        // owner is untouchable, admins only the owner can touch
         return el('div', { class: 'arow' + (u.banned ? ' banned' : ''), style: `--i:${Math.min(i, 14)}` },
-          el('div', { class: 'avwrap' }, avatar(u.displayName, 40), dot(u.online)),
+          el('div', { class: 'avwrap' }, avatar(u.displayName, 40, '', u.avatar), dot(u.online)),
           el('div', { class: 'grow' }, el('div', { class: 'ctitle' }, u.displayName, u.isOwner ? el('span', { class: 'tag gold', style: 'margin-left:8px' }, 'owner') : u.isAdmin ? el('span', { class: 'tag gold', style: 'margin-left:8px' }, 'admin') : null, u.banned ? el('span', { class: 'tag', style: 'margin-left:8px' }, 'suspended') : null, u.beta && !u.isAdmin ? el('span', { class: 'tag', style: 'margin-left:8px' }, 'beta') : null),
             el('div', { class: 'muted small' }, `@${u.username} · ${u.messages} msgs · joined ${fmtDay(u.createdAt).toLowerCase()}`)),
           el('div', { class: 'acts' }, !u.isAdmin ? el('button', { class: 'icon-btn' + (u.verified ? ' on' : ''), title: u.verified ? 'remove verification' : 'verify', onclick: () => act(() => api('POST', `/api/admin/users/${u.id}/verify`, { verified: !u.verified }), u.verified ? 'unverified' : 'verified') }, ic('verified', 18)) : null, el('button', { class: 'icon-btn' + (u.beta ? ' on' : ''), title: 'beta time', onclick: () => X.betaModal(u, loadUsers) }, ic('star', 18)),
@@ -787,7 +801,7 @@ async function loadActivity(box) {
     const [now, recent, board] = await Promise.all([
       api('GET', '/api/activity/now', null, { quiet: true }), api('GET', '/api/activity/recent', null, { quiet: true }), api('GET', '/api/activity/leaderboard?range=' + G.range, null, { quiet: true })]);
     S.nowPlaying = now.now;
-    const who = (u, sub, right) => el('div', { class: 'urow click', onclick: () => openProfile(u.username) }, avatar(u.displayName, 36), el('div', { class: 'grow' }, el('div', { class: 'ctitle' }, u.displayName), el('div', { class: 'muted small' }, sub)), right);
+    const who = (u, sub, right) => el('div', { class: 'urow click', onclick: () => openProfile(u.username) }, avatar(u.displayName, 36, '', u.avatar), el('div', { class: 'grow' }, el('div', { class: 'ctitle' }, u.displayName), el('div', { class: 'muted small' }, sub)), right);
     const none = (t) => el('div', { class: 'muted pad' }, t);
     const first = !box.firstChild;
     const grid = el('div', { class: 'act-grid' + (first ? ' stagger' : '') },

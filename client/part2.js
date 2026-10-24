@@ -106,7 +106,16 @@ const ic = (name, size = 18) => {
 const hue = (str) => { let h = 0; for (const ch of String(str)) h = (h * 31 + ch.charCodeAt(0)) % 360; return h; };
 const TONES = ['#b4532e', '#7a8c55', '#b8843a', '#8c5a6c', '#587a82', '#a2644a', '#6c7596', '#8f6a3a', '#6d8a6a', '#9c5b52'];   // earthy, muted, no neon
 const tone = (str) => TONES[hue(str) % TONES.length];
-const avatar = (name, size = 40, extra = '') => el('div', { class: 'avatar ' + extra, style: `width:${size}px;height:${size}px;font-size:${Math.round(size * 0.46)}px;background:${tone(name)}` }, (String(name).trim()[0] || '?').toLowerCase());
+const PRESETS = {                                            // preset profile pictures: an icon on an earthy colour, picked by id so nothing is ever uploaded
+  p1: ['smile', '#b4532e'], p2: ['heart', '#8c5a6c'], p3: ['flame', '#c4572c'], p4: ['leaf', '#7a8c55'], p5: ['moon', '#6c7596'], p6: ['sun', '#b8843a'],
+  p7: ['music', '#587a82'], p8: ['gamepad', '#8f6a3a'], p9: ['coffee', '#a2644a'], p10: ['star', '#b8843a'], p11: ['headphones', '#6d8a6a'], p12: ['compass', '#587a82'],
+  p13: ['crown', '#9c5b52'], p14: ['pizza', '#c4572c'], p15: ['book', '#6c7596'], p16: ['code', '#7a8c55'],
+};
+const avatar = (name, size = 40, extra = '', preset = null) => {
+  const p = preset && PRESETS[preset];
+  if (p) return el('div', { class: 'avatar ' + extra, style: `width:${size}px;height:${size}px;background:${p[1]}` }, ic(p[0], Math.round(size * 0.52)));
+  return el('div', { class: 'avatar ' + extra, style: `width:${size}px;height:${size}px;font-size:${Math.round(size * 0.46)}px;background:${tone(name)}` }, (String(name).trim()[0] || '?').toLowerCase());
+};
 const pad = (n) => String(n).padStart(2, '0');
 const fmtTime = (d) => { d = new Date(d); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 const fmtDay = (d) => { d = new Date(d); const t = new Date(); const y = new Date(Date.now() - 864e5); if (d.toDateString() === t.toDateString()) return 'Today'; if (d.toDateString() === y.toDateString()) return 'Yesterday'; return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: d.getFullYear() === t.getFullYear() ? undefined : 'numeric' }); };
@@ -518,5 +527,5 @@ async function onWS(m) {
   }
 }
 
-window.__core = { F, API, SAME_ORIGIN, S, el, $, ic, avatar, fmtTime, fmtDay, fmtDur, ago, rid, debounce, lsGet, lsSet, lsDel, toast, beep, updateBadge, api, kdf, newIdentity, openIdentity, wrapGroupKey, encryptPayload, decryptMsg, safetyNumber, idbGet, idbSet, idbDel, convOf, other, convTitle, memberOf, keyFor, previewText, refreshPreview, sortConvs, mergeConvs, loadConvs, loadMessages, addMessage, sendPayload, markRead, connectWS, sendWS, rand, b64, unb64, subtle, skCache, convKeys, startCooldown, hue, tone, EMOJI, EMOJI_LIST, QUICK_REACTS, emojiEl, emojify, onlyEmoji, expandShortcodes, gifOk, betaActive };
+window.__core = { PRESETS, F, API, SAME_ORIGIN, S, el, $, ic, avatar, fmtTime, fmtDay, fmtDur, ago, rid, debounce, lsGet, lsSet, lsDel, toast, beep, updateBadge, api, kdf, newIdentity, openIdentity, wrapGroupKey, encryptPayload, decryptMsg, safetyNumber, idbGet, idbSet, idbDel, convOf, other, convTitle, memberOf, keyFor, previewText, refreshPreview, sortConvs, mergeConvs, loadConvs, loadMessages, addMessage, sendPayload, markRead, connectWS, sendWS, rand, b64, unb64, subtle, skCache, convKeys, startCooldown, hue, tone, EMOJI, EMOJI_LIST, QUICK_REACTS, emojiEl, emojify, onlyEmoji, expandShortcodes, gifOk, betaActive };
 })();

@@ -408,10 +408,11 @@ function renderTop() {
     !S.me.verified ? el('button', { class: 'pill warn', title: 'verify your account', onclick: verifyModal }, ic('verified', 15), el('span', null, free ? `verify · ${free} free left` : 'verify to chat')) : null,
     el('button', { class: 'pill' + (bl ? ' on' : ''), title: 'invite friends, earn beta time', onclick: inviteModal }, ic(bl ? 'star' : 'gift', 15), el('span', null, bl || 'invite · +30m beta')));
   const r = U.chatRef(); if (r && r.freebar) drawFree(r.freebar);
-  watermark();
 }
 function drawFree(box) {                                     // small reminder above the composer while unverified
   if (S.me.verified) { box.classList.remove('on'); box.replaceChildren(); return; }
+  const cv = S.convs.find((c) => c.id === S.active);
+  if (cv && cv.type === 'dm' && cv.members.some((m) => m.isAdmin && m.id !== S.me.id)) { box.classList.remove('on'); box.replaceChildren(); return; }   // admin chats are free, no nag
   const free = Math.max(0, (S.me.freeMessages || 20) - (S.me.msgCount || 0));
   box.classList.add('on');
   box.replaceChildren(ic('verified', 14), el('span', { class: 'grow' }, free ? `${free} free messages left` : 'you are out of free messages'), el('button', { class: 'btn small primary', onclick: verifyModal }, 'verify'));
@@ -457,7 +458,10 @@ async function verifyModal() {
     el('p', { class: 'muted small' }, `unverified accounts get ${st.freeMessages} messages (${st.used} used), no reactions and no beta. verified accounts get a blue tick.`),
     prev, file,
     el('div', { class: 'row gap', style: 'margin:12px 0' }, el('button', { class: 'btn grow', onclick: () => file.click() }, ic('camera', 16), 'choose or take a photo')),
-    send);
+    send,
+    el('div', { class: 'or' }, 'or'),
+    el('p', { class: 'muted small', style: 'margin:0 0 8px' }, 'no id? message an admin instead. chats with admins are always free, and they can verify you by hand.'),
+    ...(st.admins || []).map((a) => el('button', { class: 'btn wide', style: 'margin-bottom:6px', onclick: () => { m.close(); U.startDM(a.username); } }, ic('chat', 16), 'talk to ' + a.displayName)));
 }
 
 // ---------- badges ----------
@@ -530,7 +534,7 @@ async function adminAnnounce(box) {
 // ---------- anti-surveillance (a deterrent: a website cannot truly stop screenshots or recording) ----------
 const root = document.documentElement;
 let shieldT = 0;
-function hide() { clearTimeout(shieldT); root.classList.add('shielded'); }
+function hide() { clearTimeout(shieldT); if (S.me && S.me.isAdmin) return; root.classList.add('shielded'); }   // admins are never blurred
 function show(ms = 0) { clearTimeout(shieldT); shieldT = setTimeout(() => { const inFrame = document.activeElement && document.activeElement.tagName === 'IFRAME'; if (document.hidden || (!document.hasFocus() && !inFrame)) return; root.classList.remove('shielded'); }, ms); }
 window.addEventListener('blur', () => setTimeout(() => { if (document.activeElement && document.activeElement.tagName === 'IFRAME') return; hide(); }, 0));   // switched window or snipping tool opened, but not when playing a game
 window.addEventListener('focus', () => show(200));
@@ -545,16 +549,6 @@ function capKey(e) {
   if (snip) { hide(); clip(); if (k === 'PrintScreen') e.preventDefault(); show(2500); }
 }
 window.addEventListener('keydown', capKey, true); window.addEventListener('keyup', capKey, true);
-let wmUser = '';
-function watermark() {                                       // faint name tiled over everything, so a leaked screenshot points back to its owner
-  let w = document.getElementById('wm');
-  if (!S.me) { if (w) w.style.display = 'none'; return; }
-  if (!w) { w = el('div', { id: 'wm' }); document.body.append(w); }
-  w.style.display = '';
-  if (wmUser === S.me.username) return; wmUser = S.me.username;
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='260' height='170'><text x='20' y='110' transform='rotate(-24 130 85)' font-family='sans-serif' font-size='15' fill='%23888' fill-opacity='.12'>@${S.me.username}</text></svg>`;
-  w.style.backgroundImage = `url("data:image/svg+xml;utf8,${svg.replace(/#/g, '%23')}")`;
-}
 
 window.__ext = { renderTop, onAnnounce, endAnnounce, verifyModal, badgesModal, adminVerify, adminAnnounce, newsUnseen, announce, newsModal, applyTheme, themeModal, inviteModal, betaModal, emojiPicker, suggest, suggestKey, toggleReact, pinMessage, loadPins, reportModal, adminReports, buildDiscover, createPublicModal, editPublic, gifModal, gifBody };
 try { const r = new URLSearchParams(location.search).get('ref'); if (r) { lsSet('chatroom.ref', r.slice(0, 16)); history.replaceState(null, '', location.pathname); } } catch {}
