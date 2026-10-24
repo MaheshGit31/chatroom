@@ -12,7 +12,8 @@ const { q, pool, init } = require('./lib/db');
 const { limiter, rl } = require('./lib/limiter');
 const { Games } = require('./lib/games');
 
-const safety = require('./lib/safety');                      // filter, verification, announcements, badges, built-in servers
+const safety = require('./lib/safety');
+const beta = require('./lib/beta');                          // beta-only extras: edits, scheduling, polls, games, stickers, folders                      // filter, verification, announcements, badges, built-in servers
 const features = require('./lib/features');                  // reactions, pins, reports, public groups, referrals, gifs, themes
 const PORT = process.env.PORT || 3000;
 const ADMIN_USERNAME = (process.env.ADMIN_USERNAME || 'bart').toLowerCase();   // this username becomes the owner/admin
@@ -131,7 +132,7 @@ async function makeSession(userId, ua) {
   return token;
 }
 const statusOf = (u) => (u.status_text || u.status_icon ? { text: u.status_text || '', icon: u.status_icon || '' } : null);
-const publicUser = (u) => ({ id: u.id, username: u.username, displayName: u.display_name, shareActivity: u.share_activity, isAdmin: !!u.is_admin, isOwner: u.username === ADMIN_USERNAME, mode: u.status_mode || 'online', status: statusOf(u), statusExpires: u.status_expires || null, beta: features.betaOn(u), betaUntil: u.beta_until || null, theme: u.theme || null, avatar: u.avatar || null, verified: safety.verifiedOn(u), msgCount: u.msg_count || 0, freeMessages: safety.FREE_MSGS });
+const publicUser = (u) => ({ id: u.id, username: u.username, displayName: u.display_name, shareActivity: u.share_activity, isAdmin: !!u.is_admin, isOwner: u.username === ADMIN_USERNAME, mode: u.status_mode || 'online', status: statusOf(u), statusExpires: u.status_expires || null, beta: features.betaOn(u), betaUntil: u.beta_until || null, theme: u.theme || null, avatar: u.avatar || null, bio: u.bio || '', banner: u.banner || null, folders: Array.isArray(u.folders) ? u.folders : [], verified: safety.verifiedOn(u), msgCount: u.msg_count || 0, freeMessages: safety.FREE_MSGS });
 
 const SECS = "(case when p.ended_at is null then floor(extract(epoch from (now()-p.started_at)))::int else p.seconds end)"; // running sessions count live
 const USERNAME = /^[a-z0-9_]{3,20}$/;
@@ -292,6 +293,7 @@ app.post('/api/admin/purge', auth, adminOnly, wrap(async (req, res) => {
 // ---------- expiry: messages vanish after TTL_HOURS ----------
 async function sweepExpired() {
   const m = await q(`delete from messages where created_at < now() - make_interval(hours=>$1) and id not in (select msg_id from pins)`, [TTL_HOURS]); // pinned messages stay until unpinned
+  await beta.sweepShort(q);                                  // chats with a shorter disappearing timer
   await q(`delete from notifications where created_at < now() - make_interval(hours=>$1)`, [TTL_HOURS]);
   await q(`delete from plays where ended_at is not null and ended_at < now() - interval '14 days'`);
   await features.pruneOldPlays(q);                         // only the newest 12 game sessions per person are kept
@@ -310,7 +312,7 @@ app.get('/api/users/search', auth, byUser('usearch', 30, 60_000), wrap(async (re
 }));
 
 app.get('/api/users/:username', auth, byUser('uprofile', 60, 60_000), wrap(async (req, res) => {
-  const r = await q('select id,username,display_name,public_key,share_activity,created_at,status_text,status_icon,status_mode,is_admin,verified,avatar from users where username=$1', [req.params.username.toLowerCase()]);
+  const r = await q('select id,username,display_name,public_key,share_activity,created_at,status_text,status_icon,status_mode,is_admin,verified,avatar,bio,banner from users where username=$1', [req.params.username.toLowerCase()]);
   const u = r.rows[0];
   if (!u) return bad(res, 'not found', 404);
   let stats = null;
@@ -320,7 +322,7 @@ app.get('/api/users/:username', auth, byUser('uprofile', 60, 60_000), wrap(async
     stats = { totalSeconds: t.rows[0].total, gamesPlayed: t.rows[0].games, top: top.rows.map((x) => ({ path: x.game_path, title: x.game_title, seconds: x.seconds })) };
   }
   const blocked = await q('select 1 from blocks where blocker=$1 and blocked=$2', [req.user.id, u.id]);
-  res.json({ id: u.id, username: u.username, displayName: u.display_name, avatar: u.avatar || null, publicKey: u.public_key, createdAt: u.created_at, online: sockets.has(u.id) && u.status_mode !== 'invisible', mode: u.status_mode, status: statusOf(u), isAdmin: u.is_admin, verified: safety.verifiedOn(u), badges: await safety.badgesOf(q, u.id), isOwner: u.username === ADMIN_USERNAME, blocked: !!blocked.rows[0], stats, activity: u.share_activity && activityNow.get(u.id) ? { title: activityNow.get(u.id).title, path: activityNow.get(u.id).path } : null });
+  res.json({ id: u.id, username: u.username, displayName: u.display_name, avatar: u.avatar || null, bio: u.bio || '', banner: u.banner || null, publicKey: u.public_key, createdAt: u.created_at, online: sockets.has(u.id) && u.status_mode !== 'invisible', mode: u.status_mode, status: statusOf(u), isAdmin: u.is_admin, verified: safety.verifiedOn(u), badges: await safety.badgesOf(q, u.id), isOwner: u.username === ADMIN_USERNAME, blocked: !!blocked.rows[0], stats, activity: u.share_activity && activityNow.get(u.id) ? { title: activityNow.get(u.id).title, path: activityNow.get(u.id).path } : null });
 }));
 
 app.post('/api/blocks/:username', auth, byUser('block', 20, 3_600_000), wrap(async (req, res) => {
@@ -341,11 +343,11 @@ async function loadConversations(userId, onlyId) {
   const me = (await q('select * from users where id=$1', [userId])).rows[0];
   const hasBeta = features.betaOn(me);                       // the Beta lounge only shows while beta is on
   const convs = await q(
-    `select c.id,c.type,c.name,c.key_version,c.created_at,c.is_public,c.system_kind,c.description,c.topic,m.role,m.muted,m.last_read_at,m.joined_at,
+    `select c.id,c.type,c.name,c.key_version,c.created_at,c.is_public,c.system_kind,c.ttl_seconds,c.description,c.topic,m.role,m.muted,m.last_read_at,m.joined_at,
        (select count(*) from members where conv_id=c.id)::int member_count,
-       (select count(*) from messages x where x.conv_id=c.id and x.created_at>m.last_read_at and x.created_at>=m.joined_at and x.sender_id is distinct from $1 and not x.deleted and x.created_at>now()-interval '${TTL_HOURS} hours')::int unread,
-       (select row_to_json(l) from (select id,sender_id "senderId",ciphertext,iv,key_version "keyVersion",created_at "createdAt",deleted from messages where conv_id=c.id and created_at>=m.joined_at and created_at>now()-interval '${TTL_HOURS} hours' order by id desc limit 1) l) last_message,
-       (select max(created_at) from messages where conv_id=c.id and created_at>=m.joined_at and created_at>now()-interval '${TTL_HOURS} hours') last_at
+       (select count(*) from messages x where x.conv_id=c.id and x.created_at>m.last_read_at and x.created_at>=m.joined_at and x.sender_id is distinct from $1 and not x.deleted and x.created_at>now()-make_interval(secs=>coalesce(c.ttl_seconds,${TTL_HOURS * 3600})))::int unread,
+       (select row_to_json(l) from (select id,sender_id "senderId",ciphertext,iv,key_version "keyVersion",created_at "createdAt",deleted from messages where conv_id=c.id and created_at>=m.joined_at and created_at>now()-make_interval(secs=>coalesce(c.ttl_seconds,${TTL_HOURS * 3600})) order by id desc limit 1) l) last_message,
+       (select max(created_at) from messages where conv_id=c.id and created_at>=m.joined_at and created_at>now()-make_interval(secs=>coalesce(c.ttl_seconds,${TTL_HOURS * 3600}))) last_at
      from conversations c join members m on m.conv_id=c.id and m.user_id=$1
      where (c.system_kind is distinct from 'beta' or ${hasBeta ? 'true' : 'false'}) ${onlyId ? 'and c.id=$2' : ''}
      order by coalesce((select max(created_at) from messages where conv_id=c.id), c.created_at) desc`,
@@ -361,7 +363,7 @@ async function loadConversations(userId, onlyId) {
   const keyUsers = {};
   for (const u of ku.rows) keyUsers[u.id] = { username: u.username, publicKey: u.public_key };
   const conversations = convs.rows.map((c) => ({
-    id: c.id, type: c.type, name: c.name, memberCount: c.member_count, isPublic: c.is_public, systemKind: c.system_kind || null, description: c.description || '', topic: c.topic || '', keyVersion: c.key_version, createdAt: c.created_at, role: c.role, muted: c.muted,
+    id: c.id, type: c.type, name: c.name, memberCount: c.member_count, isPublic: c.is_public, ttlSeconds: c.ttl_seconds || null, systemKind: c.system_kind || null, description: c.description || '', topic: c.topic || '', keyVersion: c.key_version, createdAt: c.created_at, role: c.role, muted: c.muted,
     lastReadAt: c.last_read_at, joinedAt: c.joined_at, unread: c.unread, lastMessage: c.last_message,
     members: mem.rows.filter((m) => m.conv_id === c.id).map((m) => ({ id: m.id, username: m.username, displayName: m.display_name, avatar: m.avatar || null, publicKey: m.public_key, role: m.role, lastReadAt: m.last_read_at, online: sockets.has(m.id) && m.status_mode !== 'invisible', mode: m.status_mode, verified: safety.verifiedOn(m), status: statusOf(m), isAdmin: m.is_admin })),
     keys: keys.rows.filter((k) => k.conv_id === c.id).map((k) => ({ version: k.version, wrappedKey: k.wrapped_key, iv: k.iv, wrappedBy: k.wrapped_by })),
@@ -436,7 +438,7 @@ app.post('/api/conversations/group', auth, byUser('conv-create', 15, 3_600_000),
 
 async function requireMember(req, res) {
   if (!isUuid(req.params.id)) { bad(res, 'bad id'); return null; }
-  const r = await q('select m.role,m.joined_at,c.type,c.key_version,c.name,c.is_public,c.system_kind from members m join conversations c on c.id=m.conv_id where m.conv_id=$1 and m.user_id=$2', [req.params.id, req.user.id]);
+  const r = await q('select m.role,m.joined_at,c.type,c.key_version,c.name,c.is_public,c.system_kind,c.ttl_seconds from members m join conversations c on c.id=m.conv_id where m.conv_id=$1 and m.user_id=$2', [req.params.id, req.user.id]);
   if (!r.rows[0]) { bad(res, 'not a member', 403); return null; }
   if (r.rows[0].system_kind === 'beta' && !features.betaOn(req.user)) { bad(res, 'the Beta lounge is for people with beta', 403); return null; }
   return r.rows[0];
@@ -523,11 +525,11 @@ app.get('/api/conversations/:id/messages', auth, byUser('msg-read', 120, 60_000)
   const limit = Math.min(parseInt(req.query.limit, 10) || 50, 100);
   const before = parseInt(req.query.before, 10) || 9e15;
   const r = await q(
-    `select id,sender_id "senderId",ciphertext,iv,key_version "keyVersion",created_at "createdAt",deleted,
+    `select id,sender_id "senderId",ciphertext,iv,key_version "keyVersion",created_at "createdAt",edited_at "editedAt",deleted,
        exists(select 1 from pins p where p.msg_id=messages.id) pinned,
        (select coalesce(jsonb_object_agg(e, ids),'{}'::jsonb) from (select emoji e, jsonb_agg(user_id) ids from reactions r where r.msg_id=messages.id group by emoji) x) reactions
      from messages
-     where conv_id=$1 and id<$2 and created_at>=$3 and created_at>now()-make_interval(hours=>$5) order by id desc limit $4`, [req.params.id, before, m.joined_at, limit, TTL_HOURS]);
+     where conv_id=$1 and id<$2 and created_at>=$3 and created_at>now()-make_interval(secs=>$5) order by id desc limit $4`, [req.params.id, before, m.joined_at, limit, m.ttl_seconds || TTL_HOURS * 3600]);
   res.json({ messages: r.rows.map((x) => ({ ...x, id: Number(x.id) })).reverse(), hasMore: r.rows.length === limit });
 }));
 
@@ -546,7 +548,7 @@ app.post('/api/conversations/:id/messages', auth, wrap(async (req, res, next) =>
   }
   const m = await requireMember(req, res); if (!m) return;
   const { ciphertext, iv, keyVersion } = req.body;
-  if (!isB64(ciphertext, 16000) || !isB64(iv, 40)) return bad(res, 'bad message');
+  if (!isB64(ciphertext, 56000) || !isB64(iv, 40)) return bad(res, 'bad message');   // 56k chars leaves room for a 10s voice note
   if (keyVersion !== m.key_version) return res.status(409).json({ error: 'key_version_stale', current: m.key_version });
   let adminDm = false;                                       // chatting with an admin is always free, so people can ask for help or for a manual verify
   if (m.type === 'dm' && !safety.verifiedOn(req.user) && (req.user.msg_count || 0) >= safety.FREE_MSGS) adminDm = !!(await q('select 1 from members mm join users uu on uu.id=mm.user_id where mm.conv_id=$1 and mm.user_id<>$2 and uu.is_admin', [req.params.id, uid])).rows[0];
@@ -563,7 +565,6 @@ app.post('/api/conversations/:id/messages', auth, wrap(async (req, res, next) =>
   const r = await q('insert into messages(conv_id,sender_id,ciphertext,iv,key_version) values($1,$2,$3,$4,$5) returning id,created_at', [req.params.id, uid, ciphertext, iv, keyVersion]);
   const message = { id: Number(r.rows[0].id), senderId: uid, ciphertext, iv, keyVersion, createdAt: r.rows[0].created_at, deleted: false };
   q('update users set msg_count=msg_count+1 where id=$1', [uid]).then(() => safety.badgeCheck(q, uid)).catch(() => {});
-  features.creditReferral({ q, sendTo, notify, ensureFor: (u) => safety.ensureSystem(q, u) }, req.user).catch(() => {});
   const mems = await q('select user_id,muted from members where conv_id=$1', [req.params.id]);
   for (const mm of mems.rows) {
     sendTo(mm.user_id, { t: 'msg', convId: req.params.id, message, cid: req.body.cid || null, muted: mm.muted });
@@ -700,7 +701,8 @@ app.get('/api/activity/mine', auth, wrap(async (req, res) => {
 
 const ensureFor = (u) => safety.ensureSystem(q, u);
 features.mount(app, { q, pool, auth, byUser, bad, wrap, sendTo, sendToConv, notify, isUuid, loadConversations, adminOnly, ensureFor });
-safety.mount(app, { q, auth, adminOnly, byUser, bad, wrap, sendTo, notify, sockets, isUuid, ensureFor });
+safety.mount(app, { q, auth, adminOnly, byUser, bad, wrap, sendTo, notify, sockets, isUuid, ensureFor, onVerified: (u) => features.creditReferral({ q, sendTo, notify, ensureFor }, u) });   // a referral pays out when the friend gets verified
+beta.mount(app, { q, pool, auth, adminOnly, byUser, bad, wrap, sendTo, sendToConv, notify, isUuid, loadConversations, requireMember, isBlockedEitherWay, ensureFor });
 
 // ---------- static client ----------
 const PUB = path.join(__dirname, 'public');
@@ -711,6 +713,7 @@ app.get('/loader.html', (req, res) => {                      // convenience copy
   const proto = req.headers['x-forwarded-proto'] || req.protocol;
   res.set('Cache-Control', 'no-cache').type('html').send(fs.readFileSync(path.join(PUB, 'loader.html'), 'utf8').replace('__SERVER__', `${proto}://${host}`));
 });
+app.get('/howto-image-link.gif', (req, res) => { const f = path.join(PUB, 'howto-image-link.gif'); fs.existsSync(f) ? res.set('Cache-Control', 'public, max-age=3600').type('gif').send(fs.readFileSync(f)) : res.status(404).end(); });   // the how-to-get-an-image-link guide, dropped in public/
 app.get('/sw.js', (req, res) => { res.set({ 'Content-Type': 'application/javascript', 'Cache-Control': 'no-cache', 'Service-Worker-Allowed': '/' }); res.send(fs.readFileSync(path.join(PUB, 'sw.js'), 'utf8')); });
 app.get('/api/health', (req, res) => res.json({ ok: true, games: games.items.length, online: sockets.size }));
 app.use('/api', (req, res) => bad(res, 'not found', 404));
@@ -808,5 +811,6 @@ async function getSetting(key, make) {
   await q('update users set is_admin=true where username=$1', [ADMIN_USERNAME]); // owner always admin
   sweepExpired().catch((e) => console.warn('sweep', e.message));
   setInterval(() => sweepExpired().catch((e) => console.warn('sweep', e.message)), 5 * 60_000).unref();
+  beta.start({ q, sendTo, notify, pushTo, sockets, isBlockedEitherWay });    // sends scheduled messages and clears short-timer chats
   server.listen(PORT, '0.0.0.0', () => console.log('chatroom listening on', PORT));
 })().catch((e) => { console.error('fatal', e); process.exit(1); });

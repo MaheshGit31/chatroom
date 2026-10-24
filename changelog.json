@@ -1,5 +1,15 @@
 [
   {
+    "id": "2026-10-23-c",
+    "date": "2026-10-23",
+    "title": "the beta tab",
+    "items": [
+      "new beta tab: price ($0.50 a week), what you get, and a button to message an admin to pay",
+      "beta features: edit messages, scheduled messages, voice notes (10s), polls (up to 10 options), stickers from image links with a square crop, chat folders, tic-tac-toe and rock paper scissors, bio and gradient banner on your profile, and disappearing-message timers per chat",
+      "referrals now only count once your friend is verified, and only verified people get an invite link"
+    ]
+  },
+  {
     "id": "2026-10-23-b",
     "date": "2026-10-23",
     "title": "profile pictures and fixes",
