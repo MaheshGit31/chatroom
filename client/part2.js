@@ -339,6 +339,7 @@ function previewText(p, mine) {
   if (p.t === 'sticker') return pre + 'sent a sticker';
   if (p.t === 'poll') return pre + 'made a poll: ' + p.q;
   if (p.t === 'g2') return pre + ({ rps: 'started rock paper scissors', c4: 'started connect 4', wd: 'started a word duel', tr: 'started a trivia duel' }[p.kind] || 'started tic-tac-toe');
+  if (p.t === 'coop') return pre + 'invited to play together: ' + p.title;
   if (p.t === 'image') return pre + 'sent a photo' + (p.fwd ? ' (forwarded)' : '');
   if (p.t === 'once') return pre + 'sent a view once message';
   if (p.t === 'deleted') return p.once ? 'view once, opened' : 'message deleted';
@@ -505,6 +506,7 @@ async function onWS(m) {
       ui.renderSide(); if (S.active === c.id) ui.renderMessages(c);
       break;
     }
+    case 'rtc': window.__ext.onRtc && window.__ext.onRtc(m); return;
     case 'once_viewed': {                                    // a view once message was opened and wiped
       const c = convOf(m.convId); if (!c) return;
       const x = c.msgs.find((y) => y.id === m.id); if (x) { x.deleted = true; x.once = true; x._p = { t: 'deleted', once: true }; }

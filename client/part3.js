@@ -871,6 +871,7 @@ let player = null;
 function closePlayer() {
   if (!player) return;
   clearInterval(player.timer);
+  window.__ext.coopStopHost && window.__ext.coopStopHost();
   player.node.remove();
   api('POST', '/api/activity/stop', null, { quiet: true, keepalive: true }).catch(() => {});
   player = null;
@@ -886,13 +887,14 @@ function openGame(path, title) {
     el('div', { class: 'player-bar' },
       el('button', { class: 'icon-btn', title: 'close', onclick: closePlayer }, ic('back', 22)),
       el('div', { class: 'grow' }, el('div', { class: 'ctitle' }, title), el('div', { class: 'muted small' }, S.me.shareActivity ? 'friends can see this' : 'private')),
+      el('button', { class: 'icon-btn', title: 'play together: a friend joins your game from far away', onclick: () => window.__ext.coopHostModal(path, title, frame) }, ic('users', 20)),
       el('button', { class: 'icon-btn', title: 'Share to a chat', onclick: () => shareGameModal(path, title) }, ic('share', 20)),
       el('button', { class: 'icon-btn', title: 'Fullscreen', onclick: () => { (frame.requestFullscreen || frame.webkitRequestFullscreen || (() => {})).call(frame); } }, ic('expand', 20)),
       el('a', { class: 'icon-btn', title: 'Open in a new tab', href: url, target: '_blank', rel: 'noopener' }, ic('external', 20)),
       el('button', { class: 'icon-btn', title: 'Close', onclick: closePlayer }, ic('x', 22))),
     el('div', { class: 'player-body' }, frame, spin));
   document.body.append(node);
-  player = { node, timer: null, playId: null };
+  player = { node, frame, timer: null, playId: null };
   api('POST', '/api/activity/start', { path }, { quiet: true }).then((r) => {
     if (!player || player.node !== node) return api('POST', '/api/activity/stop', null, { quiet: true }).catch(() => {});
     player.playId = r.playId;
