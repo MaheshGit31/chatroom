@@ -447,6 +447,47 @@ html.shielded body::after{content:'hidden while you are away';position:fixed;ins
 .mrow.mine .game .muted,.mrow.mine .poll .muted,.mrow.mine .voicemsg .muted{color:inherit;opacity:.85}
 .mrow.mine .btn.small:not(.primary){background:rgba(255,255,255,.22);color:inherit}
 .mrow.mine .ttt .cell{color:inherit}.mrow.mine .pollopt i{background:rgba(255,255,255,.3)}
+
+/* ---- v-next: replies, mentions, once, images, modbar, search, wallpapers, admin panes ---- */
+.replybar,.modbar{display:none;align-items:center;gap:10px;padding:7px 14px;font-size:var(--t-sm);color:var(--muted);background:var(--panel2);border-top:1px solid var(--line)}
+.replybar.on,.modbar.on{display:flex}.replybar>.grow{display:flex;flex-direction:column;min-width:0}.replybar b{color:var(--accent)}.replybar span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.modbar.hot{color:var(--warn)}
+.icon-btn.tiny{width:26px;height:26px}
+.rquote{display:flex;flex-direction:column;border-left:3px solid var(--accent);background:rgba(127,127,127,.14);padding:3px 9px;margin:0 0 5px;border-radius:6px;font-size:var(--t-sm);cursor:pointer;max-width:100%}
+.rquote b{font-size:var(--t-xs)}.rquote span{opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mine .rquote{border-left-color:var(--mine-ink)}
+.fwdtag{font-size:var(--t-xs);opacity:.75;font-style:italic;margin-bottom:3px;display:flex;align-items:center;gap:4px}
+.mention{background:rgba(229,133,90,.22);color:var(--accent);border-radius:6px;padding:0 4px;font-weight:600}.mention.me{background:var(--accent);color:var(--accent-ink)}
+.mine .mention{background:rgba(255,255,255,.25);color:inherit}
+.mrow.tome .bubble{box-shadow:0 0 0 2px var(--accent)}
+.mrow.flash .bubble{animation:flashrow 1.6s var(--ease)}
+@keyframes flashrow{0%,60%{box-shadow:0 0 0 3px var(--warn)}100%{box-shadow:0 0 0 0 transparent}}
+.oncecard{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:14px;border:1.5px dashed currentColor;background:transparent;color:inherit;font:inherit;min-width:190px;text-align:left}
+button.oncecard{cursor:pointer}.oncecard.gone{opacity:.6;cursor:default}.oncetext{font-size:var(--t-lg)}
+.imgmsg{position:relative;display:inline-block;border-radius:12px;overflow:hidden;line-height:0;cursor:pointer}.imgmsg img{display:block;max-width:100%;height:auto;border-radius:12px}
+.imgph{display:flex;align-items:center;justify-content:center;background:rgba(127,127,127,.2);border-radius:12px}
+.imgsize{position:absolute;right:6px;bottom:6px;background:rgba(0,0,0,.6);color:#fff;font-size:11px;line-height:1.4;padding:1px 7px;border-radius:99px;display:flex;gap:4px;align-items:center}
+.photoprev{max-width:100%;max-height:300px;border-radius:12px;display:block;margin:0 auto}
+.lightbox{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:20px}
+.lightbox img{max-width:100%;max-height:calc(100% - 50px);border-radius:8px}
+.lbbar{position:absolute;bottom:14px;left:0;right:0;display:flex;gap:10px;justify-content:center;align-items:center}.lbnote{color:#fff;font-size:var(--t-sm);display:flex;gap:6px;align-items:center}
+.checkrow{display:flex;gap:8px;align-items:center;margin:10px 0;color:var(--text)}.checkrow input{width:auto}
+.sres .urow{padding:8px 4px}.snip{font-size:var(--t-sm);word-break:break-word}.snip mark{background:var(--warn);color:#000;border-radius:3px;padding:0 1px}
+.cmdsug,.cmdrow{display:flex;gap:8px;align-items:baseline;width:100%;text-align:left;padding:6px 10px}.cmdsug.on{background:var(--panel2)}.cmdsug i,.cmdrow i{color:var(--muted);font-style:normal;font-size:var(--t-sm)}.cmdsug .muted,.cmdrow .muted{font-size:var(--t-sm);margin-left:auto}.cmdrow:hover{background:var(--panel2);border-radius:8px}
+.card-s{display:flex;align-items:center;gap:10px;background:var(--panel2);padding:10px 12px;border-radius:var(--r-s);margin-bottom:10px}
+.wpgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.wpopt{aspect-ratio:1;border-radius:12px;border:2px solid var(--line);cursor:pointer}.wpopt.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.msgs.haswp{background-attachment:local}.msgs.haswp .daysep{background:rgba(0,0,0,.5);color:#fff;padding:2px 12px;border-radius:99px;align-self:center}
+.logrow{display:flex;gap:8px;flex-wrap:wrap;align-items:baseline;padding:7px 2px;border-bottom:1px solid var(--line);font-size:var(--t-sm)}.logwhen{color:var(--muted);min-width:120px}.logact{background:var(--panel2);border-radius:6px;padding:0 7px;font-weight:600}
+.appealmsg{background:var(--panel2);border-radius:10px;padding:8px 11px;margin:6px 0;white-space:pre-wrap;word-break:break-word}
+.stiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-bottom:14px}.stile{background:var(--panel2);border-radius:var(--r-s);padding:10px 12px;display:flex;flex-direction:column}.stile b{font-family:var(--display);font-size:var(--t-xl)}.stile span{color:var(--muted);font-size:var(--t-sm)}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}.chartcard{background:var(--panel2);border-radius:var(--r-s);padding:12px}.barchart{width:100%;height:auto;margin-top:6px}.barchart rect{fill:var(--accent)}.barchart text{fill:var(--muted);font-size:9px}
+@media (max-width:640px){.wpgrid{grid-template-columns:repeat(3,1fr)}.logwhen{min-width:0;width:100%}}
+
+.c4{display:flex;gap:3px;background:#2d4a8a;padding:6px;border-radius:12px}.c4col{display:flex;flex-direction:column;gap:3px;padding:0;background:none;border-radius:8px}.c4col:not(:disabled):hover{background:rgba(255,255,255,.18)}.c4col:disabled{cursor:default}
+.disc{width:26px;height:26px;border-radius:50%;background:#16264a;display:block}.disc.r{background:#e5553a}.disc.y{background:#f0c040}
+.wdboards{display:flex;gap:14px;flex-wrap:wrap}.wdrow{display:flex;gap:3px;margin-top:3px}.wdl{width:24px;height:24px;border-radius:5px;background:color-mix(in srgb,var(--text) 12%,transparent);display:flex;align-items:center;justify-content:center;font:700 13px var(--mono);text-transform:uppercase;color:inherit}.wdl.g{background:#4f8a3f;color:#fff}.wdl.y{background:#c49a2a;color:#fff}.wdl.x{background:color-mix(in srgb,var(--text) 28%,transparent)}
+.game input{background:var(--panel);color:var(--text);border-radius:8px;padding:5px 8px;width:110px}
+.trq{font-weight:600;margin-bottom:6px}.trs{display:flex;flex-direction:column;gap:5px;align-items:stretch}.trs .btn{text-align:left}
 </style>
 </head>
 <body>
@@ -527,6 +568,13 @@ const $ = (sel, root = document) => root.querySelector(sel);
 
 // icons are static svg strings defined here (never user data)
 const ICONS = {
+  reply: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/>',
+  forward: '<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5v0A5.5 5.5 0 0 0 9.5 20H13"/>',
+  eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
+  chart: '<path d="M3 3v18h18"/><path d="M7 15v3M12 9v9M17 5v13"/>',
+  list: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+  at: '<circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/>',
+  hammer: '<path d="m15 12-8.4 8.4a2.1 2.1 0 0 1-3-3L12 9"/><path d="M17.6 15 22 10.6a2 2 0 0 0 0-2.8l-3.4-3.4a2 2 0 0 0-2.8 0L11.4 8.8"/><path d="m14 6 4 4"/>',
   verified: '<path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m9 12 2 2 4-4"/>',
   megaphone: '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
   camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
@@ -818,14 +866,16 @@ const memberOf = (c, id) => c.members.find((m) => m.id === id);
 function previewText(p, mine) {
   if (!p) return '';
   const pre = mine ? 'You: ' : '';
-  if (p.t === 'text') return pre + p.text;
+  if (p.t === 'text') return pre + (p.fwd ? 'forwarded: ' : '') + p.text;
   if (p.t === 'game') return pre + 'shared a game: ' + p.title;
   if (p.t === 'gif') return pre + 'sent a gif';
   if (p.t === 'voice') return pre + 'sent a voice note';
   if (p.t === 'sticker') return pre + 'sent a sticker';
   if (p.t === 'poll') return pre + 'made a poll: ' + p.q;
-  if (p.t === 'g2') return pre + (p.kind === 'rps' ? 'started rock paper scissors' : 'started tic-tac-toe');
-  if (p.t === 'deleted') return 'message deleted';
+  if (p.t === 'g2') return pre + ({ rps: 'started rock paper scissors', c4: 'started connect 4', wd: 'started a word duel', tr: 'started a trivia duel' }[p.kind] || 'started tic-tac-toe');
+  if (p.t === 'image') return pre + 'sent a photo' + (p.fwd ? ' (forwarded)' : '');
+  if (p.t === 'once') return pre + 'sent a view once message';
+  if (p.t === 'deleted') return p.once ? 'view once, opened' : 'message deleted';
   return 'encrypted message';
 }
 async function refreshPreview(c) {
@@ -874,18 +924,21 @@ function startCooldown(sec, msg) {
   toast(msg || `slow down - wait ${sec}s`, 'error');
   window.__ui.tickCooldown();
 }
-async function sendPayload(c, payload, retried) {
+async function sendPayload(c, payload, retried, extra) {
   if (S.cooldownUntil > Date.now()) { toast('you are on cooldown, wait a moment', 'error'); return false; }
   try {
     const e = await encryptPayload(c, payload);
-    const r = await api('POST', `/api/conversations/${c.id}/messages`, { ...e, cid: rid() }, { quiet: true });
+    const r = await api('POST', `/api/conversations/${c.id}/messages`, { ...e, ...(extra || {}), cid: rid() }, { quiet: true });
     S.me.msgCount = (S.me.msgCount || 0) + 1; window.__ext && window.__ext.renderTop();
+    if (c.slowSeconds && !(S.me.isAdmin || c.role === 'admin' || c.role === 'mod')) c.slowUntil = Date.now() + c.slowSeconds * 1000;   // slow mode: next message after the wait
     if (addMessage(c, r.message, payload)) { c._preview = previewText(payload, true); sortConvs(); }
     window.__ui.renderSide(); window.__ui.renderMessages(c, true);
     return true;
   } catch (err) {
-    if (err.status === 429) startCooldown(err.data.retryAfter || 5, err.data.message);
-    else if (err.status === 409 && err.data.error === 'key_version_stale' && !retried) { await loadConvs(); return sendPayload(convOf(c.id), payload, true); }
+    if (err.status === 429 && err.data.error === 'slow_mode') { c.slowUntil = Date.now() + (err.data.retryAfter || 5) * 1000; toast(err.data.message, 'error'); window.__ui.tickCooldown(); }
+    else if (err.status === 403 && /^muted_/.test(err.data.error || '')) { if (err.data.error === 'muted_group') c.mutedUntil = new Date(Date.now() + (err.data.retryAfter || 60) * 1000).toISOString(); else S.me.mutedUntil = new Date(Date.now() + (err.data.retryAfter || 60) * 1000).toISOString(); toast(err.data.message, 'error'); window.__ui.tickCooldown(); }
+    else if (err.status === 429) startCooldown(err.data.retryAfter || 5, err.data.message);
+    else if (err.status === 409 && err.data.error === 'key_version_stale' && !retried) { await loadConvs(); return sendPayload(convOf(c.id), payload, true, extra); }
     else if (err.status === 401) window.__chatroomLogout(true);
     else if (err.data && err.data.error === 'verify_required') { toast(err.message, 'error', () => window.__ext && window.__ext.verifyModal()); window.__ext && window.__ext.verifyModal(); }
     else if (err.data && err.data.error === 'blocked_word') toast('that message was blocked, keep it clean', 'error');
@@ -986,6 +1039,14 @@ async function onWS(m) {
       ui.renderSide(); if (S.active === c.id) ui.renderMessages(c);
       break;
     }
+    case 'once_viewed': {                                    // a view once message was opened and wiped
+      const c = convOf(m.convId); if (!c) return;
+      const x = c.msgs.find((y) => y.id === m.id); if (x) { x.deleted = true; x.once = true; x._p = { t: 'deleted', once: true }; }
+      if (c.lastMessage && c.lastMessage.id === m.id) { c.lastMessage.deleted = true; c.lastMessage.once = true; c._preview = 'view once, opened'; }
+      ui.renderSide(); if (S.active === c.id) ui.renderMessages(c);
+      break;
+    }
+    case 'appeals_changed': if (window.__ui.appealsChanged) window.__ui.appealsChanged(); break;
     case 'extra': window.__ext && window.__ext.onExtra(m); break;
     case 'announce': window.__ext && window.__ext.onAnnounce(m.announcement); break;
     case 'announce_end': window.__ext && window.__ext.endAnnounce(m.id); break;
@@ -1022,6 +1083,7 @@ async function onWS(m) {
     case 'conv_update': {
       if (m.refresh) { await loadConvs(); ui.renderAll(); break; }
       const c = convOf(m.convId); if (c && m.name) c.name = m.name;
+      if (c && 'slowSeconds' in m) { c.slowSeconds = m.slowSeconds; ui.renderHeader(); ui.tickCooldown(); }
       ui.renderAll();
       break;
     }
@@ -1034,9 +1096,9 @@ async function onWS(m) {
     case 'notif': {
       S.notifs.unshift(m.notif); S.notifUnread++;
       ui.renderRail();
-      const txt = m.notif.type === 'group_added' ? `${m.notif.data.by} added you to ${m.notif.data.name}` : m.notif.type === 'dm_new' ? `${m.notif.data.from} started a chat with you` : m.notif.type === 'sched_failed' ? 'a scheduled message could not be sent' : m.notif.type === 'referral' ? `${m.notif.data.name} joined, +${m.notif.data.minutes} min beta` : m.notif.type === 'report' ? 'new report to review' : m.notif.type === 'verified' ? 'you are verified' : m.notif.type === 'verify_rejected' ? 'verification was not approved' + (m.notif.data.note ? ': ' + m.notif.data.note : '') : 'new notification';
-      toast(txt, 'info', () => { if (m.notif.data.convId) ui.openConv(m.notif.data.convId); });
-      beep();
+      const txt = m.notif.type === 'group_added' ? `${m.notif.data.by} added you to ${m.notif.data.name}` : m.notif.type === 'dm_new' ? `${m.notif.data.from} started a chat with you` : m.notif.type === 'sched_failed' ? 'a scheduled message could not be sent' : m.notif.type === 'referral' ? `${m.notif.data.name} joined, +${m.notif.data.minutes} min beta` : m.notif.type === 'report' ? 'new report to review' : m.notif.type === 'mention' ? `${m.notif.data.byName || m.notif.data.by} mentioned you${m.notif.data.convName ? ' in ' + m.notif.data.convName : ''}` : m.notif.type === 'reminder' ? 'reminder: ' + (m.notif.data.note || 'a message you saved') : m.notif.type === 'warn' ? `warning from ${m.notif.data.by}: ${m.notif.data.text}` : m.notif.type === 'appeal' ? `${m.notif.data.by} sent an appeal` : m.notif.type === 'verified' ? 'you are verified' : m.notif.type === 'verify_rejected' ? 'verification was not approved' + (m.notif.data.note ? ': ' + m.notif.data.note : '') : 'new notification';
+      const quiet = window.__ext && window.__ext.dndActive && window.__ext.dndActive() && m.notif.type !== 'warn';
+      if (!quiet) { toast(txt, 'info', () => { if (m.notif.data.convId) { ui.openConv(m.notif.data.convId); if (m.notif.data.msgId && window.__ext) setTimeout(() => window.__ext.jumpTo(convOf(m.notif.data.convId), m.notif.data.msgId), 600); } }); beep(); }
       break;
     }
   }
@@ -1100,10 +1162,15 @@ function userSearch(onPick, exclude = new Set()) {
   const reset = () => { input.value = ''; list.replaceChildren(hint()); input.focus(); };
   return { node: el('div', null, el('div', { class: 'searchbox' }, ic('search', 16), input), list), input, reset };
 }
-const linkify = (text) => {                                    // links become anchors, emoji become images
+const linkify = (text, c) => {                                 // links become anchors, @names become pills, emoji become images
   const out = [];
   String(text).split(/(https?:\/\/[^\s<>"]+)/g).forEach((part, i) => {
-    if (i % 2) out.push(el('a', { href: part, target: '_blank', rel: 'noopener noreferrer nofollow' }, part)); else if (part) out.push(...C.emojify(C.F.clean(part)));
+    if (i % 2) out.push(el('a', { href: part, target: '_blank', rel: 'noopener noreferrer nofollow' }, part));
+    else if (part) part.split(/(@[a-z0-9_]{3,20})/gi).forEach((seg, j) => {
+      const who = j % 2 ? seg.slice(1).toLowerCase() : '';
+      if (who && c && c.members.some((m) => m.username === who)) out.push(el('span', { class: 'mention' + (who === S.me.username ? ' me' : ''), onclick: () => openProfile(who) }, seg));
+      else if (seg) out.push(...C.emojify(C.F.clean(seg)));
+    });
   });
   return out;
 };
@@ -1166,7 +1233,8 @@ function showAuth(mode = 'login', note = '') {
         }
       } catch (ex) {
         if (ex.data && ex.data.error === 'setup_key_required') { keyBox.style.display = ''; key.focus(); }
-        err.textContent = ex.status === 429 ? `too many tries, wait ${ex.data.retryAfter}s` : ex.message;
+        if (ex.data && ex.data.error === 'suspended') { err.textContent = 'this account is suspended'; X.appealModal(ex.data, user.value.trim().toLowerCase()); }
+        else err.textContent = ex.status === 429 ? `too many tries, wait ${ex.data.retryAfter}s` : ex.message;
         btn.disabled = false; btn.textContent = label;
       }
     },
@@ -1349,6 +1417,8 @@ function buildChat(m, c) {
   const selbar = el('div', { class: 'selbar' });
   const sugg = el('div', { class: 'sugg' });
   const freebar = el('div', { class: 'freebar' });
+  const modbar = el('div', { class: 'modbar' });
+  const replybar = el('div', { class: 'replybar' });
   let lastTyping = 0;
   const input = el('textarea', {
     rows: 1, maxLength: 2000, placeholder: 'say something',
@@ -1356,7 +1426,7 @@ function buildChat(m, c) {
       input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 140) + 'px';
       c.draft = input.value;
       if (input.value && Date.now() - lastTyping > 2500) { lastTyping = Date.now(); sendWS({ t: 'typing', convId: c.id }); }
-      X.suggest(input, sugg);                                // :sk -> shows :skull:
+      X.suggest(input, sugg);                                // :sk -> shows :skull:, @na -> members, /ba -> commands
     },
     onkeydown: (e) => { if (X.suggestKey(e, input, sugg)) return; if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); doSend(); } },
   });
@@ -1364,17 +1434,23 @@ function buildChat(m, c) {
   const sendBtn = el('button', { class: 'btn primary send', title: 'send', onclick: doSend }, ic('send', 18));
   let sending = false;
   async function doSend() {
-    const text = C.expandShortcodes(input.value.trim());     // :skull: becomes the emoji before encryption
-    if (!text || sending) return;
+    if (sending) return;
+    const raw = input.value.trim();
+    if (raw.startsWith('/') && await X.slash(c, raw)) { input.value = ''; c.draft = ''; input.style.height = 'auto'; sugg.classList.remove('on'); input.focus(); return; }   // /ban, /mute, /slow and friends never get sent as messages
+    const text = C.expandShortcodes(raw);                    // :skull: becomes the emoji before encryption
+    if (!text) return;
+    if (X.sendBlock(c)) { toast(X.sendBlock(c).text, 'error'); return; }
     if (C.F.check(text)) { toast('keep it clean, that was not sent', 'error'); return; } // word filter, runs before anything is encrypted
     sending = true; sendBtn.disabled = true;
-    const ok = await sendPayload(c, { t: 'text', text });
-    if (ok) { input.value = ''; c.draft = ''; input.style.height = 'auto'; sugg.classList.remove('on'); }
+    const payload = { t: 'text', text };
+    if (c._reply) payload.reply = c._reply;                  // quoted message
+    const ok = await sendPayload(c, payload, false, { mentions: X.mentionIds(c, text) });
+    if (ok) { c._reply = null; X.drawReply(c); input.value = ''; c.draft = ''; input.style.height = 'auto'; sugg.classList.remove('on'); }
     sending = false; tickCooldown(); input.focus();
   }
   const emojiBtn = el('button', { class: 'icon-btn', title: 'emoji', onclick: () => X.emojiPicker(emojiBtn, (ch) => { const a = input.selectionStart ?? input.value.length; input.setRangeText(ch, a, input.selectionEnd ?? a, 'end'); input.dispatchEvent(new Event('input')); input.focus(); }) }, ic('smile', 20));
   m.append(el('div', { class: 'chat' }, head, pinbar, msgs, typing, selbar,
-    el('div', { class: 'composer-wrap' }, cool, freebar, sugg,
+    el('div', { class: 'composer-wrap' }, cool, freebar, modbar, replybar, sugg,
       el('div', { class: 'composer' },
         el('button', { class: 'icon-btn', title: 'more: voice, stickers, polls, schedule, games', onclick: (e) => X.plusMenu(e.currentTarget, c, input) }, ic('plus', 20)),
         el('button', { class: 'icon-btn', title: 'share a game', onclick: () => pickGameModal(c) }, ic('gamepad', 20)),
@@ -1382,8 +1458,8 @@ function buildChat(m, c) {
         emojiBtn, input, sendBtn))));
   c._shown = null;                                           // first paint of a chat should not animate every old message
   sel = null;                                                // leave select mode when switching chats
-  chatRef = { head, pinbar, msgs, typing, input, sendBtn, cool, selbar, freebar, convId: c.id };
-  renderHeader(); renderTyping(); tickCooldown(); X.loadPins(c); X.renderTop();
+  chatRef = { head, pinbar, msgs, typing, input, sendBtn, cool, selbar, freebar, modbar, replybar, convId: c.id };
+  renderHeader(); renderTyping(); tickCooldown(); X.loadPins(c); X.renderTop(); X.drawReply(c); X.applyWallpaper(c);
 }
 function renderHeader() {
   const h = chatRef.head; if (!h) return;
@@ -1396,13 +1472,15 @@ function renderHeader() {
   else if (o) {
     const act = activityOf(o.id), on = isOnline(c, o.id);
     sub = act ? el('span', { class: 'good' }, 'playing ' + act.title) : (st && st.status && (st.status.text || st.status.icon)) ? statusLine(st) : el('span', { class: on ? 'good' : 'muted' }, on ? 'online' : 'offline');
-  } else sub = el('span', { class: 'muted' }, `${c.isPublic ? 'public · ' : ''}${c.members.filter((x) => isOnline(c, x.id)).length} of ${c.memberCount || c.members.length} here`);
+  } else sub = el('span', { class: 'muted' }, `${c.isPublic ? 'public · ' : ''}${c.members.filter((x) => isOnline(c, x.id)).length} of ${c.memberCount || c.members.length} here${c.slowSeconds ? ' · slow mode ' + X.slowLabel(c.slowSeconds) : ''}`);
   h.replaceChildren(
     el('button', { class: 'icon-btn back', title: 'back', onclick: () => { S.active = null; renderAll(); } }, ic('back', 22)),
     o ? el('div', { class: 'avwrap' }, avatar(convTitle(c), 42, '', o.avatar), dot(isOnline(c, o.id), st.mode)) : el('div', { class: 'avatar', style: `width:42px;height:42px;background:${tone(c.name)}` }, ic(c.isPublic ? 'globe' : 'users', 18)),
     el('div', { class: 'grow click', onclick: () => (o ? openProfile(o.username) : groupModal(c)) }, el('div', { class: 'ctitle' }, convTitle(c), o ? vb(o) : null), el('div', { class: 'small' }, sub)),
     el('span', { class: 'ic muted', title: c.isPublic ? 'public room: open to everyone, not end-to-end encrypted' : 'end-to-end encrypted' }, ic(c.isPublic ? 'globe' : 'lock', 16)),
     !c.systemKind && (c.type === 'dm' || c.role === 'admin') ? el('button', { class: 'icon-btn' + (c.ttlSeconds ? ' on' : ''), title: 'disappearing messages', onclick: () => X.ttlModal(c) }, ic('timer', 20)) : null,
+    el('button', { class: 'icon-btn', title: 'search this chat', onclick: () => X.searchModal(c) }, ic('search', 20)),
+    X.dndActive() ? el('button', { class: 'icon-btn on', title: 'do not disturb is on', onclick: () => X.dndModal() }, ic('moon', 20)) : null,
     el('button', { class: 'icon-btn', title: c.muted ? 'unmute' : 'mute', onclick: async () => { c.muted = !c.muted; await api('PATCH', `/api/conversations/${c.id}/me`, { muted: c.muted }).catch(() => {}); renderHeader(); renderSide(); updateBadge(); } }, ic(c.muted ? 'mute' : 'volume', 20)),
     el('button', { class: 'icon-btn', title: 'details', onclick: () => (o ? openProfile(o.username) : groupModal(c)) }, ic('info', 20)));
 }
@@ -1417,11 +1495,16 @@ function tickCooldown() {
   const cool = chatRef.cool; if (!cool) return;
   clearInterval(tickCooldown.t);
   const upd = () => {
+    const c = convOf(chatRef.convId);
     const left = Math.ceil((S.cooldownUntil - Date.now()) / 1000);
-    if (left > 0) { cool.textContent = `easy there, try again in ${left}s`; cool.classList.add('on'); chatRef.sendBtn.disabled = true; }
-    else { cool.textContent = ''; cool.classList.remove('on'); chatRef.sendBtn.disabled = false; clearInterval(tickCooldown.t); }
+    const blk = c ? X.sendBlock(c) : null;                   // admin mute, group mute or slow mode
+    if (left > 0) { cool.textContent = `easy there, try again in ${left}s`; cool.classList.add('on'); }
+    else { cool.textContent = ''; cool.classList.remove('on'); }
+    X.drawModbar(c);
+    chatRef.sendBtn.disabled = left > 0 || !!blk;
+    if (left <= 0 && !blk) clearInterval(tickCooldown.t);
   };
-  upd(); if (S.cooldownUntil > Date.now()) tickCooldown.t = setInterval(upd, 250);
+  upd(); if (S.cooldownUntil > Date.now() || (convOf(chatRef.convId) && X.sendBlock(convOf(chatRef.convId)))) tickCooldown.t = setInterval(upd, 500);
 }
 function gameCard(p) {
   return el('div', { class: 'gshare' }, el('div', { class: 'gshare-ic', style: `background:${tone(p.title)}` }, ic('gamepad', 22)),
@@ -1431,8 +1514,10 @@ function gameCard(p) {
 // ---------- message actions: delete with undo, select many, pin, react, report ----------
 let sel = null;                                              // Set of selected message ids while in select mode
 const pendingDeletes = new Set();
-const canDelete = (c, m) => !m.deleted && !m._hide && (m.senderId === S.me.id || (c.type === 'group' && c.role === 'admin'));
-const canPin = (c) => c.type === 'dm' || c.role === 'admin';
+const rankR = (isAdmin, role) => (isAdmin ? 3 : role === 'admin' ? 2 : role === 'mod' ? 1 : 0);   // global admin > host > mod > member
+const myRank = (c) => rankR(S.me.isAdmin, c.role);
+const canDelete = (c, m) => { if (m.deleted || m._hide) return false; if (m.senderId === S.me.id) return true; if (c.type !== 'group') return false; const s = memberOf(c, m.senderId); return myRank(c) >= 1 && myRank(c) > rankR(s && s.isAdmin, s && s.role); };
+const canPin = (c) => c.type === 'dm' || c.role === 'admin' || c.role === 'mod';
 function undoToast(text, onUndo, ms = 5000) {
   let box = $('#toasts'); if (!box) { box = el('div', { id: 'toasts' }); document.body.append(box); }
   const gone = () => { t.classList.add('out'); setTimeout(() => t.remove(), 240); };
@@ -1466,11 +1551,14 @@ function msgTools(c, m, mine) {
   const p = m._p || {};
   const b = (icon, title, fn) => el('button', { class: 'icon-btn tiny', title, onclick: (e) => { e.stopPropagation(); fn(e); } }, ic(icon, 15));
   const kids = [b('smile', 'react', (e) => (!S.me.verified ? X.verifyModal() : X.emojiPicker(e.currentTarget, (ch) => X.toggleReact(c, m, ch, true), true)))];
+  if (!m.deleted) kids.unshift(b('reply', 'reply', () => X.setReply(c, m)));
+  if (!m.deleted && ['text', 'gif', 'game', 'image', 'sticker', 'voice'].includes(p.t)) kids.push(b('forward', 'forward', () => X.forwardModal(c, m)));
+  if (!m.deleted) kids.push(b('bell', 'remind me', () => X.remindModal(c, m)));
   if (canPin(c)) kids.push(b('pin', m.pinned ? 'unpin' : 'pin', () => X.pinMessage(c, m)));
   if (mine && p.t === 'text' && C.betaActive()) kids.push(b('edit', 'edit', () => X.editMessage(c, m)));
   if (p.t === 'text') kids.push(b('copy', 'copy', () => { navigator.clipboard && navigator.clipboard.writeText(p.text).then(() => toast('copied', 'success')).catch(() => {}); }));
   if (canDelete(c, m)) kids.push(b('checksquare', 'select', () => startSelect(c, m.id)));
-  if (!mine) kids.push(b('flag', 'report', () => X.reportModal({ kind: 'message', msgId: m.id, convId: c.id, title: 'this message', snapshot: p.t === 'text' ? p.text : p.t === 'gif' ? '[gif] ' + p.url : '[' + p.t + ']' })));
+  if (!mine && p.t !== 'once') kids.push(b('flag', 'report', () => X.reportModal({ kind: 'message', msgId: m.id, convId: c.id, title: 'this message', snapshot: p.t === 'text' ? p.text : p.t === 'gif' ? '[gif] ' + p.url : '[' + p.t + ']' })));
   if (canDelete(c, m)) kids.push(b('trash', 'delete', () => deleteWithUndo(c, [m.id])));
   return el('div', { class: 'mtools' }, kids);
 }
@@ -1496,18 +1584,21 @@ function renderMessages(c, stick) {
     const mine = m.senderId === S.me.id;
     const sender = memberOf(c, m.senderId);
     const p = m._p || { t: 'error' };
-    const body = p.t === 'text' ? el('div', { class: 'mtext' + (C.onlyEmoji(p.text) ? ' big' : '') }, linkify(p.text)) : p.t === 'game' ? gameCard(p) : p.t === 'gif' ? X.gifBody(p) : (X.extraBody(c, m, p) || el('div', { class: 'mtext muted-i' }, p.t === 'deleted' ? 'deleted' : 'could not decrypt'));
+    const body = p.t === 'text' ? el('div', { class: 'mtext' + (C.onlyEmoji(p.text) ? ' big' : '') }, linkify(p.text, c)) : p.t === 'game' ? gameCard(p) : p.t === 'gif' ? X.gifBody(p) : p.t === 'image' ? X.imageBody(c, m, p) : p.t === 'once' || (m.deleted && m.once) ? X.onceBody(c, m, p) : (X.extraBody(c, m, p) || el('div', { class: 'mtext muted-i' }, p.t === 'deleted' ? 'deleted' : 'could not decrypt'));
+    const tome = p.t === 'text' && !mine && X.mentionsMe(p.text);
     const seen = lastMineId && lastMineId.id === m.id && o && o.lastReadAt && new Date(o.lastReadAt) >= new Date(m.createdAt);
     const isNew = shown && !shown.has(m.id);
     const picked = sel && sel.has(m.id), selectable = sel && canDelete(c, m);
     const rx = Object.entries(m.reactions || {}).filter(([, u]) => u.length);
-    frag.append(el('div', { class: 'mrow' + (mine ? ' mine' : '') + (first ? ' first' : '') + (isNew ? ' new' : '') + (sel ? ' selecting' : '') + (picked ? ' picked' : '') },
+    frag.append(el('div', { 'data-mid': m.id, class: 'mrow' + (mine ? ' mine' : '') + (first ? ' first' : '') + (isNew ? ' new' : '') + (sel ? ' selecting' : '') + (picked ? ' picked' : '') },
       selectable ? el('span', { class: 'selbox' + (picked ? ' on' : ''), onclick: () => toggleSel(c, m.id) }, picked ? ic('check', 12) : null) : (sel ? el('span', { class: 'selbox off' }) : null),
       !mine && c.type === 'group' ? (first ? el('div', { class: 'click', onclick: () => sender && openProfile(sender.username) }, avatar(sender ? sender.displayName : '?', 30, '', sender && sender.avatar)) : el('div', { style: 'width:30px;flex:none' })) : null,
       el('div', { class: 'bubwrap' },
-        el('div', { class: 'bubble' + (p.t === 'gif' ? ' gifb' : '') + (p.t === 'sticker' ? ' stickb' : '') + (m.pinned ? ' pinned' : ''), onclick: (e) => { if (sel && selectable) return toggleSel(c, m.id); if (matchMedia('(hover: none)').matches && !e.target.closest('a,button')) { const was = e.currentTarget.classList.contains('tools-on'); box.querySelectorAll('.tools-on').forEach((n) => n.classList.remove('tools-on')); if (!was) e.currentTarget.classList.add('tools-on'); } } },
+        el('div', { class: 'bubble' + (tome ? ' tome' : '') + (p.t === 'image' ? ' imgb' : '') + (p.t === 'gif' ? ' gifb' : '') + (p.t === 'sticker' ? ' stickb' : '') + (m.pinned ? ' pinned' : ''), onclick: (e) => { if (sel && selectable) return toggleSel(c, m.id); if (matchMedia('(hover: none)').matches && !e.target.closest('a,button')) { const was = e.currentTarget.classList.contains('tools-on'); box.querySelectorAll('.tools-on').forEach((n) => n.classList.remove('tools-on')); if (!was) e.currentTarget.classList.add('tools-on'); } } },
           !m.deleted && !sel ? msgTools(c, m, mine) : null,
           first && !mine && c.type === 'group' ? el('div', { class: 'mname click', onclick: () => sender && openProfile(sender.username) }, sender ? sender.displayName : 'former member', vb(sender)) : null,
+          p.fwd ? el('div', { class: 'fwdtag' }, ic('forward', 12), 'forwarded' + (p.fwd.name ? ' from ' + p.fwd.name : '')) : null,
+          p.reply ? X.quoteEl(c, p.reply) : null,
           body,
           el('div', { class: 'mmeta' }, m.pinned ? el('span', { class: 'pinmark', title: 'pinned' }, ic('pin', 12)) : null, fmtTime(m.createdAt), m.editedAt ? el('span', { class: 'edited' }, 'edited') : null, seen ? el('span', { class: 'seen' }, ic('check', 12), 'seen') : null)),
         rx.length ? el('div', { class: 'rxrow' }, rx.map(([e, u]) => el('button', { class: 'rx' + (u.includes(S.me.id) ? ' mine' : ''), title: u.map((id) => (id === S.me.id ? 'you' : (memberOf(c, id) || {}).displayName || 'someone')).join(', '), onclick: () => X.toggleReact(c, m, e) }, C.emojiEl(e), el('span', null, u.length)))) : null)));
@@ -1522,6 +1613,7 @@ function notifyMessage(c, msg, payload) {
   const who = sender ? sender.displayName : 'Someone';
   const text = C.previewText(payload, false);
   const title = c.type === 'group' ? `${who} in ${c.name}` : who;
+  if (X.dndActive()) return;                                 // do not disturb: no sound, no popups
   beep();
   if (document.hidden && S.prefs.desktop && 'Notification' in window && Notification.permission === 'granted') {
     try { const n = new Notification(title, { body: text, tag: c.id, silent: true }); n.onclick = () => { window.focus(); openConv(c.id); n.close(); }; } catch {}
@@ -1601,9 +1693,11 @@ async function groupModal(c) {
       el('div', { class: 'ulist' }, c.members.map((u) => el('div', { class: 'urow' },
         el('div', { class: 'avwrap click', onclick: () => openProfile(u.username) }, avatar(u.displayName, 34, '', u.avatar), dot(isOnline(c, u.id))),
         el('div', { class: 'grow click', onclick: () => openProfile(u.username) }, el('div', { class: 'ctitle' }, u.displayName + (u.id === S.me.id ? ' (you)' : ''), vb(u)), el('div', { class: 'muted small' }, '@' + u.username)),
-        u.role === 'admin' ? el('span', { class: 'tag' }, 'host') : null,
-        isAdmin() && u.id !== S.me.id ? el('button', { class: 'icon-btn', title: 'remove', onclick: async () => { if (await confirmModal(`remove ${u.displayName}?`, c.isPublic ? 'they cannot rejoin.' : 'the group key changes, so they cannot read anything new.', 'remove')) { await removeMember(c, u.id); draw(); } } }, ic('x', 16)) : null))),
+        u.role === 'admin' ? el('span', { class: 'tag' }, 'host') : u.role === 'mod' ? el('span', { class: 'tag' }, 'mod') : null,
+        ...X.memberTools(c, u, draw),
+        u.id !== S.me.id && myRank(c) >= 1 && myRank(c) > rankR(u.isAdmin, u.role) ? el('button', { class: 'icon-btn', title: 'remove', onclick: async () => { if (await confirmModal(`remove ${u.displayName}?`, c.isPublic ? 'they cannot rejoin.' : 'the group key changes, so they cannot read anything new.', 'remove')) { await removeMember(c, u.id); draw(); } } }, ic('x', 16)) : null))),
       addBox,
+      X.staffSection(c, draw),
       el('div', { class: 'row between', style: 'margin-top:14px' },
         c.isPublic && !isAdmin() ? el('button', { class: 'btn ghost', onclick: () => { m.close(); X.reportModal({ kind: 'group', convId: c.id, title: c.name }); } }, ic('flag', 16), 'report') : el('span'),
         el('button', { class: 'btn danger', onclick: async () => { if (await confirmModal(`leave ${c.name}?`, '', 'leave')) { await removeMember(c, S.me.id); m.close(); } } }, ic('logout', 16), 'leave')));
@@ -1681,6 +1775,10 @@ function settingsModal() {
     el('h4', null, ic('palette', 14), 'look'),
     el('div', { class: 'seg small' }, themeBtn('auto', 'auto'), themeBtn('light', 'day'), themeBtn('dark', 'night')),
     el('button', { class: 'btn wide', style: 'margin-top:10px', onclick: () => { m.close(); X.themeModal(); } }, ic('palette', 16), 'custom theme', el('span', { class: 'tag gold' }, 'beta')),
+    el('div', { class: 'row gap', style: 'margin-top:8px' },
+      el('button', { class: 'btn grow', onclick: () => { m.close(); X.dndModal(); } }, ic('moon', 16), X.dndActive() ? 'dnd is on' : 'do not disturb'),
+      el('button', { class: 'btn grow', onclick: () => { m.close(); X.remindersModal(); } }, ic('bell', 16), 'reminders', el('span', { class: 'tag gold' }, 'beta'))),
+    el('button', { class: 'btn wide', style: 'margin-top:8px', onclick: () => { m.close(); X.wallpaperModal(null); } }, ic('image', 16), 'chat wallpaper', el('span', { class: 'tag gold' }, 'beta')),
     el('h4', null, 'ping me'),
     toggle('show what i am playing', S.me.shareActivity, async (v) => { try { const d = await api('PATCH', '/api/me', { shareActivity: v }); S.me.shareActivity = d.user.shareActivity; } catch (e) { toast(e.message, 'error'); return false; } }),
     toggle('sound', S.prefs.sound, (v) => { S.prefs.sound = v; savePrefs(); if (v) beep(); }),
@@ -1767,7 +1865,7 @@ function buildAdmin(m) {
     if (!tiles.isConnected) return;
     try {
       const d = await api('GET', '/api/admin/stats', null, { quiet: true });
-      const t = [['people', d.users], ['online', d.online], ['messages', d.messages], ['groups', d.groups], ['plays', d.plays], ['reports', d.reports], ['to verify', d.pending_verifications], ['public', d.public_groups], ['storage', fmtBytes(d.bytes)], ['vanish', d.ttlHours % 24 ? d.ttlHours + 'h' : d.ttlHours / 24 + 'd']];
+      const t = [['people', d.users], ['online', d.online], ['messages', d.messages], ['groups', d.groups], ['plays', d.plays], ['reports', d.reports], ['to verify', d.pending_verifications], ['appeals', d.pending_appeals || 0], ['public', d.public_groups], ['storage', fmtBytes(d.bytes)], ['vanish', d.ttlHours % 24 ? d.ttlHours + 'h' : d.ttlHours / 24 + 'd']];
       tiles.replaceChildren(...t.map(([l, v], i) => el('div', { class: 'tile', style: `--i:${i}` }, el('b', null, v), el('span', null, l))));
     } catch (e) { tiles.replaceChildren(el('div', { class: 'form-err' }, e.message)); }
   }
@@ -1797,12 +1895,16 @@ function buildAdmin(m) {
     tiles,
     (() => {
       const people = el('div', null, el('div', { class: 'searchbox' }, ic('search', 16), q), list);
-      const panes = { people, reports: el('div', { style: 'display:none' }), verify: el('div', { style: 'display:none' }), announce: el('div', { style: 'display:none' }) };
-      const loaders = { reports: () => X.adminReports(panes.reports, loadStats), verify: () => X.adminVerify(panes.verify, loadStats), announce: () => X.adminAnnounce(panes.announce) };
-      const tab = (k, label) => el('button', { class: k === 'people' ? 'on' : '', onclick: (e) => { e.currentTarget.parentNode.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b === e.currentTarget)); for (const [n, node] of Object.entries(panes)) node.style.display = n === k ? '' : 'none'; if (loaders[k]) loaders[k](); } }, label);
+      const hid = () => el('div', { style: 'display:none' });
+      const panes = { people, reports: hid(), verify: hid(), appeals: hid(), announce: hid(), audit: hid(), stats: hid() };
+      const loaders = { reports: () => X.adminReports(panes.reports, loadStats), verify: () => X.adminVerify(panes.verify, loadStats), appeals: () => X.adminAppeals(panes.appeals, loadStats), announce: () => X.adminAnnounce(panes.announce), audit: () => X.adminAudit(panes.audit), stats: () => X.adminStats(panes.stats) };
+      const tabBtns = {};
+      const tab = (k, label) => tabBtns[k] = el('button', { class: k === 'people' ? 'on' : '', onclick: (e) => { e.currentTarget.parentNode.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b === e.currentTarget)); for (const [n, node] of Object.entries(panes)) node.style.display = n === k ? '' : 'none'; if (loaders[k]) loaders[k](); } }, label);
       window.__ui.reportsChanged = () => { loadStats(); if (panes.reports.isConnected && panes.reports.style.display !== 'none') loaders.reports(); };
       window.__ui.verifyChanged = () => { loadStats(); if (panes.verify.isConnected && panes.verify.style.display !== 'none') loaders.verify(); };
-      return el('div', null, el('div', { class: 'seg wrapseg' }, tab('people', 'people'), tab('reports', 'reports'), tab('verify', 'verify'), tab('announce', 'announce')), people, panes.reports, panes.verify, panes.announce);
+      window.__ui.appealsChanged = () => { loadStats(); if (panes.appeals.isConnected && panes.appeals.style.display !== 'none') loaders.appeals(); };
+      setTimeout(() => { const k = S.adminTab; S.adminTab = null; if (k && tabBtns[k]) tabBtns[k].click(); }, 0);   // /audit, /stats and /appeals jump straight to their tab
+      return el('div', null, el('div', { class: 'seg wrapseg' }, tab('people', 'people'), tab('reports', 'reports'), tab('verify', 'verify'), tab('appeals', 'appeals'), tab('announce', 'announce'), tab('audit', 'audit log'), tab('stats', 'stats')), people, panes.reports, panes.verify, panes.appeals, panes.announce, panes.audit, panes.stats);
     })()));
   loadStats(); loadUsers();
   nowTimer = setInterval(loadStats, 20000);
@@ -1913,7 +2015,7 @@ function shareGameModal(path, title) {
   m.box.style.zIndex = 400;
 }
 
-window.__ui = { renderAll, renderRail, renderSide, renderHeader, renderMessages, renderTyping, renderActivityLive, notifyMessage, openConv, tickCooldown, boot: () => boot(), modal, confirmModal, userSearch, openProfile, statusFor, statusLine, isMobile, chatRef: () => chatRef, resetMain: () => { builtMain = ''; renderMain(); }, startDM, mugIcon, groupModal, removeMember, deleteWithUndo };
+window.__ui = { renderAll, renderRail, renderSide, renderHeader, renderMessages, renderTyping, renderActivityLive, notifyMessage, openConv, tickCooldown, boot: () => boot(), modal, confirmModal, userSearch, openProfile, statusFor, statusLine, isMobile, chatRef: () => chatRef, resetMain: () => { builtMain = ''; renderMain(); }, startDM, mugIcon, groupModal, removeMember, deleteWithUndo, myRank, rankR, linkify, goAdminTab: (k) => { S.adminTab = k; S.view = 'admin'; builtMain = ''; renderAll(); } };
 
 // ---------- boot ----------
 async function boot() {
@@ -2522,14 +2624,22 @@ function plusMenu(anchor, c, input) {
   const had = !!plus; closePlus(); if (had) return;
   anchor.dataset.plus = 1;
   const on = C.betaActive();
-  const item = (icon, label, fn) => el('button', { class: 'plusitem', onclick: () => { closePlus(); fn(); } }, ic(icon, 18), el('span', { class: 'grow' }, label), on ? null : el('span', { class: 'tag gold' }, 'beta'));
+  const item = (icon, label, fn, free) => el('button', { class: 'plusitem', onclick: () => { closePlus(); fn(); } }, ic(icon, 18), el('span', { class: 'grow' }, label), on || free ? null : el('span', { class: 'tag gold' }, 'beta'));
+  const noImg = c.isPublic || c.systemKind;
   plus = el('div', { class: 'plusmenu' },
+    noImg ? null : item('image', 'photo', () => window.__ext.pickPhoto(c)),
+    c.type === 'dm' ? item('eye', 'view once', () => window.__ext.onceModal(c), true) : null,
     item('mic', 'voice note', () => needBeta('voice notes') && voiceModal(c)),
     item('sticker', 'sticker', () => needBeta('stickers') && stickerPicker(c)),
     item('poll', 'poll', () => needBeta('polls') && pollModal(c)),
     item('calendar', 'schedule a message', () => needBeta('scheduled messages') && scheduleModal(c, input)),
     c.type === 'dm' ? item('grid', 'tic-tac-toe', () => needBeta('mini games') && startGame(c, 'ttt')) : null,
-    c.type === 'dm' ? item('users', 'rock paper scissors', () => needBeta('mini games') && startGame(c, 'rps')) : null);
+    c.type === 'dm' ? item('users', 'rock paper scissors', () => needBeta('mini games') && startGame(c, 'rps')) : null,
+    c.type === 'dm' ? item('grid', 'connect 4', () => needBeta('mini games') && startGame(c, 'c4')) : null,
+    c.type === 'dm' ? item('book', 'word duel', () => needBeta('mini games') && startGame(c, 'wd')) : null,
+    c.type === 'dm' ? item('trophy', 'trivia duel', () => needBeta('mini games') && startGame(c, 'tr')) : null,
+    item('bell', 'my reminders', () => window.__ext.remindersModal()),
+    item('palette', 'chat wallpaper', () => window.__ext.wallpaperModal(c)));
   document.body.append(plus);
   const r = anchor.getBoundingClientRect();
   plus.style.left = Math.max(8, Math.min(r.left, innerWidth - plus.offsetWidth - 8)) + 'px';
@@ -2744,10 +2854,11 @@ async function startGame(c, kind) {
     try { await api('POST', `/api/messages/${id}/game`, { kind }, { quiet: true }); } catch (e) { toast(e.message, 'error'); }
   }
 }
+const GAME_NAME = { ttt: 'tic-tac-toe', rps: 'rock paper scissors', c4: 'connect 4', wd: 'word duel', tr: 'trivia duel' };
 function gameBody(c, m, p) {
-  if (!['ttt', 'rps'].includes(p.kind)) return el('div', { class: 'mtext muted-i' }, 'game unavailable');
+  if (!['ttt', 'rps', 'c4', 'wd', 'tr'].includes(p.kind)) return el('div', { class: 'mtext muted-i' }, 'game unavailable');
   const g = extras(c).games[m.id];
-  if (!g) return el('div', { class: 'game' }, el('div', { class: 'gtitle' }, p.kind === 'rps' ? 'rock paper scissors' : 'tic-tac-toe'), el('div', { class: 'muted small' }, 'loading...'));
+  if (!g) return el('div', { class: 'game' }, el('div', { class: 'gtitle' }, GAME_NAME[p.kind] || 'game'), el('div', { class: 'muted small' }, 'loading...'));
   const me1 = S.me.id === g.p1, other = (C.other(c) || {}).displayName || 'them';
   const move = async (body) => { try { const r = await api('POST', `/api/messages/${m.id}/move`, body, { quiet: true }); extras(c).games[m.id] = r.view; U.renderMessages(c); } catch (e) { toast(e.message, 'error'); } };
   const result = g.winner === 'draw' ? 'a draw' : g.winner ? ((g.winner === 'p1') === me1 ? 'you win' : other + ' wins') : null;
@@ -2756,6 +2867,31 @@ function gameBody(c, m, p) {
     return el('div', { class: 'game' }, el('div', { class: 'gtitle' }, 'tic-tac-toe', el('span', { class: 'muted small' }, ` you are ${me1 ? 'X' : 'O'}`)),
       el('div', { class: 'ttt' }, g.board.map((v, i) => el('button', { class: 'cell ' + v, disabled: !mine || !!v, onclick: () => move({ cell: i }) }, v))),
       el('div', { class: 'muted small' }, result || (mine ? 'your turn' : `waiting for ${other}`)));
+  }
+  if (g.kind === 'c4') {
+    const mine = g.turn === S.me.id && !g.winner;
+    return el('div', { class: 'game' }, el('div', { class: 'gtitle' }, 'connect 4', el('span', { class: 'muted small' }, ` you are ${me1 ? 'red' : 'gold'}`)),
+      el('div', { class: 'c4' }, [0, 1, 2, 3, 4, 5, 6].map((col) => el('button', { class: 'c4col', disabled: !mine || !!g.board[col], title: 'drop here', onclick: () => move({ col }) }, [0, 1, 2, 3, 4, 5].map((r) => { const v = g.board[r * 7 + col]; return el('i', { class: 'disc ' + (v === 'X' ? 'r' : v === 'O' ? 'y' : '') }); })))),
+      el('div', { class: 'muted small' }, result || (mine ? 'your turn' : `waiting for ${other}`)));
+  }
+  if (g.kind === 'wd') {
+    const done = !!g.winner || g.mine.length >= 6 || (g.mine.length && g.mine[g.mine.length - 1].fb === 'ggggg');
+    const row = (w, fb) => el('div', { class: 'wdrow' }, [0, 1, 2, 3, 4].map((i) => el('span', { class: 'wdl ' + (fb ? fb[i] : '') }, w ? w[i] : '')));
+    const inp = el('input', { maxLength: 5, placeholder: '5 letters', autocapitalize: 'none', autocomplete: 'off', spellcheck: false });
+    const go = () => { const w = inp.value.trim().toLowerCase(); if (!/^[a-z]{5}$/.test(w)) return toast('type a 5 letter word', 'error'); move({ word: w }); };
+    inp.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') go(); });
+    return el('div', { class: 'game' }, el('div', { class: 'gtitle' }, 'word duel', el('span', { class: 'muted small' }, ' same secret word, first to guess it wins')),
+      el('div', { class: 'wdboards' }, el('div', null, el('div', { class: 'muted small' }, 'you'), [0, 1, 2, 3, 4, 5].map((i) => g.mine[i] ? row(g.mine[i].w, g.mine[i].fb) : row('', ''))),
+        el('div', null, el('div', { class: 'muted small' }, other), [0, 1, 2, 3, 4, 5].map((i) => row('', g.theirs[i] || '')))),
+      done ? null : el('div', { class: 'row gap-s' }, inp, el('button', { class: 'btn small primary', onclick: go }, 'guess')),
+      el('div', { class: 'muted small' }, g.winner ? `${result}, the word was ${g.word}` : done ? `out of guesses, waiting for ${other}` : `${6 - g.mine.length} guesses left`));
+  }
+  if (g.kind === 'tr') {
+    const q = g.q;
+    return el('div', { class: 'game' }, el('div', { class: 'gtitle' }, 'trivia duel', el('span', { class: 'muted small' }, ` ${Math.min(g.qi + 1, g.total)}/${g.total}`)),
+      q ? el('div', null, el('div', { class: 'trq' }, q.t), el('div', { class: 'trs' }, q.o.map((o, i) => el('button', { class: 'btn small', onclick: () => move({ choice: i }) }, o))))
+        : el('div', { class: 'muted small' }, g.winner ? '' : `you are done, waiting for ${other}`),
+      el('div', { class: 'muted small' }, g.winner ? `you ${g.myScore}, ${other} ${g.theirScore}: ${result}` : `your score ${g.myScore} · ${other} answered ${g.theirDone}/${g.total}${g.lastRight === null ? '' : g.lastRight ? ' · last one right' : ' · last one wrong'}`));
   }
   const pick = (ch) => el('button', { class: 'btn small' + (g.mine === ch ? ' primary' : ''), disabled: !!g.mine || !!g.winner, onclick: () => move({ choice: ch }) }, ch);
   return el('div', { class: 'game' }, el('div', { class: 'gtitle' }, 'rock paper scissors'),
@@ -2857,11 +2993,11 @@ function foldersModal() {
     try { const r = await api('PUT', '/api/me/folders', { folders: draft }, { quiet: true }); S.me.folders = r.folders; U.renderSide(); toast('folders saved', 'success'); m.close(); } catch (e) { toast(e.message, 'error'); }
   };
   const draw = () => {
-    box.replaceChildren(el('p', { class: 'muted small', style: 'margin-top:0' }, 'sort your chats into tabs. up to 8 folders.'),
+    box.replaceChildren(el('p', { class: 'muted small', style: 'margin-top:0' }, 'sort your chats into tabs. up to 20 folders.'),
       ...draft.map((f, i) => el('div', { class: 'folderedit' },
         el('div', { class: 'row gap' }, el('input', { value: f.name, maxLength: 16, oninput: (e) => { f.name = e.target.value; } }), el('button', { class: 'icon-btn', title: 'remove folder', onclick: () => { draft.splice(i, 1); draw(); } }, ic('trash', 16))),
         el('div', { class: 'folderchats' }, S.convs.map((c) => el('label', { class: 'check' }, el('input', { type: 'checkbox', checked: f.convIds.includes(c.id), onchange: (e) => { f.convIds = e.target.checked ? [...f.convIds, c.id] : f.convIds.filter((x) => x !== c.id); } }), el('span', null, convTitle(c))))))),
-      el('div', { class: 'row gap', style: 'margin-top:12px' }, el('button', { class: 'btn', disabled: draft.length >= 8, onclick: () => { draft.push({ id: Math.random().toString(36).slice(2, 8), name: 'folder ' + (draft.length + 1), convIds: [] }); draw(); } }, ic('folder', 16), 'new folder'), el('div', { class: 'grow' }), el('button', { class: 'btn primary', onclick: save }, ic('check', 16), 'save')));
+      el('div', { class: 'row gap', style: 'margin-top:12px' }, el('button', { class: 'btn', disabled: draft.length >= 20, onclick: () => { draft.push({ id: Math.random().toString(36).slice(2, 8), name: 'folder ' + (draft.length + 1), convIds: [] }); draw(); } }, ic('folder', 16), 'new folder'), el('div', { class: 'grow' }), el('button', { class: 'btn primary', onclick: save }, ic('check', 16), 'save')));
   };
   draw();
 }
@@ -2934,6 +3070,735 @@ function buildBeta(m) {
 const betaChanged = () => { if (S.view === 'beta' && window.__betaDraw) window.__betaDraw(); };
 
 Object.assign(window.__ext, { buildBeta, betaChanged, banner, plusMenu, editMessage, extraBody, onExtra, loadExtras, ttlModal, ttlLabel, renderFolders, inFolder, foldersModal, profileEditModal, scheduledList, stickerManage });
+
+})();
+
+/* ===== Chatroom client: chat extras (replies, mentions, search, do not disturb, view once, photos, forwards, reminders, wallpapers, slash commands) ===== */
+(() => {
+'use strict';
+const C = window.__core, U = window.__ui;
+const { S, el, $, ic, avatar, api, toast, convOf, sendPayload, convTitle, memberOf, fmtTime, fmtDay, rid } = C;
+const { modal, confirmModal } = U;
+const X0 = window.__ext;                                     // older extras, some are wrapped below
+const oldSuggest = X0.suggest, oldSuggestKey = X0.suggestKey;
+
+// ---------- small shared bits ----------
+const betaGate = (what) => {                                 // true when beta is on, otherwise points to the beta tab
+  if (C.betaActive()) return true;
+  toast(`${what} is a beta feature`, 'error', () => { S.view = 'beta'; U.renderAll(); });
+  return false;
+};
+const niceSecs = (s) => (s < 90 ? Math.round(s) + 's' : s < 5400 ? Math.round(s / 60) + ' min' : s < 172800 ? Math.round(s / 3600) + ' h' : Math.round(s / 86400) + ' days');
+const parseSecs = (txt, dflt = 'm') => {                      // 30s, 10m, 2h, 1d, 1w -> seconds (0 when it does not parse)
+  const m = String(txt || '').trim().toLowerCase().match(/^(\d{1,5})\s*(s|sec|m|min|h|hr|d|w)?$/);
+  if (!m) return 0;
+  const n = parseInt(m[1], 10), u = m[2] || dflt;
+  return n * (u.startsWith('s') ? 1 : u.startsWith('m') ? 60 : u.startsWith('h') ? 3600 : u === 'd' ? 86400 : 604800);
+};
+const fmtSize = (b) => (b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB');
+const chat = () => U.chatRef();
+const staffOf = (c) => c && c.type === 'group' && U.myRank(c) >= 1;
+
+// ---------- do not disturb ----------
+function dndActive() {
+  const m = S.me; if (!m) return false;
+  const now = new Date();
+  if (m.dndUntil && new Date(m.dndUntil) > now) return true;
+  const z = m.quiet;
+  if (z && /^\d\d:\d\d$/.test(z.from || '') && /^\d\d:\d\d$/.test(z.to || '')) {
+    const local = new Date(now.getTime() - (Number(z.tz) || 0) * 60000);
+    const mins = local.getUTCHours() * 60 + local.getUTCMinutes();
+    const t = (s) => { const [h, mm] = s.split(':').map(Number); return h * 60 + mm; };
+    const f = t(z.from), to = t(z.to);
+    if (f === to) return false;
+    return f < to ? mins >= f && mins < to : mins >= f || mins < to;
+  }
+  return false;
+}
+async function setDnd(body) {
+  const d = await api('PUT', '/api/me/dnd', body);
+  S.me.dndUntil = d.dndUntil; S.me.quiet = d.quiet;
+  U.renderAll();
+  return d;
+}
+function dndModal() {
+  const body = el('div');
+  const m = modal('do not disturb', body);
+  const draw = () => {
+    const until = S.me.dndUntil && new Date(S.me.dndUntil) > new Date() ? new Date(S.me.dndUntil) : null;
+    const z = S.me.quiet;
+    const from = el('input', { type: 'time', value: z ? z.from : '22:00' }), to = el('input', { type: 'time', value: z ? z.to : '07:00' });
+    const go = async (mins) => { try { await setDnd({ minutes: mins }); draw(); } catch (e) { toast(e.message, 'error'); } };
+    const tomorrow = () => { const t = new Date(); t.setDate(t.getDate() + 1); t.setHours(8, 0, 0, 0); return Math.round((t - Date.now()) / 60000); };
+    body.replaceChildren(
+      el('p', { class: 'muted small', style: 'margin-top:0' }, 'no sounds, popups or pushes. you still get your messages, and reminders still show up in the app.'),
+      until ? el('div', { class: 'card-s' }, ic('moon', 16), el('span', { class: 'grow' }, `on until ${fmtTime(until)}${until.toDateString() !== new Date().toDateString() ? ' tomorrow' : ''}`), el('button', { class: 'btn small', onclick: () => go(null) }, 'turn off')) : null,
+      el('div', { class: 'row gap wraprow' }, [['30 min', 30], ['1 hour', 60], ['4 hours', 240], ['until tomorrow', tomorrow()]].map(([l, v]) => el('button', { class: 'btn small', onclick: () => go(v) }, l))),
+      el('h4', null, ic('clock', 14), 'quiet hours'),
+      el('p', { class: 'muted small', style: 'margin-top:0' }, 'repeats every day, in your timezone.'),
+      el('div', { class: 'row gap' }, el('label', { class: 'grow', style: 'margin:0' }, 'from', from), el('label', { class: 'grow', style: 'margin:0' }, 'to', to)),
+      el('div', { class: 'row gap', style: 'margin-top:10px' },
+        el('button', { class: 'btn primary grow', onclick: async () => { try { await setDnd({ quiet: { from: from.value, to: to.value, tz: new Date().getTimezoneOffset() } }); toast('quiet hours saved', 'success'); draw(); } catch (e) { toast(e.message, 'error'); } } }, 'save quiet hours'),
+        z ? el('button', { class: 'btn', onclick: async () => { try { await setDnd({ quiet: null }); draw(); } catch (e) { toast(e.message, 'error'); } } }, 'remove') : null));
+  };
+  draw();
+}
+
+// ---------- slow mode, mutes: what blocks sending right now ----------
+const slowLabel = (s) => (s % 60 === 0 ? s / 60 + 'm' : s + 's');
+function sendBlock(c) {
+  if (!c) return null;
+  const now = Date.now();
+  const gm = S.me.mutedUntil ? new Date(S.me.mutedUntil) - now : 0;
+  if (gm > 0) return { secs: Math.ceil(gm / 1000), text: `an admin muted you for another ${niceSecs(gm / 1000)}`, kind: 'mute' };
+  const cm = c.mutedUntil ? new Date(c.mutedUntil) - now : 0;
+  if (cm > 0) return { secs: Math.ceil(cm / 1000), text: `you are muted in this group for another ${niceSecs(cm / 1000)}`, kind: 'mute' };
+  if (c.slowUntil && c.slowUntil > now && !(S.me.isAdmin || c.role === 'admin' || c.role === 'mod')) { const s = Math.ceil((c.slowUntil - now) / 1000); return { secs: s, text: `slow mode, wait ${s}s`, kind: 'slow' }; }
+  return null;
+}
+function drawModbar(c) {
+  const b = chat().modbar; if (!b || !c || chat().convId !== c.id) return;
+  const blk = sendBlock(c);
+  if (blk) b.replaceChildren(ic(blk.kind === 'mute' ? 'mute' : 'timer', 14), blk.text);
+  else if (c.slowSeconds) b.replaceChildren(ic('timer', 14), `slow mode: one message every ${niceSecs(c.slowSeconds)}`);
+  else b.replaceChildren();
+  b.classList.toggle('on', !!blk || !!c.slowSeconds);
+  b.classList.toggle('hot', !!blk);
+}
+
+// ---------- replies ----------
+const snipOf = (p) => String(C.previewText(p, false) || '').replace(/\s+/g, ' ').slice(0, 90);
+function setReply(c, m) {
+  const p = m._p || {};
+  const s = memberOf(c, m.senderId);
+  c._reply = { id: m.id, uid: m.senderId, name: m.senderId === S.me.id ? S.me.displayName : s ? s.displayName : 'someone', snip: snipOf(p.t === 'once' ? { t: 'once' } : p) };
+  drawReply(c);
+  const r = chat(); if (r.input) r.input.focus();
+}
+function drawReply(c) {
+  const b = chat().replybar; if (!b || !c || chat().convId !== c.id) return;
+  if (!c._reply) { b.classList.remove('on'); b.replaceChildren(); return; }
+  b.classList.add('on');
+  b.replaceChildren(ic('reply', 15), el('div', { class: 'grow' }, el('b', null, 'replying to ' + (c._reply.uid === S.me.id ? 'yourself' : c._reply.name)), el('span', null, c._reply.snip)),
+    el('button', { class: 'icon-btn tiny', title: 'cancel', onclick: () => { c._reply = null; drawReply(c); } }, ic('x', 14)));
+}
+function quoteEl(c, r) {
+  return el('div', { class: 'rquote click', onclick: (e) => { e.stopPropagation(); jumpTo(c, r.id); } }, el('b', null, r.uid === S.me.id ? 'you' : String(r.name || 'someone').slice(0, 32)), el('span', null, String(r.snip || '').slice(0, 120)));
+}
+async function jumpTo(c, id) {
+  if (!c) return;
+  if (S.active !== c.id || S.view !== 'chats') { await U.openConv(c.id); }
+  const find = () => document.querySelector(`.msgs [data-mid="${id}"]`);
+  let n = find(), pages = 0;
+  while (!n && c.hasMore && pages < 20) { await C.loadMessages(c, true); c._shown = null; U.renderMessages(c); n = find(); pages++; }
+  if (!n) return toast('that message is gone or too far back', 'error');
+  n.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  n.classList.add('flash'); setTimeout(() => n.classList.remove('flash'), 1800);
+}
+
+// ---------- mentions ----------
+const mentionRe = /(^|[^a-z0-9_])@([a-z0-9_]{3,20})/gi;
+function mentionIds(c, text) {
+  const ids = new Set();
+  for (const m of String(text).matchAll(mentionRe)) { const u = c.members.find((x) => x.username === m[2].toLowerCase()); if (u && u.id !== S.me.id) ids.add(u.id); }
+  return [...ids].slice(0, 5);
+}
+const mentionsMe = (text) => new RegExp('(^|[^a-z0-9_])@' + S.me.username + '(?![a-z0-9_])', 'i').test(String(text));
+
+// ---------- slash commands ----------
+const CMDS = [
+  { n: 'help', d: 'every command you can use', who: 'all' },
+  { n: 'dnd', a: '30m | 2h | off', d: 'do not disturb', who: 'all' },
+  { n: 'search', a: 'words', d: 'search this chat', who: 'all' },
+  { n: 'remind', a: '10m note', d: 'remind me later (beta)', who: 'all' },
+  { n: 'block', a: '@user', d: 'block someone', who: 'all' },
+  { n: 'unblock', a: '@user', d: 'unblock someone', who: 'all' },
+  { n: 'shrug', a: 'text', d: 'add a shrug', who: 'all' },
+  { n: 'mute', a: '@user 10m', d: 'mute someone in this group', who: 'mod' },
+  { n: 'unmute', a: '@user', d: 'let them talk again', who: 'mod' },
+  { n: 'kick', a: '@user', d: 'remove someone from this group', who: 'mod' },
+  { n: 'slow', a: '10s | 1m | off', d: 'slow mode for this group', who: 'mod' },
+  { n: 'modlog', d: 'what the mods did here', who: 'mod' },
+  { n: 'mod', a: '@user', d: 'make someone a mod', who: 'host' },
+  { n: 'unmod', a: '@user', d: 'take mod away', who: 'host' },
+  { n: 'ban', a: '@user reason', d: 'suspend an account', who: 'admin' },
+  { n: 'unban', a: '@user', d: 'restore an account', who: 'admin' },
+  { n: 'gmute', a: '@user 1h', d: 'mute someone everywhere', who: 'admin' },
+  { n: 'ungmute', a: '@user', d: 'lift a global mute', who: 'admin' },
+  { n: 'warn', a: '@user reason', d: 'send a warning', who: 'admin' },
+  { n: 'verify', a: '@user', d: 'verify someone', who: 'admin' },
+  { n: 'unverify', a: '@user', d: 'remove verification', who: 'admin' },
+  { n: 'beta', a: '@user 1w | clear', d: 'give or remove beta', who: 'admin' },
+  { n: 'whois', a: '@user', d: 'look someone up', who: 'admin' },
+  { n: 'announce', a: 'title | message', d: 'announce to everyone online', who: 'admin' },
+  { n: 'audit', d: 'open the audit log', who: 'admin' },
+  { n: 'stats', d: 'open the stats page', who: 'admin' },
+  { n: 'appeals', d: 'open the appeals', who: 'admin' },
+];
+function allowed(cmd, c) {
+  if (cmd.who === 'all') return true;
+  if (cmd.who === 'admin') return !!S.me.isAdmin;
+  if (cmd.who === 'mod') return staffOf(c);
+  if (cmd.who === 'host') return !!c && c.type === 'group' && (c.role === 'admin' || S.me.isAdmin);
+  return false;
+}
+const availableCmds = (c) => CMDS.filter((x) => allowed(x, c));
+function helpModal(c, input) {
+  const m = modal('commands', el('div', null, el('p', { class: 'muted small', style: 'margin-top:0' }, 'type these in any chat. tap one to put it in the box.'),
+    ...['all', 'mod', 'host', 'admin'].map((w) => { const list = availableCmds(c).filter((x) => x.who === w); return list.length ? el('div', null, el('h4', null, { all: 'everyone', mod: 'mods and hosts (groups)', host: 'group hosts', admin: 'admins' }[w]),
+      list.map((x) => el('button', { class: 'cmdrow', onclick: () => { m.close(); const i = chat().input; if (i) { i.value = '/' + x.n + ' '; i.focus(); i.dispatchEvent(new Event('input')); } } }, el('b', null, '/' + x.n), x.a ? el('i', null, x.a) : null, el('span', { class: 'muted' }, x.d)))) : null; })));
+}
+const firstWord = (s) => { const m = String(s).trim().match(/^@?([a-z0-9_]{1,20})\s*(.*)$/is); return m ? { user: m[1].toLowerCase(), rest: m[2].trim() } : { user: '', rest: '' }; };
+
+async function slash(c, raw) {
+  const m = raw.match(/^\/([a-z]+)(?:\s+([\s\S]*))?$/i);
+  if (!m) return false;
+  const cmd = CMDS.find((x) => x.n === m[1].toLowerCase());
+  if (!cmd) return false;                                    // not one of ours, so it is just a message
+  const arg = (m[2] || '').trim();
+  if (!allowed(cmd, c)) { toast(`you cannot use /${cmd.n} here`, 'error'); return true; }
+  const ok = (t) => toast(t, 'success');
+  const fail = (e) => toast(e.message || String(e), 'error');
+  const target = () => { const w = firstWord(arg); if (!w.user) { toast(`use /${cmd.n} ${cmd.a || '@user'}`, 'error'); return null; } return w; };
+  const member = (w) => { const u = c.members.find((x) => x.username === w.user); if (!u) toast(`@${w.user} is not in this group`, 'error'); return u; };
+  try {
+    switch (cmd.n) {
+      case 'help': helpModal(c); break;
+      case 'dnd': {
+        if (/^(off|stop|0)$/i.test(arg)) { await setDnd({ minutes: null }); ok('do not disturb is off'); break; }
+        const s = parseSecs(arg || '1h');
+        if (!s) { dndModal(); break; }
+        await setDnd({ minutes: Math.max(1, Math.round(s / 60)) }); ok(`do not disturb for ${niceSecs(s)}`); break;
+      }
+      case 'search': searchModal(c, arg); break;
+      case 'remind': {
+        if (!betaGate('reminders')) break;
+        const w = String(arg).match(/^(\S+)\s*([\s\S]*)$/);
+        const s = w ? parseSecs(w[1]) : 0;
+        if (!s || s < 60) { toast('use /remind 10m call mum  (minutes, h, d)', 'error'); break; }
+        if (!w[2].trim()) { toast('say what to remind you about', 'error'); break; }
+        await api('POST', '/api/reminders', { minutes: Math.round(s / 60), note: w[2].trim(), convId: c.id }); ok(`i will remind you in ${niceSecs(s)}`); break;
+      }
+      case 'block': case 'unblock': { const w = target(); if (!w) break; await api(cmd.n === 'block' ? 'POST' : 'DELETE', '/api/blocks/' + encodeURIComponent(w.user)); ok(`@${w.user} ${cmd.n}ed`); break; }
+      case 'shrug': { const text = ((arg ? arg + ' ' : '') + '¯\\_(ツ)_/¯'); await sendPayload(c, { t: 'text', text }); break; }
+      case 'mute': {
+        if (c.type !== 'group') { toast(S.me.isAdmin ? 'mutes work inside groups, use /gmute @user to mute someone everywhere' : 'mutes only work in groups', 'error'); break; }
+        const w = target(); if (!w) break; const u = member(w); if (!u) break;
+        const s = parseSecs(w.rest || '10m') || 600;
+        await api('POST', `/api/conversations/${c.id}/mutes/${u.id}`, { minutes: Math.max(1, Math.round(s / 60)) }); ok(`@${u.username} is muted for ${niceSecs(s)}`); break;
+      }
+      case 'unmute': { const w = target(); if (!w) break; const u = member(w); if (!u) break; await api('DELETE', `/api/conversations/${c.id}/mutes/${u.id}`); ok(`@${u.username} can talk again`); break; }
+      case 'kick': {
+        const w = target(); if (!w) break; const u = member(w); if (!u) break;
+        if (u.id === S.me.id) { toast('use the leave button for that', 'error'); break; }
+        if (!(U.myRank(c) > U.rankR(u.isAdmin, u.role))) { toast('you cannot remove them', 'error'); break; }
+        if (await confirmModal(`remove @${u.username}?`, c.isPublic ? 'they cannot rejoin.' : 'the group key changes, so they cannot read anything new.', 'remove')) { await U.removeMember(c, u.id); ok(`@${u.username} was removed`); }
+        break;
+      }
+      case 'slow': {
+        if (c.type !== 'group') { toast('slow mode is for groups', 'error'); break; }
+        const s = /^(off|0|none)$/i.test(arg) ? 0 : parseSecs(arg, 's');
+        if (![0, 5, 10, 30, 60, 300, 900].includes(s)) { toast('slow mode can be 5s, 10s, 30s, 1m, 5m, 15m or off', 'error'); break; }
+        await api('PUT', `/api/conversations/${c.id}/slow`, { seconds: s }); ok(s ? `slow mode on: one message every ${niceSecs(s)}` : 'slow mode is off'); break;
+      }
+      case 'modlog': X0.modlogModal(c); break;
+      case 'mod': case 'unmod': {
+        const w = target(); if (!w) break; const u = member(w); if (!u) break;
+        await api('POST', `/api/conversations/${c.id}/mods/${u.id}`, { on: cmd.n === 'mod' }); ok(cmd.n === 'mod' ? `@${u.username} is a mod now` : `@${u.username} is not a mod anymore`); break;
+      }
+      case 'audit': case 'stats': case 'appeals': U.goAdminTab(cmd.n === 'audit' ? 'audit' : cmd.n); break;
+      case 'announce': { const r = await api('POST', '/api/cmd', { cmd: 'announce', arg }); ok(r.message); break; }
+      default: {                                             // ban unban gmute ungmute warn verify unverify beta whois
+        const w = target(); if (!w) break;
+        if (cmd.n === 'ban' && !(await confirmModal(`suspend @${w.user}?`, 'they are signed out right away and can appeal.', 'suspend'))) break;
+        const r = await api('POST', '/api/cmd', { cmd: cmd.n, target: w.user, arg: w.rest });
+        if (cmd.n === 'whois') whoisModal(r.info); else ok(r.message);
+      }
+    }
+  } catch (e) { fail(e); }
+  return true;
+}
+function whoisModal(i) {
+  const row = (k, v) => el('div', { class: 'urow' }, el('div', { class: 'grow muted' }, k), el('b', null, v));
+  modal('@' + i.username, el('div', null, row('name', i.displayName), row('joined', fmtDay(i.joined)), row('messages', i.messages), row('verified', i.verified ? 'yes' : 'no'), row('beta', i.beta ? 'until ' + fmtDay(i.betaUntil) : 'no'), row('online', i.online ? 'yes' : 'no'),
+    i.isAdmin ? row('role', 'admin') : null, i.banned ? row('suspended', i.banReason || 'yes') : null, i.mutedUntil && new Date(i.mutedUntil) > new Date() ? row('muted until', fmtTime(i.mutedUntil)) : null));
+}
+
+// ---------- suggestions: / commands, @ people, then the old :emoji: ones ----------
+function drawM(input, box) {
+  const s = box._m; if (!s) return;
+  box.classList.add('on');
+  box.replaceChildren(...s.list.map((x, i) => (s.kind === 'cmd'
+    ? el('button', { class: 'cmdsug' + (i === s.idx ? ' on' : ''), onmousedown: (e) => { e.preventDefault(); s.idx = i; pickM(input, box); } }, el('b', null, '/' + x.n), x.a ? el('i', null, x.a) : null, el('span', { class: 'muted' }, x.d))
+    : el('button', { class: i === s.idx ? 'on' : '', onmousedown: (e) => { e.preventDefault(); s.idx = i; pickM(input, box); } }, avatar(x.displayName, 24, '', x.avatar), el('span', null, x.displayName), el('span', { class: 'muted' }, '@' + x.username)))));
+}
+function pickM(input, box) {
+  const s = box._m; if (!s) return;
+  const x = s.list[s.idx];
+  input.setRangeText(s.kind === 'cmd' ? '/' + x.n + ' ' : '@' + x.username + ' ', s.start, s.end, 'end');
+  box.classList.remove('on'); box._m = null;
+  input.dispatchEvent(new Event('input')); input.focus();
+}
+function suggest(input, box) {
+  const c = convOf(S.active);
+  const pos = input.selectionStart ?? input.value.length;
+  const before = input.value.slice(0, pos);
+  box._m = null;
+  let m = c && before.match(/^\/([a-z]*)$/i);
+  if (m) {
+    const list = availableCmds(c).filter((x) => x.n.startsWith(m[1].toLowerCase())).slice(0, 8);
+    if (list.length) { box._s = null; box._m = { kind: 'cmd', list, idx: 0, start: 0, end: pos }; return drawM(input, box); }
+  }
+  m = c && before.match(/(^|\s)@([a-z0-9_]{0,20})$/i);
+  if (m) {
+    const q = m[2].toLowerCase();
+    const list = c.members.filter((x) => x.id !== S.me.id && (x.username.startsWith(q) || x.displayName.toLowerCase().startsWith(q))).slice(0, 6);
+    if (list.length) { box._s = null; box._m = { kind: 'mention', list, idx: 0, start: pos - q.length - 1, end: pos }; return drawM(input, box); }
+  }
+  oldSuggest(input, box);                                    // the :emoji: suggestions
+}
+function suggestKey(e, input, box) {
+  const s = box._m;
+  if (s && box.classList.contains('on')) {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); s.idx = (s.idx + (e.key === 'ArrowDown' ? 1 : s.list.length - 1)) % s.list.length; drawM(input, box); return true; }
+    if (e.key === 'Tab' || e.key === 'Enter') {
+      if (e.key === 'Enter' && s.kind === 'cmd' && !s.list[s.idx].a && input.value.trim() === '/' + s.list[s.idx].n) return false;   // a finished no-argument command just sends
+      if (e.key === 'Enter' && s.kind === 'mention' && input.value.startsWith('/') && input.value.slice(s.start + 1, s.end).toLowerCase() === s.list[s.idx].username) { box.classList.remove('on'); box._m = null; return false; }   // a finished /command @name just sends
+      e.preventDefault(); pickM(input, box); return true;
+    }
+    if (e.key === 'Escape') { box.classList.remove('on'); box._m = null; return true; }
+  }
+  return oldSuggestKey(e, input, box);
+}
+
+// ---------- forwarding ----------
+function forwardModal(c, m) {
+  const p = m._p || {};
+  const list = el('div', { class: 'ulist' });
+  const q = el('input', { placeholder: 'find a chat' });
+  const mm = modal('forward to...', el('div', null, el('div', { class: 'searchbox' }, ic('search', 16), q), list));
+  const draw = () => {
+    const needle = q.value.trim().toLowerCase();
+    const rows = S.convs.filter((x) => !(x.systemKind === 'beta' && !C.betaActive()) && (!needle || convTitle(x).toLowerCase().includes(needle)));
+    list.replaceChildren(...(rows.length ? rows.map((x) => { const o = x.type === 'dm' ? C.other(x) : null; return el('div', { class: 'urow click', onclick: () => doForward(c, m, x, mm) }, o ? avatar(convTitle(x), 36, '', o.avatar) : el('div', { class: 'avatar', style: `width:36px;height:36px;background:${C.tone(x.name || '')}` }, ic(x.isPublic ? 'globe' : 'users', 16)), el('div', { class: 'grow' }, el('div', { class: 'ctitle' }, convTitle(x)), el('div', { class: 'muted small' }, x.type === 'dm' ? 'direct message' : x.isPublic ? 'public group' : 'group')), ic('forward', 16)); }) : [el('div', { class: 'muted pad' }, 'no chats match')]));
+  };
+  q.addEventListener('input', draw); draw(); q.focus();
+  if (!['text', 'gif', 'game', 'image', 'sticker', 'voice'].includes(p.t)) { toast('that kind of message cannot be forwarded', 'error'); mm.close(); }
+}
+async function doForward(src, m, dst, mm) {
+  const p = m._p || {};
+  const from = memberOf(src, m.senderId);
+  const payload = { ...p }; delete payload.reply; delete payload.fwd;
+  payload.fwd = { name: m.senderId === S.me.id ? S.me.displayName : from ? from.displayName : '' };
+  let extra;
+  try {
+    if (['sticker', 'voice', 'image'].includes(p.t) && !betaGate(p.t === 'image' ? 'sending photos' : p.t === 'voice' ? 'voice notes' : 'stickers')) return;
+    if (p.t === 'image') {
+      if (dst.isPublic || dst.systemKind) return toast('photos are not allowed in public rooms', 'error');
+      toast('copying the photo...', 'info');
+      const id = await uploadBlob(dst, await fetchBlobBytes(p.blob));   // same encrypted bytes, same key, new home
+      payload.blob = id; extra = { blob: id };
+    }
+    if (await sendPayload(dst, payload, false, extra)) { toast('forwarded to ' + convTitle(dst), 'success'); mm.close(); }
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+// ---------- search inside a chat ----------
+const textOfPayload = (p) => [p.text, p.caption, p.title, p.q, p.name, p.inner && p.inner.caption].filter((x) => typeof x === 'string').join(' ');
+async function searchModal(c, preset) {
+  const q = el('input', { placeholder: 'search ' + convTitle(c), value: preset || '' });
+  const status = el('div', { class: 'muted small', style: 'margin:6px 2px' });
+  const list = el('div', { class: 'sres' });
+  const mm = modal('search', el('div', null, el('div', { class: 'searchbox' }, ic('search', 16), q), status, list), { wide: true });
+  let loaded = false;
+  const draw = () => {
+    const needle = q.value.trim().toLowerCase();
+    if (needle.length < 2) { list.replaceChildren(el('div', { class: 'muted pad' }, 'type 2 or more letters')); return; }
+    const hits = c.msgs.filter((x) => !x.deleted && x._p && textOfPayload(x._p).toLowerCase().includes(needle)).reverse().slice(0, 80);
+    status.textContent = loaded ? `${hits.length}${hits.length === 80 ? '+' : ''} match${hits.length === 1 ? '' : 'es'} in ${c.msgs.length} messages` : 'still loading older messages...';
+    list.replaceChildren(...(hits.length ? hits.map((x) => {
+      const s = memberOf(c, x.senderId);
+      const t = textOfPayload(x._p), at = t.toLowerCase().indexOf(needle), a = Math.max(0, at - 30);
+      return el('div', { class: 'urow click', onclick: () => { mm.close(); jumpTo(c, x.id); } }, avatar(s ? s.displayName : x.senderId === S.me.id ? S.me.displayName : '?', 32, '', s && s.avatar),
+        el('div', { class: 'grow' }, el('div', { class: 'small muted' }, (x.senderId === S.me.id ? 'you' : s ? s.displayName : 'someone') + ' · ' + fmtDay(x.createdAt).toLowerCase() + ' ' + fmtTime(x.createdAt)),
+          el('div', { class: 'snip' }, (a ? '...' : '') + t.slice(a, at), el('mark', null, t.slice(at, at + needle.length)), t.slice(at + needle.length, at + needle.length + 70))));
+    }) : [el('div', { class: 'muted pad' }, 'nothing found')]));
+  };
+  q.addEventListener('input', C.debounce(draw, 150));
+  draw(); q.focus();
+  let pages = 0;                                             // pull in the older history so the search sees it all (messages only live a couple of days anyway)
+  while (c.hasMore && pages < 20 && mm.box.isConnected) { try { await C.loadMessages(c, true); } catch { break; } pages++; draw(); }
+  loaded = true; draw(); c._shown = null;
+}
+
+// ---------- encrypted images + view once ----------
+const IMG_MAX = 5 * 1024 * 1024;
+const blobUrls = new Map();                                  // blob id -> object url, kept for this session
+const authHdr = () => ({ Authorization: 'Bearer ' + S.token });
+async function fetchBlobBytes(id) {
+  const r = await fetch(C.API + '/api/blobs/' + id, { headers: authHdr() }).catch(() => null);
+  if (!r) throw new Error('cannot reach the server');
+  if (!r.ok) throw new Error(r.status === 404 ? 'that photo is gone' : 'could not load the photo');
+  return new Uint8Array(await r.arrayBuffer());
+}
+async function uploadBlob(c, bytes) {
+  const r = await fetch(`${C.API}/api/blobs?conv=${c.id}`, { method: 'POST', headers: { ...authHdr(), 'Content-Type': 'application/octet-stream' }, body: bytes }).catch(() => null);
+  if (!r) throw new Error('cannot reach the server');
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) { const e = new Error(d.message || d.error || 'upload failed'); e.status = r.status; e.data = d; throw e; }
+  return d.id;
+}
+const imgOk = (p) => p && /^[0-9a-f-]{36}$/i.test(p.blob || '') && /^[A-Za-z0-9+/=_-]{20,60}$/.test(p.key || '') && /^[A-Za-z0-9+/=_-]{10,30}$/.test(p.iv || '') && /^image\/(png|jpeg|gif|webp)$/.test(p.mime || '');
+async function decryptBlob(p, bytes) {
+  const key = await C.subtle.importKey('raw', C.unb64(p.key), 'AES-GCM', false, ['decrypt']);
+  return new Uint8Array(await C.subtle.decrypt({ name: 'AES-GCM', iv: C.unb64(p.iv) }, key, bytes));
+}
+const canvasOf = (bmp, max) => { const k = Math.min(1, max / Math.max(bmp.width, bmp.height)); const cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round(bmp.width * k)); cv.height = Math.max(1, Math.round(bmp.height * k)); const g = cv.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height); g.drawImage(bmp, 0, 0, cv.width, cv.height); return cv; };
+const toBlob = (cv, q) => new Promise((ok) => cv.toBlob(ok, 'image/jpeg', q));
+async function prepareImage(file) {
+  if (!/^image\/(png|jpeg|gif|webp)$/.test(file.type)) throw new Error('pick a png, jpg, gif or webp picture');
+  let blob = file;
+  const bmp = await createImageBitmap(file).catch(() => null);
+  if (!bmp) throw new Error('could not read that picture');
+  if (file.size > IMG_MAX) {                                  // too big: squeeze it as a jpg
+    if (file.type === 'image/gif') throw new Error('gifs have to be under 5 MB');
+    blob = await toBlob(canvasOf(bmp, 2600), 0.85);
+    if (!blob || blob.size > IMG_MAX) throw new Error('that picture is over 5 MB even after shrinking');
+  }
+  let thumb = '', q = 0.65;
+  const tc = canvasOf(bmp, 220);
+  do { thumb = tc.toDataURL('image/jpeg', q); q -= 0.1; } while (thumb.length > 22000 && q > 0.2);
+  return { blob, w: bmp.width, h: bmp.height, thumb, mime: blob.type };
+}
+async function sendImage(c, file, opts = {}) {
+  const prep = await prepareImage(file);
+  const raw = C.rand(32), iv = C.rand(12);
+  const key = await C.subtle.importKey('raw', raw, 'AES-GCM', false, ['encrypt']);
+  const ct = new Uint8Array(await C.subtle.encrypt({ name: 'AES-GCM', iv }, key, await prep.blob.arrayBuffer()));
+  const id = await uploadBlob(c, ct);
+  const inner = { t: 'image', blob: id, key: C.b64(raw), iv: C.b64(iv), mime: prep.mime, w: prep.w, h: prep.h, size: prep.blob.size };
+  if (!opts.once) inner.thumb = prep.thumb;                   // a view once photo carries no preview
+  if (opts.caption) inner.caption = opts.caption;
+  if (c._reply && !opts.once) inner.reply = c._reply;
+  const ok = await sendPayload(c, opts.once ? { t: 'once', inner } : inner, false, { blob: id, ...(opts.once ? { once: true } : {}) });
+  if (ok && c._reply) { c._reply = null; drawReply(c); }
+  return ok;
+}
+function pickPhoto(c) {
+  if (!betaGate('sending photos')) return;
+  if (c.isPublic || c.systemKind) return toast('photos are not allowed in public rooms', 'error');
+  const f = el('input', { type: 'file', accept: 'image/png,image/jpeg,image/gif,image/webp', style: 'display:none' });
+  f.addEventListener('change', () => { const file = f.files[0]; f.remove(); if (file) photoModal(c, file); });
+  document.body.append(f); f.click();
+}
+function photoModal(c, file) {
+  const url = URL.createObjectURL(file);
+  const cap = el('input', { placeholder: 'add a caption (optional)', maxLength: 300 });
+  const once = el('input', { type: 'checkbox' });
+  const err = el('div', { class: 'form-err' });
+  const send = el('button', { class: 'btn primary wide', onclick: async () => {
+    const caption = cap.value.trim();
+    if (caption && C.F.check(caption)) { err.textContent = 'keep the caption clean'; return; }
+    send.disabled = true; send.textContent = 'encrypting and sending...'; err.textContent = '';
+    try { if (await sendImage(c, file, { caption, once: once.checked })) { mm.close(); } else { send.disabled = false; send.textContent = 'send'; } }
+    catch (e) { err.textContent = e.message; send.disabled = false; send.textContent = 'send'; }
+  } }, 'send');
+  const mm = modal('send a photo', el('div', null, el('img', { src: url, class: 'photoprev' }), el('div', { class: 'muted small', style: 'margin:6px 0' }, `${fmtSize(file.size)}${file.size > IMG_MAX ? ' - will be shrunk to fit 5 MB' : ''} · encrypted before it leaves your device`),
+    cap, c.type === 'dm' ? el('label', { class: 'checkrow' }, once, 'view once (it disappears after they open it)') : null, err, send), { onClose: () => URL.revokeObjectURL(url) });
+}
+function imageBody(c, m, p) {
+  if (!imgOk(p)) return el('div', { class: 'mtext muted-i' }, 'could not show this photo');
+  const w = clampN(p.w, 1, 20000, 200), h = clampN(p.h, 1, 20000, 200);
+  const k = Math.min(1, 260 / w, 320 / h);
+  const thumb = /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(p.thumb || '') ? p.thumb : '';
+  return el('div', { class: 'imgwrap' },
+    el('div', { class: 'imgmsg click', onclick: () => openImage(c, m, p) }, thumb ? el('img', { src: thumb, width: Math.round(w * k), height: Math.round(h * k), alt: 'photo', draggable: false }) : el('div', { class: 'imgph', style: `width:${Math.round(w * k)}px;height:${Math.round(h * k)}px` }, ic('image', 28)),
+      el('span', { class: 'imgsize' }, ic('expand', 12), fmtSize(clampN(p.size, 1, IMG_MAX * 2, 0)))),
+    typeof p.caption === 'string' && p.caption ? el('div', { class: 'mtext' }, U.linkify(p.caption, c)) : null);
+}
+const clampN = (v, lo, hi, d) => (Number.isFinite(+v) ? Math.min(hi, Math.max(lo, +v)) : d);
+async function openImage(c, m, p) {
+  try {
+    let url = blobUrls.get(p.blob);
+    if (!url) { toast('loading the photo...', 'info'); const plain = await decryptBlob(p, await fetchBlobBytes(p.blob)); url = URL.createObjectURL(new Blob([plain], { type: p.mime })); blobUrls.set(p.blob, url); }
+    lightbox(url, { download: true });
+  } catch (e) { toast(e.message || 'could not open the photo', 'error'); }
+}
+function lightbox(url, opts = {}) {
+  const box = el('div', { class: 'lightbox', onclick: (e) => { if (e.target === box) close(); } },
+    el('img', { src: url, alt: 'photo' }),
+    el('div', { class: 'lbbar' }, opts.note ? el('span', { class: 'lbnote' }, ic('eye', 14), opts.note) : null, opts.download ? el('a', { class: 'btn small', href: url, download: 'photo' }, 'save') : null, el('button', { class: 'btn small', onclick: () => close() }, 'close')));
+  const onKey = (e) => { if (e.key === 'Escape') close(); };
+  const close = () => { document.removeEventListener('keydown', onKey); box.remove(); opts.onClose && opts.onClose(); };
+  document.addEventListener('keydown', onKey);
+  document.body.append(box);
+}
+function onceBody(c, m, p) {
+  const mine = m.senderId === S.me.id;
+  const inner = p && p.inner ? p.inner : {};
+  const kind = inner.t === 'image' ? 'photo' : 'message';
+  if (m.deleted) return el('div', { class: 'oncecard gone' }, ic('eye', 16), 'view once · opened');
+  if (mine) return el('div', { class: 'oncecard gone' }, ic('eye', 16), `view once ${kind} · not opened yet`);
+  return el('button', { class: 'oncecard', onclick: () => openOnce(c, m, p) }, ic('eye', 18), el('span', { class: 'grow' }, `view once ${kind}`), el('span', { class: 'muted small' }, 'tap to open'));
+}
+async function openOnce(c, m, p) {
+  const inner = p.inner || {};
+  try {
+    let plain = null;
+    if (inner.t === 'image') {
+      if (!imgOk(inner)) return toast('could not open that', 'error');
+      toast('opening...', 'info');
+      plain = await decryptBlob(inner, await fetchBlobBytes(inner.blob));   // fetched first, because opening wipes it on the server
+    }
+    await api('POST', `/api/messages/${m.id}/viewed`, null, { quiet: true });
+    if (inner.t === 'image') { const url = URL.createObjectURL(new Blob([plain], { type: inner.mime })); lightbox(url, { note: 'view once: it is gone after this', onClose: () => URL.revokeObjectURL(url) }); if (inner.caption) toast(inner.caption, 'info'); }
+    else modal('view once', el('div', null, el('div', { class: 'mtext oncetext' }, U.linkify(String(inner.text || ''), c)), el('p', { class: 'muted small', style: 'margin-bottom:0' }, 'this message is gone now.')));
+  } catch (e) { toast(e.status === 404 ? 'that was already opened' : e.message, 'error'); }
+}
+function onceModal(c) {
+  if (c.type !== 'dm') return toast('view once works in direct messages', 'error');
+  const ta = el('textarea', { rows: 4, maxLength: 1500, placeholder: 'this disappears after they open it' });
+  const send = el('button', { class: 'btn primary', onclick: async () => {
+    const text = C.expandShortcodes(ta.value.trim());
+    if (!text) return;
+    if (C.F.check(text)) return toast('keep it clean, that was not sent', 'error');
+    send.disabled = true;
+    if (await sendPayload(c, { t: 'once', inner: { t: 'text', text } }, false, { once: true })) mm.close(); else send.disabled = false;
+  } }, 'send');
+  const mm = modal('view once message', el('div', null, el('p', { class: 'muted small', style: 'margin-top:0' }, 'they open it once, then it is deleted for both of you. they could still screenshot it, so only send it to people you trust.'), ta,
+    el('div', { class: 'row gap', style: 'margin-top:10px' }, el('button', { class: 'btn grow', onclick: () => { mm.close(); pickPhoto(c); } }, ic('image', 16), 'send a photo instead'), send)));
+  ta.focus();
+}
+
+// ---------- reminders (beta) ----------
+function remindModal(c, m) {
+  if (!betaGate('reminders')) return;
+  const note = el('input', { placeholder: 'note (optional)', maxLength: 120 });
+  const custom = el('input', { placeholder: 'or type: 45m, 5h, 2d' });
+  const go = async (mins) => {
+    if (!mins || mins < 1) return toast('pick a time', 'error');
+    try { await api('POST', '/api/reminders', { msgId: m.id, minutes: mins, note: note.value.trim() }); toast(`ok, i will remind you in ${niceSecs(mins * 60)}`, 'success'); mm.close(); }
+    catch (e) { toast(e.message, 'error'); }
+  };
+  const tomorrow = () => { const t = new Date(); t.setDate(t.getDate() + 1); t.setHours(9, 0, 0, 0); return Math.round((t - Date.now()) / 60000); };
+  const mm = modal('remind me', el('div', null, el('p', { class: 'muted small', style: 'margin-top:0' }, 'you get a notification. messages vanish after a couple of days, so add a note if it matters. the note is not end-to-end encrypted.'), note,
+    el('div', { class: 'row gap wraprow', style: 'margin-top:10px' }, [['10 min', 10], ['1 hour', 60], ['3 hours', 180], ['tomorrow 9am', tomorrow()]].map(([l, v]) => el('button', { class: 'btn small', onclick: () => go(v) }, l))),
+    el('div', { class: 'row gap', style: 'margin-top:10px' }, custom, el('button', { class: 'btn', onclick: () => go(Math.round(parseSecs(custom.value) / 60)) }, 'set'))));
+}
+async function remindersModal() {
+  if (!betaGate('reminders')) return;
+  const body = el('div', null, el('div', { class: 'muted pad' }, '...'));
+  const mm = modal('reminders', body);
+  const draw = async () => {
+    try {
+      const d = await api('GET', '/api/reminders', null, { quiet: true });
+      body.replaceChildren(...(d.reminders.length ? d.reminders.map((r) => { const cv = r.convId && convOf(r.convId); return el('div', { class: 'urow' }, ic('bell', 18), el('div', { class: 'grow' }, el('div', { class: 'ctitle' }, r.note || (r.msgId ? 'a message you saved' : 'reminder')), el('div', { class: 'muted small' }, `${fmtDay(r.at).toLowerCase()} ${fmtTime(r.at)}${cv ? ' · ' + convTitle(cv) : ''}`)), el('button', { class: 'icon-btn', title: 'delete', onclick: async () => { await api('DELETE', '/api/reminders/' + r.id).catch(() => {}); draw(); } }, ic('trash', 16))); }) : [el('div', { class: 'muted pad' }, 'nothing waiting. long press a message and tap the bell, or type /remind 1h call mum')]));
+    } catch (e) { body.replaceChildren(el('div', { class: 'form-err' }, e.message)); }
+  };
+  draw();
+}
+
+// ---------- wallpapers (beta) ----------
+const WP = {
+  dusk: 'linear-gradient(160deg,#3a2740,#1e2a4a)', ember: 'linear-gradient(160deg,#4a2418,#2a1410)', moss: 'linear-gradient(160deg,#243a2a,#14241a)', ocean: 'linear-gradient(160deg,#173a4a,#0f2230)',
+  plum: 'linear-gradient(160deg,#4a2446,#2a1430)', slate: 'linear-gradient(160deg,#3a4250,#232a34)', night: '#0f0d0b', dots: 'radial-gradient(circle at 1px 1px,rgba(255,255,255,.12) 1px,transparent 0) 0 0/18px 18px,#1c1612',
+  sand: 'linear-gradient(160deg,#e8d6b4,#d9bf94)', rose: 'linear-gradient(160deg,#f0c8c4,#e2a6a8)', mint: 'linear-gradient(160deg,#c9e6d2,#a4d1b8)', paper: '#f4ead9',
+};
+const wpCss = (w) => {
+  if (!w) return '';
+  if (w.k === 'preset' && WP[w.id]) return WP[w.id];
+  if (w.k === 'grad' && /^#[0-9a-f]{6}$/i.test(w.a) && /^#[0-9a-f]{6}$/i.test(w.b)) return `linear-gradient(160deg,${w.a},${w.b})`;
+  if (w.k === 'img' && /^https:\/\/[^\s"'()<>\\]+$/.test(w.url || '')) return `center/cover no-repeat url("${w.url}")`;
+  return '';
+};
+const wpOf = (id) => (C.betaActive() ? (S.me.wallpapers || {})[id] || (S.me.wallpapers || {}).default : null);
+function applyWallpaper(c) {
+  const r = chat(); if (!r.msgs || !c || r.convId !== c.id) return;
+  const css = wpCss(wpOf(c.id));
+  r.msgs.classList.toggle('haswp', !!css);
+  r.msgs.style.background = css;
+}
+function wallpaperModal(c) {
+  if (!betaGate('wallpapers')) return;
+  let scope = c ? c.id : 'default';
+  const body = el('div');
+  const mm = modal('chat wallpaper', body);
+  const save = async (wp) => {
+    try { const d = await api('PUT', '/api/me/wallpapers', { convId: scope, wp }); S.me.wallpapers = d.wallpapers; applyWallpaper(convOf(S.active)); draw(); }
+    catch (e) { toast(e.message, 'error'); }
+  };
+  const draw = () => {
+    const cur = (S.me.wallpapers || {})[scope];
+    const a = el('input', { type: 'color', value: cur && cur.k === 'grad' ? cur.a : '#3a2740' }), b = el('input', { type: 'color', value: cur && cur.k === 'grad' ? cur.b : '#1e2a4a' });
+    const url = el('input', { placeholder: 'https:// image link', value: cur && cur.k === 'img' ? cur.url : '' });
+    body.replaceChildren(
+      c ? el('div', { class: 'seg small' }, el('button', { class: scope === c.id ? 'on' : '', onclick: () => { scope = c.id; draw(); } }, 'this chat'), el('button', { class: scope === 'default' ? 'on' : '', onclick: () => { scope = 'default'; draw(); } }, 'every chat')) : el('p', { class: 'muted small', style: 'margin-top:0' }, 'this is the background for every chat. you can still pick a different one inside a chat.'),
+      el('p', { class: 'muted small' }, 'only you see your wallpapers.'),
+      el('div', { class: 'wpgrid' }, Object.keys(WP).map((id) => el('button', { class: 'wpopt' + (cur && cur.k === 'preset' && cur.id === id ? ' on' : ''), title: id, style: `background:${WP[id]}`, onclick: () => save({ k: 'preset', id }) }))),
+      el('h4', null, 'your own colors'),
+      el('div', { class: 'row gap' }, a, b, el('button', { class: 'btn grow', onclick: () => save({ k: 'grad', a: a.value, b: b.value }) }, 'use gradient')),
+      el('h4', null, 'a picture'),
+      el('div', { class: 'row gap' }, url, el('button', { class: 'btn', onclick: () => save({ k: 'img', url: url.value.trim() }) }, 'use')),
+      el('p', { class: 'muted small' }, 'a picture is loaded from its website, so that site can see your address.'),
+      cur ? el('button', { class: 'btn wide', onclick: () => save(null) }, 'remove wallpaper') : null);
+  };
+  draw();
+}
+const wrapBetaChanged = X0.betaChanged;
+
+Object.assign(window.__ext, {
+  dndActive, dndModal, sendBlock, drawModbar, slowLabel, setReply, drawReply, quoteEl, jumpTo, mentionIds, mentionsMe, slash, suggest, suggestKey, forwardModal, searchModal,
+  imageBody, onceBody, onceModal, pickPhoto, remindModal, remindersModal, wallpaperModal, applyWallpaper, lightbox, whoisModal, niceSecs, parseSecs, betaGate,
+  betaChanged: () => { if (wrapBetaChanged) wrapBetaChanged(); applyWallpaper(convOf(S.active)); U.renderHeader(); },
+});
+})();
+
+/* ===== Chatroom client: mod tools, admin panes (appeals, audit log, stats), appeal screen, and app start ===== */
+(() => {
+'use strict';
+const C = window.__core, U = window.__ui;
+const { S, el, ic, avatar, api, toast, fmtTime, fmtDay, ago } = C;
+const { modal, confirmModal } = U;
+const X = window.__ext;
+
+const when = (t) => `${fmtDay(t).toLowerCase()} ${fmtTime(t)}`;
+
+// ---------- group mod tools ----------
+function memberTools(c, u, redraw) {
+  if (c.type !== 'group' || u.id === S.me.id || U.myRank(c) < 1 || U.myRank(c) <= U.rankR(u.isAdmin, u.role)) return [];
+  return [el('button', { class: 'icon-btn', title: 'mod tools', onclick: () => modToolsModal(c, u, redraw) }, ic('hammer', 16))];
+}
+function modToolsModal(c, u, redraw) {
+  const run = async (fn, msg) => { try { await fn(); toast(msg, 'success'); mm.close(); redraw && redraw(); } catch (e) { toast(e.message, 'error'); } };
+  const mute = (mins, label) => el('button', { class: 'btn small', onclick: () => run(() => api('POST', `/api/conversations/${c.id}/mutes/${u.id}`, { minutes: mins }), `${u.displayName} muted for ${label}`) }, label);
+  const isHost = c.role === 'admin' || S.me.isAdmin;
+  const mm = modal('@' + u.username, el('div', null,
+    el('h4', { style: 'margin-top:0' }, ic('mute', 14), 'mute in this group'),
+    el('div', { class: 'row gap wraprow' }, mute(5, '5 min'), mute(60, '1 hour'), mute(1440, '1 day'), mute(10080, '1 week')),
+    el('button', { class: 'btn small wide', style: 'margin-top:8px', onclick: () => run(() => api('DELETE', `/api/conversations/${c.id}/mutes/${u.id}`), 'unmuted') }, 'unmute'),
+    isHost && u.role !== 'admin' ? el('div', null, el('h4', null, ic('shield', 14), 'moderator'),
+      el('button', { class: 'btn wide', onclick: () => run(() => api('POST', `/api/conversations/${c.id}/mods/${u.id}`, { on: u.role !== 'mod' }), u.role === 'mod' ? 'mod removed' : 'now a mod') }, u.role === 'mod' ? 'remove mod' : 'make mod')) : null));
+}
+function staffSection(c, redraw) {
+  if (c.type !== 'group' || U.myRank(c) < 1) return null;
+  const sel = el('select', null, [[0, 'off'], [5, '5 seconds'], [10, '10 seconds'], [30, '30 seconds'], [60, '1 minute'], [300, '5 minutes'], [900, '15 minutes']].map(([v, l]) => el('option', { value: v, selected: (c.slowSeconds || 0) === v }, l)));
+  sel.addEventListener('change', async () => { try { await api('PUT', `/api/conversations/${c.id}/slow`, { seconds: +sel.value }); c.slowSeconds = +sel.value || null; toast(+sel.value ? 'slow mode on' : 'slow mode off', 'success'); U.renderHeader(); X.drawModbar(c); } catch (e) { toast(e.message, 'error'); sel.value = c.slowSeconds || 0; } });
+  return el('div', null, el('h4', null, ic('timer', 14), 'slow mode'), el('div', { class: 'row gap' }, sel, el('button', { class: 'btn', onclick: () => modlogModal(c) }, ic('list', 16), 'mod log')),
+    el('p', { class: 'muted small' }, 'mods and hosts are not slowed down. type /help in the chat for mod commands.'));
+}
+async function modlogModal(c) {
+  const body = el('div', null, el('div', { class: 'muted pad' }, '...'));
+  modal('mod log', body, { wide: true });
+  try {
+    const d = await api('GET', `/api/conversations/${c.id}/modlog`, null, { quiet: true });
+    body.replaceChildren(...(d.log.length ? d.log.map(logRow) : [el('div', { class: 'muted pad' }, 'nothing yet')]));
+  } catch (e) { body.replaceChildren(el('div', { class: 'form-err' }, e.message)); }
+}
+const ACTION_LABEL = (a) => String(a).replace(/_/g, ' ');
+function logRow(r) {
+  return el('div', { class: 'logrow' }, el('span', { class: 'logwhen' }, when(r.at)), el('span', { class: 'logact' }, ACTION_LABEL(r.action)),
+    el('span', { class: 'grow' }, el('b', null, r.actor || 'system'), r.target ? ' → ' + r.target : '', r.conv ? el('i', null, ' in ' + r.conv) : null, r.detail ? el('span', { class: 'muted' }, ' · ' + r.detail) : null));
+}
+
+// ---------- admin: appeals ----------
+async function adminAppeals(box, reload) {
+  box.replaceChildren(el('div', { class: 'muted pad' }, '...'));
+  try {
+    const d = await api('GET', '/api/admin/appeals?status=all', null, { quiet: true });
+    if (!d.appeals.length) return box.replaceChildren(el('div', { class: 'empty-s' }, el('div', null, 'no appeals')));
+    box.replaceChildren(...d.appeals.map((a, i) => el('div', { class: 'arow appeal', style: `--i:${Math.min(i, 12)}` },
+      avatar(a.displayName, 40),
+      el('div', { class: 'grow' },
+        el('div', { class: 'ctitle' }, a.displayName, el('span', { class: 'tag ' + (a.status === 'pending' ? 'gold' : '') }, a.status)),
+        el('div', { class: 'muted small' }, `@${a.username} · ${a.messages} msgs · ${ago(a.createdAt)}${a.banned ? '' : ' · not suspended now'}`),
+        a.banReason ? el('div', { class: 'small' }, el('b', null, 'suspended for: '), a.banReason) : null,
+        el('div', { class: 'appealmsg' }, a.message),
+        a.status !== 'pending' && a.response ? el('div', { class: 'small muted' }, `answer${a.decidedBy ? ' by ' + a.decidedBy : ''}: ${a.response}`) : null),
+      a.status === 'pending' ? el('button', { class: 'btn small primary', onclick: () => decideModal(a, () => { adminAppeals(box, reload); reload && reload(); }) }, 'answer') : null)));
+  } catch (e) { box.replaceChildren(el('div', { class: 'form-err' }, e.message)); }
+}
+function decideModal(a, done) {
+  const resp = el('textarea', { rows: 3, maxLength: 300, placeholder: 'reply to them (optional)' });
+  const go = async (approve) => {
+    try { await api('POST', `/api/admin/appeals/${a.id}`, { approve, response: resp.value.trim() }, { quiet: true }); toast(approve ? `@${a.username} is unsuspended` : 'appeal denied', 'success'); mm.close(); done && done(); }
+    catch (e) { toast(e.message, 'error'); }
+  };
+  const mm = modal('appeal from @' + a.username, el('div', null, a.banReason ? el('p', { class: 'small', style: 'margin-top:0' }, el('b', null, 'suspended for: '), a.banReason) : null, el('div', { class: 'appealmsg' }, a.message), resp,
+    el('div', { class: 'row gap', style: 'margin-top:10px' }, el('button', { class: 'btn danger grow', onclick: () => go(false) }, 'deny'), el('button', { class: 'btn primary grow', onclick: () => go(true) }, 'approve + unsuspend'))));
+}
+
+// ---------- admin: audit log ----------
+async function adminAudit(box) {
+  const who = el('input', { placeholder: 'filter by username', maxLength: 20 });
+  const act = el('select', null, el('option', { value: '' }, 'every action'), ...['ban', 'unban', 'gmute', 'ungmute', 'warn', 'verify', 'unverify', 'beta_grant', 'beta_clear', 'delete_msg', 'kick', 'group_mute', 'announce', 'appeal_approve', 'appeal_deny'].map((a) => el('option', { value: a }, ACTION_LABEL(a))));
+  const list = el('div', { class: 'loglist' });
+  const more = el('button', { class: 'btn wide', style: 'display:none', onclick: () => load(true) }, 'older');
+  let last = 0;
+  const load = async (append) => {
+    if (!append) { last = 0; list.replaceChildren(el('div', { class: 'muted pad' }, '...')); }
+    try {
+      const qs = new URLSearchParams({ q: who.value.trim().replace(/^@/, ''), action: act.value }); if (append && last) qs.set('before', last);
+      const d = await api('GET', '/api/admin/audit?' + qs, null, { quiet: true });
+      if (!append) list.replaceChildren();
+      if (!d.log.length && !append) list.replaceChildren(el('div', { class: 'muted pad' }, 'nothing found'));
+      d.log.forEach((r) => list.append(logRow(r)));
+      if (d.log.length) last = d.log[d.log.length - 1].id;
+      more.style.display = d.more ? '' : 'none';
+    } catch (e) { list.replaceChildren(el('div', { class: 'form-err' }, e.message)); }
+  };
+  who.addEventListener('input', C.debounce(() => load(false), 300)); act.addEventListener('change', () => load(false));
+  box.replaceChildren(el('div', { class: 'row gap' }, who, act), el('p', { class: 'muted small' }, 'every admin and mod action is kept for 90 days.'), list, more);
+  load(false);
+}
+
+// ---------- admin: stats ----------
+function barChart(days, key, label) {
+  const W = 320, H = 110, pad = 18, n = days.length, bw = (W - pad) / n;
+  const max = Math.max(1, ...days.map((d) => +d[key] || 0));
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', `0 0 ${W} ${H + 18}`); svg.setAttribute('class', 'barchart'); svg.setAttribute('role', 'img'); svg.setAttribute('aria-label', label);
+  days.forEach((d, i) => {
+    const v = +d[key] || 0, h = Math.max(v ? 2 : 0, (v / max) * H);
+    const r = document.createElementNS(NS, 'rect');
+    r.setAttribute('x', pad + i * bw + 1.5); r.setAttribute('y', H - h); r.setAttribute('width', Math.max(2, bw - 3)); r.setAttribute('height', h); r.setAttribute('rx', 2);
+    const t = document.createElementNS(NS, 'title'); t.textContent = `${d.day}: ${v}`; r.append(t); svg.append(r);
+    if (i % 3 === 0 || i === n - 1) { const tx = document.createElementNS(NS, 'text'); tx.setAttribute('x', pad + i * bw + bw / 2); tx.setAttribute('y', H + 13); tx.setAttribute('text-anchor', 'middle'); tx.textContent = d.day.slice(8); svg.append(tx); }
+  });
+  const top = document.createElementNS(NS, 'text'); top.setAttribute('x', 0); top.setAttribute('y', 9); top.textContent = max; svg.append(top);
+  return el('div', { class: 'chartcard' }, el('div', { class: 'ctitle' }, label), el('div', { class: 'muted small' }, `last 14 days · ${days.reduce((a, d) => a + (+d[key] || 0), 0)} total`), svg);
+}
+const fmtBytes = (b) => (b > 1e9 ? (b / 1e9).toFixed(2) + ' GB' : b > 1e6 ? (b / 1e6).toFixed(1) + ' MB' : Math.round(b / 1e3) + ' KB');
+async function adminStats(box) {
+  box.replaceChildren(el('div', { class: 'muted pad' }, '...'));
+  try {
+    const { totals: t, days } = await api('GET', '/api/admin/analytics', null, { quiet: true });
+    const tile = (n, l) => el('div', { class: 'stile' }, el('b', null, n), el('span', null, l));
+    box.replaceChildren(
+      el('div', { class: 'stiles' }, tile(t.users, 'people'), tile(t.online, 'online now'), tile(t.dau, 'active today'), tile(t.wau, 'active 7 days'), tile(t.mau, 'active 30 days'), tile(t.newWeek, 'new this week'), tile(t.verified, 'verified'), tile(t.beta, 'on beta'), tile(t.groups, 'groups'), tile(t.dms, 'dms'), tile(t.banned, 'suspended'), tile(t.openReports + t.pendingVerify + t.pendingAppeals, 'waiting on you')),
+      el('div', { class: 'charts' }, barChart(days, 'messages', 'messages sent'), barChart(days, 'active', 'people active'), barChart(days, 'signups', 'new signups'), barChart(days, 'beta', 'beta grants')),
+      el('p', { class: 'muted small' }, `${t.images} photos stored (${fmtBytes(t.imageBytes)}) · ${t.reminders} reminders waiting · database ${fmtBytes(t.dbBytes)}`));
+  } catch (e) { box.replaceChildren(el('div', { class: 'form-err' }, e.message)); }
+}
+
+// ---------- suspended account: the appeal screen ----------
+function appealModal(data, username) {
+  const ap = data.appeal || {};
+  const msg = el('textarea', { rows: 4, maxLength: 600, placeholder: 'tell us what happened and why it should be lifted' });
+  const err = el('div', { class: 'form-err' });
+  const send = el('button', { class: 'btn primary wide', onclick: async () => {
+    send.disabled = true; err.textContent = '';
+    try { await api('POST', '/api/appeals', { token: ap.token, message: msg.value.trim() }, { quiet: true }); toast('appeal sent', 'success'); mm.close(); }
+    catch (e) { err.textContent = e.message; send.disabled = false; }
+  } }, 'send appeal');
+  const status = ap.status === 'pending' ? 'your appeal is waiting for an admin.' : ap.status === 'denied' ? `your last appeal was denied${ap.response ? ': ' + ap.response : ''}.` : '';
+  const can = ap.canAppeal && ap.token;
+  const mm = modal('account suspended', el('div', null,
+    el('p', { style: 'margin-top:0' }, `@${username} is suspended.`), data.reason ? el('p', null, el('b', null, 'reason: '), data.reason) : null,
+    status ? el('p', { class: 'muted' }, status) : null,
+    can ? el('div', null, msg, err, send) : ap.status !== 'pending' && ap.waitMinutes ? el('p', { class: 'muted small' }, `you can appeal again in ${X.niceSecs(ap.waitMinutes * 60)}.`) : null));
+}
+
+Object.assign(window.__ext, { memberTools, staffSection, modlogModal, adminAppeals, adminAudit, adminStats, appealModal });
 
 try { const r = new URLSearchParams(location.search).get('ref'); if (r) { C.lsSet('chatroom.ref', r.slice(0, 16)); history.replaceState(null, '', location.pathname); } } catch {}
 U.boot();                                                    // everything is defined, start the app
