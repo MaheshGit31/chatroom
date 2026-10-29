@@ -28,14 +28,22 @@ function plusMenu(anchor, c, input) {
   const had = !!plus; closePlus(); if (had) return;
   anchor.dataset.plus = 1;
   const on = C.betaActive();
-  const item = (icon, label, fn) => el('button', { class: 'plusitem', onclick: () => { closePlus(); fn(); } }, ic(icon, 18), el('span', { class: 'grow' }, label), on ? null : el('span', { class: 'tag gold' }, 'beta'));
+  const item = (icon, label, fn, free) => el('button', { class: 'plusitem', onclick: () => { closePlus(); fn(); } }, ic(icon, 18), el('span', { class: 'grow' }, label), on || free ? null : el('span', { class: 'tag gold' }, 'beta'));
+  const noImg = c.isPublic || c.systemKind;
   plus = el('div', { class: 'plusmenu' },
+    noImg ? null : item('image', 'photo', () => window.__ext.pickPhoto(c)),
+    c.type === 'dm' ? item('eye', 'view once', () => window.__ext.onceModal(c), true) : null,
     item('mic', 'voice note', () => needBeta('voice notes') && voiceModal(c)),
     item('sticker', 'sticker', () => needBeta('stickers') && stickerPicker(c)),
     item('poll', 'poll', () => needBeta('polls') && pollModal(c)),
     item('calendar', 'schedule a message', () => needBeta('scheduled messages') && scheduleModal(c, input)),
     c.type === 'dm' ? item('grid', 'tic-tac-toe', () => needBeta('mini games') && startGame(c, 'ttt')) : null,
-    c.type === 'dm' ? item('users', 'rock paper scissors', () => needBeta('mini games') && startGame(c, 'rps')) : null);
+    c.type === 'dm' ? item('users', 'rock paper scissors', () => needBeta('mini games') && startGame(c, 'rps')) : null,
+    c.type === 'dm' ? item('grid', 'connect 4', () => needBeta('mini games') && startGame(c, 'c4')) : null,
+    c.type === 'dm' ? item('book', 'word duel', () => needBeta('mini games') && startGame(c, 'wd')) : null,
+    c.type === 'dm' ? item('trophy', 'trivia duel', () => needBeta('mini games') && startGame(c, 'tr')) : null,
+    item('bell', 'my reminders', () => window.__ext.remindersModal()),
+    item('palette', 'chat wallpaper', () => window.__ext.wallpaperModal(c)));
   document.body.append(plus);
   const r = anchor.getBoundingClientRect();
   plus.style.left = Math.max(8, Math.min(r.left, innerWidth - plus.offsetWidth - 8)) + 'px';
@@ -250,10 +258,11 @@ async function startGame(c, kind) {
     try { await api('POST', `/api/messages/${id}/game`, { kind }, { quiet: true }); } catch (e) { toast(e.message, 'error'); }
   }
 }
+const GAME_NAME = { ttt: 'tic-tac-toe', rps: 'rock paper scissors', c4: 'connect 4', wd: 'word duel', tr: 'trivia duel' };
 function gameBody(c, m, p) {
-  if (!['ttt', 'rps'].includes(p.kind)) return el('div', { class: 'mtext muted-i' }, 'game unavailable');
+  if (!['ttt', 'rps', 'c4', 'wd', 'tr'].includes(p.kind)) return el('div', { class: 'mtext muted-i' }, 'game unavailable');
   const g = extras(c).games[m.id];
-  if (!g) return el('div', { class: 'game' }, el('div', { class: 'gtitle' }, p.kind === 'rps' ? 'rock paper scissors' : 'tic-tac-toe'), el('div', { class: 'muted small' }, 'loading...'));
+  if (!g) return el('div', { class: 'game' }, el('div', { class: 'gtitle' }, GAME_NAME[p.kind] || 'game'), el('div', { class: 'muted small' }, 'loading...'));
   const me1 = S.me.id === g.p1, other = (C.other(c) || {}).displayName || 'them';
   const move = async (body) => { try { const r = await api('POST', `/api/messages/${m.id}/move`, body, { quiet: true }); extras(c).games[m.id] = r.view; U.renderMessages(c); } catch (e) { toast(e.message, 'error'); } };
   const result = g.winner === 'draw' ? 'a draw' : g.winner ? ((g.winner === 'p1') === me1 ? 'you win' : other + ' wins') : null;
@@ -262,6 +271,31 @@ function gameBody(c, m, p) {
     return el('div', { class: 'game' }, el('div', { class: 'gtitle' }, 'tic-tac-toe', el('span', { class: 'muted small' }, ` you are ${me1 ? 'X' : 'O'}`)),
       el('div', { class: 'ttt' }, g.board.map((v, i) => el('button', { class: 'cell ' + v, disabled: !mine || !!v, onclick: () => move({ cell: i }) }, v))),
       el('div', { class: 'muted small' }, result || (mine ? 'your turn' : `waiting for ${other}`)));
+  }
+  if (g.kind === 'c4') {
+    const mine = g.turn === S.me.id && !g.winner;
+    return el('div', { class: 'game' }, el('div', { class: 'gtitle' }, 'connect 4', el('span', { class: 'muted small' }, ` you are ${me1 ? 'red' : 'gold'}`)),
+      el('div', { class: 'c4' }, [0, 1, 2, 3, 4, 5, 6].map((col) => el('button', { class: 'c4col', disabled: !mine || !!g.board[col], title: 'drop here', onclick: () => move({ col }) }, [0, 1, 2, 3, 4, 5].map((r) => { const v = g.board[r * 7 + col]; return el('i', { class: 'disc ' + (v === 'X' ? 'r' : v === 'O' ? 'y' : '') }); })))),
+      el('div', { class: 'muted small' }, result || (mine ? 'your turn' : `waiting for ${other}`)));
+  }
+  if (g.kind === 'wd') {
+    const done = !!g.winner || g.mine.length >= 6 || (g.mine.length && g.mine[g.mine.length - 1].fb === 'ggggg');
+    const row = (w, fb) => el('div', { class: 'wdrow' }, [0, 1, 2, 3, 4].map((i) => el('span', { class: 'wdl ' + (fb ? fb[i] : '') }, w ? w[i] : '')));
+    const inp = el('input', { maxLength: 5, placeholder: '5 letters', autocapitalize: 'none', autocomplete: 'off', spellcheck: false });
+    const go = () => { const w = inp.value.trim().toLowerCase(); if (!/^[a-z]{5}$/.test(w)) return toast('type a 5 letter word', 'error'); move({ word: w }); };
+    inp.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') go(); });
+    return el('div', { class: 'game' }, el('div', { class: 'gtitle' }, 'word duel', el('span', { class: 'muted small' }, ' same secret word, first to guess it wins')),
+      el('div', { class: 'wdboards' }, el('div', null, el('div', { class: 'muted small' }, 'you'), [0, 1, 2, 3, 4, 5].map((i) => g.mine[i] ? row(g.mine[i].w, g.mine[i].fb) : row('', ''))),
+        el('div', null, el('div', { class: 'muted small' }, other), [0, 1, 2, 3, 4, 5].map((i) => row('', g.theirs[i] || '')))),
+      done ? null : el('div', { class: 'row gap-s' }, inp, el('button', { class: 'btn small primary', onclick: go }, 'guess')),
+      el('div', { class: 'muted small' }, g.winner ? `${result}, the word was ${g.word}` : done ? `out of guesses, waiting for ${other}` : `${6 - g.mine.length} guesses left`));
+  }
+  if (g.kind === 'tr') {
+    const q = g.q;
+    return el('div', { class: 'game' }, el('div', { class: 'gtitle' }, 'trivia duel', el('span', { class: 'muted small' }, ` ${Math.min(g.qi + 1, g.total)}/${g.total}`)),
+      q ? el('div', null, el('div', { class: 'trq' }, q.t), el('div', { class: 'trs' }, q.o.map((o, i) => el('button', { class: 'btn small', onclick: () => move({ choice: i }) }, o))))
+        : el('div', { class: 'muted small' }, g.winner ? '' : `you are done, waiting for ${other}`),
+      el('div', { class: 'muted small' }, g.winner ? `you ${g.myScore}, ${other} ${g.theirScore}: ${result}` : `your score ${g.myScore} · ${other} answered ${g.theirDone}/${g.total}${g.lastRight === null ? '' : g.lastRight ? ' · last one right' : ' · last one wrong'}`));
   }
   const pick = (ch) => el('button', { class: 'btn small' + (g.mine === ch ? ' primary' : ''), disabled: !!g.mine || !!g.winner, onclick: () => move({ choice: ch }) }, ch);
   return el('div', { class: 'game' }, el('div', { class: 'gtitle' }, 'rock paper scissors'),
@@ -363,11 +397,11 @@ function foldersModal() {
     try { const r = await api('PUT', '/api/me/folders', { folders: draft }, { quiet: true }); S.me.folders = r.folders; U.renderSide(); toast('folders saved', 'success'); m.close(); } catch (e) { toast(e.message, 'error'); }
   };
   const draw = () => {
-    box.replaceChildren(el('p', { class: 'muted small', style: 'margin-top:0' }, 'sort your chats into tabs. up to 8 folders.'),
+    box.replaceChildren(el('p', { class: 'muted small', style: 'margin-top:0' }, 'sort your chats into tabs. up to 20 folders.'),
       ...draft.map((f, i) => el('div', { class: 'folderedit' },
         el('div', { class: 'row gap' }, el('input', { value: f.name, maxLength: 16, oninput: (e) => { f.name = e.target.value; } }), el('button', { class: 'icon-btn', title: 'remove folder', onclick: () => { draft.splice(i, 1); draw(); } }, ic('trash', 16))),
         el('div', { class: 'folderchats' }, S.convs.map((c) => el('label', { class: 'check' }, el('input', { type: 'checkbox', checked: f.convIds.includes(c.id), onchange: (e) => { f.convIds = e.target.checked ? [...f.convIds, c.id] : f.convIds.filter((x) => x !== c.id); } }), el('span', null, convTitle(c))))))),
-      el('div', { class: 'row gap', style: 'margin-top:12px' }, el('button', { class: 'btn', disabled: draft.length >= 8, onclick: () => { draft.push({ id: Math.random().toString(36).slice(2, 8), name: 'folder ' + (draft.length + 1), convIds: [] }); draw(); } }, ic('folder', 16), 'new folder'), el('div', { class: 'grow' }), el('button', { class: 'btn primary', onclick: save }, ic('check', 16), 'save')));
+      el('div', { class: 'row gap', style: 'margin-top:12px' }, el('button', { class: 'btn', disabled: draft.length >= 20, onclick: () => { draft.push({ id: Math.random().toString(36).slice(2, 8), name: 'folder ' + (draft.length + 1), convIds: [] }); draw(); } }, ic('folder', 16), 'new folder'), el('div', { class: 'grow' }), el('button', { class: 'btn primary', onclick: save }, ic('check', 16), 'save')));
   };
   draw();
 }
@@ -441,6 +475,4 @@ const betaChanged = () => { if (S.view === 'beta' && window.__betaDraw) window._
 
 Object.assign(window.__ext, { buildBeta, betaChanged, banner, plusMenu, editMessage, extraBody, onExtra, loadExtras, ttlModal, ttlLabel, renderFolders, inFolder, foldersModal, profileEditModal, scheduledList, stickerManage });
 
-try { const r = new URLSearchParams(location.search).get('ref'); if (r) { C.lsSet('chatroom.ref', r.slice(0, 16)); history.replaceState(null, '', location.pathname); } } catch {}
-U.boot();                                                    // everything is defined, start the app
 })();

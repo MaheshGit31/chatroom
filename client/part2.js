@@ -34,6 +34,13 @@ const $ = (sel, root = document) => root.querySelector(sel);
 
 // icons are static svg strings defined here (never user data)
 const ICONS = {
+  reply: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/>',
+  forward: '<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5v0A5.5 5.5 0 0 0 9.5 20H13"/>',
+  eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
+  chart: '<path d="M3 3v18h18"/><path d="M7 15v3M12 9v9M17 5v13"/>',
+  list: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+  at: '<circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/>',
+  hammer: '<path d="m15 12-8.4 8.4a2.1 2.1 0 0 1-3-3L12 9"/><path d="M17.6 15 22 10.6a2 2 0 0 0 0-2.8l-3.4-3.4a2 2 0 0 0-2.8 0L11.4 8.8"/><path d="m14 6 4 4"/>',
   verified: '<path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m9 12 2 2 4-4"/>',
   megaphone: '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
   camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
@@ -325,14 +332,16 @@ const memberOf = (c, id) => c.members.find((m) => m.id === id);
 function previewText(p, mine) {
   if (!p) return '';
   const pre = mine ? 'You: ' : '';
-  if (p.t === 'text') return pre + p.text;
+  if (p.t === 'text') return pre + (p.fwd ? 'forwarded: ' : '') + p.text;
   if (p.t === 'game') return pre + 'shared a game: ' + p.title;
   if (p.t === 'gif') return pre + 'sent a gif';
   if (p.t === 'voice') return pre + 'sent a voice note';
   if (p.t === 'sticker') return pre + 'sent a sticker';
   if (p.t === 'poll') return pre + 'made a poll: ' + p.q;
-  if (p.t === 'g2') return pre + (p.kind === 'rps' ? 'started rock paper scissors' : 'started tic-tac-toe');
-  if (p.t === 'deleted') return 'message deleted';
+  if (p.t === 'g2') return pre + ({ rps: 'started rock paper scissors', c4: 'started connect 4', wd: 'started a word duel', tr: 'started a trivia duel' }[p.kind] || 'started tic-tac-toe');
+  if (p.t === 'image') return pre + 'sent a photo' + (p.fwd ? ' (forwarded)' : '');
+  if (p.t === 'once') return pre + 'sent a view once message';
+  if (p.t === 'deleted') return p.once ? 'view once, opened' : 'message deleted';
   return 'encrypted message';
 }
 async function refreshPreview(c) {
@@ -381,18 +390,21 @@ function startCooldown(sec, msg) {
   toast(msg || `slow down - wait ${sec}s`, 'error');
   window.__ui.tickCooldown();
 }
-async function sendPayload(c, payload, retried) {
+async function sendPayload(c, payload, retried, extra) {
   if (S.cooldownUntil > Date.now()) { toast('you are on cooldown, wait a moment', 'error'); return false; }
   try {
     const e = await encryptPayload(c, payload);
-    const r = await api('POST', `/api/conversations/${c.id}/messages`, { ...e, cid: rid() }, { quiet: true });
+    const r = await api('POST', `/api/conversations/${c.id}/messages`, { ...e, ...(extra || {}), cid: rid() }, { quiet: true });
     S.me.msgCount = (S.me.msgCount || 0) + 1; window.__ext && window.__ext.renderTop();
+    if (c.slowSeconds && !(S.me.isAdmin || c.role === 'admin' || c.role === 'mod')) c.slowUntil = Date.now() + c.slowSeconds * 1000;   // slow mode: next message after the wait
     if (addMessage(c, r.message, payload)) { c._preview = previewText(payload, true); sortConvs(); }
     window.__ui.renderSide(); window.__ui.renderMessages(c, true);
     return true;
   } catch (err) {
-    if (err.status === 429) startCooldown(err.data.retryAfter || 5, err.data.message);
-    else if (err.status === 409 && err.data.error === 'key_version_stale' && !retried) { await loadConvs(); return sendPayload(convOf(c.id), payload, true); }
+    if (err.status === 429 && err.data.error === 'slow_mode') { c.slowUntil = Date.now() + (err.data.retryAfter || 5) * 1000; toast(err.data.message, 'error'); window.__ui.tickCooldown(); }
+    else if (err.status === 403 && /^muted_/.test(err.data.error || '')) { if (err.data.error === 'muted_group') c.mutedUntil = new Date(Date.now() + (err.data.retryAfter || 60) * 1000).toISOString(); else S.me.mutedUntil = new Date(Date.now() + (err.data.retryAfter || 60) * 1000).toISOString(); toast(err.data.message, 'error'); window.__ui.tickCooldown(); }
+    else if (err.status === 429) startCooldown(err.data.retryAfter || 5, err.data.message);
+    else if (err.status === 409 && err.data.error === 'key_version_stale' && !retried) { await loadConvs(); return sendPayload(convOf(c.id), payload, true, extra); }
     else if (err.status === 401) window.__chatroomLogout(true);
     else if (err.data && err.data.error === 'verify_required') { toast(err.message, 'error', () => window.__ext && window.__ext.verifyModal()); window.__ext && window.__ext.verifyModal(); }
     else if (err.data && err.data.error === 'blocked_word') toast('that message was blocked, keep it clean', 'error');
@@ -493,6 +505,14 @@ async function onWS(m) {
       ui.renderSide(); if (S.active === c.id) ui.renderMessages(c);
       break;
     }
+    case 'once_viewed': {                                    // a view once message was opened and wiped
+      const c = convOf(m.convId); if (!c) return;
+      const x = c.msgs.find((y) => y.id === m.id); if (x) { x.deleted = true; x.once = true; x._p = { t: 'deleted', once: true }; }
+      if (c.lastMessage && c.lastMessage.id === m.id) { c.lastMessage.deleted = true; c.lastMessage.once = true; c._preview = 'view once, opened'; }
+      ui.renderSide(); if (S.active === c.id) ui.renderMessages(c);
+      break;
+    }
+    case 'appeals_changed': if (window.__ui.appealsChanged) window.__ui.appealsChanged(); break;
     case 'extra': window.__ext && window.__ext.onExtra(m); break;
     case 'announce': window.__ext && window.__ext.onAnnounce(m.announcement); break;
     case 'announce_end': window.__ext && window.__ext.endAnnounce(m.id); break;
@@ -529,6 +549,7 @@ async function onWS(m) {
     case 'conv_update': {
       if (m.refresh) { await loadConvs(); ui.renderAll(); break; }
       const c = convOf(m.convId); if (c && m.name) c.name = m.name;
+      if (c && 'slowSeconds' in m) { c.slowSeconds = m.slowSeconds; ui.renderHeader(); ui.tickCooldown(); }
       ui.renderAll();
       break;
     }
@@ -541,9 +562,9 @@ async function onWS(m) {
     case 'notif': {
       S.notifs.unshift(m.notif); S.notifUnread++;
       ui.renderRail();
-      const txt = m.notif.type === 'group_added' ? `${m.notif.data.by} added you to ${m.notif.data.name}` : m.notif.type === 'dm_new' ? `${m.notif.data.from} started a chat with you` : m.notif.type === 'sched_failed' ? 'a scheduled message could not be sent' : m.notif.type === 'referral' ? `${m.notif.data.name} joined, +${m.notif.data.minutes} min beta` : m.notif.type === 'report' ? 'new report to review' : m.notif.type === 'verified' ? 'you are verified' : m.notif.type === 'verify_rejected' ? 'verification was not approved' + (m.notif.data.note ? ': ' + m.notif.data.note : '') : 'new notification';
-      toast(txt, 'info', () => { if (m.notif.data.convId) ui.openConv(m.notif.data.convId); });
-      beep();
+      const txt = m.notif.type === 'group_added' ? `${m.notif.data.by} added you to ${m.notif.data.name}` : m.notif.type === 'dm_new' ? `${m.notif.data.from} started a chat with you` : m.notif.type === 'sched_failed' ? 'a scheduled message could not be sent' : m.notif.type === 'referral' ? `${m.notif.data.name} joined, +${m.notif.data.minutes} min beta` : m.notif.type === 'report' ? 'new report to review' : m.notif.type === 'mention' ? `${m.notif.data.byName || m.notif.data.by} mentioned you${m.notif.data.convName ? ' in ' + m.notif.data.convName : ''}` : m.notif.type === 'reminder' ? 'reminder: ' + (m.notif.data.note || 'a message you saved') : m.notif.type === 'warn' ? `warning from ${m.notif.data.by}: ${m.notif.data.text}` : m.notif.type === 'appeal' ? `${m.notif.data.by} sent an appeal` : m.notif.type === 'verified' ? 'you are verified' : m.notif.type === 'verify_rejected' ? 'verification was not approved' + (m.notif.data.note ? ': ' + m.notif.data.note : '') : 'new notification';
+      const quiet = window.__ext && window.__ext.dndActive && window.__ext.dndActive() && m.notif.type !== 'warn';
+      if (!quiet) { toast(txt, 'info', () => { if (m.notif.data.convId) { ui.openConv(m.notif.data.convId); if (m.notif.data.msgId && window.__ext) setTimeout(() => window.__ext.jumpTo(convOf(m.notif.data.convId), m.notif.data.msgId), 600); } }); beep(); }
       break;
     }
   }

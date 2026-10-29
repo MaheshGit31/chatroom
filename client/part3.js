@@ -53,10 +53,15 @@ function userSearch(onPick, exclude = new Set()) {
   const reset = () => { input.value = ''; list.replaceChildren(hint()); input.focus(); };
   return { node: el('div', null, el('div', { class: 'searchbox' }, ic('search', 16), input), list), input, reset };
 }
-const linkify = (text) => {                                    // links become anchors, emoji become images
+const linkify = (text, c) => {                                 // links become anchors, @names become pills, emoji become images
   const out = [];
   String(text).split(/(https?:\/\/[^\s<>"]+)/g).forEach((part, i) => {
-    if (i % 2) out.push(el('a', { href: part, target: '_blank', rel: 'noopener noreferrer nofollow' }, part)); else if (part) out.push(...C.emojify(C.F.clean(part)));
+    if (i % 2) out.push(el('a', { href: part, target: '_blank', rel: 'noopener noreferrer nofollow' }, part));
+    else if (part) part.split(/(@[a-z0-9_]{3,20})/gi).forEach((seg, j) => {
+      const who = j % 2 ? seg.slice(1).toLowerCase() : '';
+      if (who && c && c.members.some((m) => m.username === who)) out.push(el('span', { class: 'mention' + (who === S.me.username ? ' me' : ''), onclick: () => openProfile(who) }, seg));
+      else if (seg) out.push(...C.emojify(C.F.clean(seg)));
+    });
   });
   return out;
 };
@@ -119,7 +124,8 @@ function showAuth(mode = 'login', note = '') {
         }
       } catch (ex) {
         if (ex.data && ex.data.error === 'setup_key_required') { keyBox.style.display = ''; key.focus(); }
-        err.textContent = ex.status === 429 ? `too many tries, wait ${ex.data.retryAfter}s` : ex.message;
+        if (ex.data && ex.data.error === 'suspended') { err.textContent = 'this account is suspended'; X.appealModal(ex.data, user.value.trim().toLowerCase()); }
+        else err.textContent = ex.status === 429 ? `too many tries, wait ${ex.data.retryAfter}s` : ex.message;
         btn.disabled = false; btn.textContent = label;
       }
     },
@@ -302,6 +308,8 @@ function buildChat(m, c) {
   const selbar = el('div', { class: 'selbar' });
   const sugg = el('div', { class: 'sugg' });
   const freebar = el('div', { class: 'freebar' });
+  const modbar = el('div', { class: 'modbar' });
+  const replybar = el('div', { class: 'replybar' });
   let lastTyping = 0;
   const input = el('textarea', {
     rows: 1, maxLength: 2000, placeholder: 'say something',
@@ -309,7 +317,7 @@ function buildChat(m, c) {
       input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 140) + 'px';
       c.draft = input.value;
       if (input.value && Date.now() - lastTyping > 2500) { lastTyping = Date.now(); sendWS({ t: 'typing', convId: c.id }); }
-      X.suggest(input, sugg);                                // :sk -> shows :skull:
+      X.suggest(input, sugg);                                // :sk -> shows :skull:, @na -> members, /ba -> commands
     },
     onkeydown: (e) => { if (X.suggestKey(e, input, sugg)) return; if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); doSend(); } },
   });
@@ -317,17 +325,23 @@ function buildChat(m, c) {
   const sendBtn = el('button', { class: 'btn primary send', title: 'send', onclick: doSend }, ic('send', 18));
   let sending = false;
   async function doSend() {
-    const text = C.expandShortcodes(input.value.trim());     // :skull: becomes the emoji before encryption
-    if (!text || sending) return;
+    if (sending) return;
+    const raw = input.value.trim();
+    if (raw.startsWith('/') && await X.slash(c, raw)) { input.value = ''; c.draft = ''; input.style.height = 'auto'; sugg.classList.remove('on'); input.focus(); return; }   // /ban, /mute, /slow and friends never get sent as messages
+    const text = C.expandShortcodes(raw);                    // :skull: becomes the emoji before encryption
+    if (!text) return;
+    if (X.sendBlock(c)) { toast(X.sendBlock(c).text, 'error'); return; }
     if (C.F.check(text)) { toast('keep it clean, that was not sent', 'error'); return; } // word filter, runs before anything is encrypted
     sending = true; sendBtn.disabled = true;
-    const ok = await sendPayload(c, { t: 'text', text });
-    if (ok) { input.value = ''; c.draft = ''; input.style.height = 'auto'; sugg.classList.remove('on'); }
+    const payload = { t: 'text', text };
+    if (c._reply) payload.reply = c._reply;                  // quoted message
+    const ok = await sendPayload(c, payload, false, { mentions: X.mentionIds(c, text) });
+    if (ok) { c._reply = null; X.drawReply(c); input.value = ''; c.draft = ''; input.style.height = 'auto'; sugg.classList.remove('on'); }
     sending = false; tickCooldown(); input.focus();
   }
   const emojiBtn = el('button', { class: 'icon-btn', title: 'emoji', onclick: () => X.emojiPicker(emojiBtn, (ch) => { const a = input.selectionStart ?? input.value.length; input.setRangeText(ch, a, input.selectionEnd ?? a, 'end'); input.dispatchEvent(new Event('input')); input.focus(); }) }, ic('smile', 20));
   m.append(el('div', { class: 'chat' }, head, pinbar, msgs, typing, selbar,
-    el('div', { class: 'composer-wrap' }, cool, freebar, sugg,
+    el('div', { class: 'composer-wrap' }, cool, freebar, modbar, replybar, sugg,
       el('div', { class: 'composer' },
         el('button', { class: 'icon-btn', title: 'more: voice, stickers, polls, schedule, games', onclick: (e) => X.plusMenu(e.currentTarget, c, input) }, ic('plus', 20)),
         el('button', { class: 'icon-btn', title: 'share a game', onclick: () => pickGameModal(c) }, ic('gamepad', 20)),
@@ -335,8 +349,8 @@ function buildChat(m, c) {
         emojiBtn, input, sendBtn))));
   c._shown = null;                                           // first paint of a chat should not animate every old message
   sel = null;                                                // leave select mode when switching chats
-  chatRef = { head, pinbar, msgs, typing, input, sendBtn, cool, selbar, freebar, convId: c.id };
-  renderHeader(); renderTyping(); tickCooldown(); X.loadPins(c); X.renderTop();
+  chatRef = { head, pinbar, msgs, typing, input, sendBtn, cool, selbar, freebar, modbar, replybar, convId: c.id };
+  renderHeader(); renderTyping(); tickCooldown(); X.loadPins(c); X.renderTop(); X.drawReply(c); X.applyWallpaper(c);
 }
 function renderHeader() {
   const h = chatRef.head; if (!h) return;
@@ -349,13 +363,15 @@ function renderHeader() {
   else if (o) {
     const act = activityOf(o.id), on = isOnline(c, o.id);
     sub = act ? el('span', { class: 'good' }, 'playing ' + act.title) : (st && st.status && (st.status.text || st.status.icon)) ? statusLine(st) : el('span', { class: on ? 'good' : 'muted' }, on ? 'online' : 'offline');
-  } else sub = el('span', { class: 'muted' }, `${c.isPublic ? 'public · ' : ''}${c.members.filter((x) => isOnline(c, x.id)).length} of ${c.memberCount || c.members.length} here`);
+  } else sub = el('span', { class: 'muted' }, `${c.isPublic ? 'public · ' : ''}${c.members.filter((x) => isOnline(c, x.id)).length} of ${c.memberCount || c.members.length} here${c.slowSeconds ? ' · slow mode ' + X.slowLabel(c.slowSeconds) : ''}`);
   h.replaceChildren(
     el('button', { class: 'icon-btn back', title: 'back', onclick: () => { S.active = null; renderAll(); } }, ic('back', 22)),
     o ? el('div', { class: 'avwrap' }, avatar(convTitle(c), 42, '', o.avatar), dot(isOnline(c, o.id), st.mode)) : el('div', { class: 'avatar', style: `width:42px;height:42px;background:${tone(c.name)}` }, ic(c.isPublic ? 'globe' : 'users', 18)),
     el('div', { class: 'grow click', onclick: () => (o ? openProfile(o.username) : groupModal(c)) }, el('div', { class: 'ctitle' }, convTitle(c), o ? vb(o) : null), el('div', { class: 'small' }, sub)),
     el('span', { class: 'ic muted', title: c.isPublic ? 'public room: open to everyone, not end-to-end encrypted' : 'end-to-end encrypted' }, ic(c.isPublic ? 'globe' : 'lock', 16)),
     !c.systemKind && (c.type === 'dm' || c.role === 'admin') ? el('button', { class: 'icon-btn' + (c.ttlSeconds ? ' on' : ''), title: 'disappearing messages', onclick: () => X.ttlModal(c) }, ic('timer', 20)) : null,
+    el('button', { class: 'icon-btn', title: 'search this chat', onclick: () => X.searchModal(c) }, ic('search', 20)),
+    X.dndActive() ? el('button', { class: 'icon-btn on', title: 'do not disturb is on', onclick: () => X.dndModal() }, ic('moon', 20)) : null,
     el('button', { class: 'icon-btn', title: c.muted ? 'unmute' : 'mute', onclick: async () => { c.muted = !c.muted; await api('PATCH', `/api/conversations/${c.id}/me`, { muted: c.muted }).catch(() => {}); renderHeader(); renderSide(); updateBadge(); } }, ic(c.muted ? 'mute' : 'volume', 20)),
     el('button', { class: 'icon-btn', title: 'details', onclick: () => (o ? openProfile(o.username) : groupModal(c)) }, ic('info', 20)));
 }
@@ -370,11 +386,16 @@ function tickCooldown() {
   const cool = chatRef.cool; if (!cool) return;
   clearInterval(tickCooldown.t);
   const upd = () => {
+    const c = convOf(chatRef.convId);
     const left = Math.ceil((S.cooldownUntil - Date.now()) / 1000);
-    if (left > 0) { cool.textContent = `easy there, try again in ${left}s`; cool.classList.add('on'); chatRef.sendBtn.disabled = true; }
-    else { cool.textContent = ''; cool.classList.remove('on'); chatRef.sendBtn.disabled = false; clearInterval(tickCooldown.t); }
+    const blk = c ? X.sendBlock(c) : null;                   // admin mute, group mute or slow mode
+    if (left > 0) { cool.textContent = `easy there, try again in ${left}s`; cool.classList.add('on'); }
+    else { cool.textContent = ''; cool.classList.remove('on'); }
+    X.drawModbar(c);
+    chatRef.sendBtn.disabled = left > 0 || !!blk;
+    if (left <= 0 && !blk) clearInterval(tickCooldown.t);
   };
-  upd(); if (S.cooldownUntil > Date.now()) tickCooldown.t = setInterval(upd, 250);
+  upd(); if (S.cooldownUntil > Date.now() || (convOf(chatRef.convId) && X.sendBlock(convOf(chatRef.convId)))) tickCooldown.t = setInterval(upd, 500);
 }
 function gameCard(p) {
   return el('div', { class: 'gshare' }, el('div', { class: 'gshare-ic', style: `background:${tone(p.title)}` }, ic('gamepad', 22)),
@@ -384,8 +405,10 @@ function gameCard(p) {
 // ---------- message actions: delete with undo, select many, pin, react, report ----------
 let sel = null;                                              // Set of selected message ids while in select mode
 const pendingDeletes = new Set();
-const canDelete = (c, m) => !m.deleted && !m._hide && (m.senderId === S.me.id || (c.type === 'group' && c.role === 'admin'));
-const canPin = (c) => c.type === 'dm' || c.role === 'admin';
+const rankR = (isAdmin, role) => (isAdmin ? 3 : role === 'admin' ? 2 : role === 'mod' ? 1 : 0);   // global admin > host > mod > member
+const myRank = (c) => rankR(S.me.isAdmin, c.role);
+const canDelete = (c, m) => { if (m.deleted || m._hide) return false; if (m.senderId === S.me.id) return true; if (c.type !== 'group') return false; const s = memberOf(c, m.senderId); return myRank(c) >= 1 && myRank(c) > rankR(s && s.isAdmin, s && s.role); };
+const canPin = (c) => c.type === 'dm' || c.role === 'admin' || c.role === 'mod';
 function undoToast(text, onUndo, ms = 5000) {
   let box = $('#toasts'); if (!box) { box = el('div', { id: 'toasts' }); document.body.append(box); }
   const gone = () => { t.classList.add('out'); setTimeout(() => t.remove(), 240); };
@@ -419,11 +442,14 @@ function msgTools(c, m, mine) {
   const p = m._p || {};
   const b = (icon, title, fn) => el('button', { class: 'icon-btn tiny', title, onclick: (e) => { e.stopPropagation(); fn(e); } }, ic(icon, 15));
   const kids = [b('smile', 'react', (e) => (!S.me.verified ? X.verifyModal() : X.emojiPicker(e.currentTarget, (ch) => X.toggleReact(c, m, ch, true), true)))];
+  if (!m.deleted) kids.unshift(b('reply', 'reply', () => X.setReply(c, m)));
+  if (!m.deleted && ['text', 'gif', 'game', 'image', 'sticker', 'voice'].includes(p.t)) kids.push(b('forward', 'forward', () => X.forwardModal(c, m)));
+  if (!m.deleted) kids.push(b('bell', 'remind me', () => X.remindModal(c, m)));
   if (canPin(c)) kids.push(b('pin', m.pinned ? 'unpin' : 'pin', () => X.pinMessage(c, m)));
   if (mine && p.t === 'text' && C.betaActive()) kids.push(b('edit', 'edit', () => X.editMessage(c, m)));
   if (p.t === 'text') kids.push(b('copy', 'copy', () => { navigator.clipboard && navigator.clipboard.writeText(p.text).then(() => toast('copied', 'success')).catch(() => {}); }));
   if (canDelete(c, m)) kids.push(b('checksquare', 'select', () => startSelect(c, m.id)));
-  if (!mine) kids.push(b('flag', 'report', () => X.reportModal({ kind: 'message', msgId: m.id, convId: c.id, title: 'this message', snapshot: p.t === 'text' ? p.text : p.t === 'gif' ? '[gif] ' + p.url : '[' + p.t + ']' })));
+  if (!mine && p.t !== 'once') kids.push(b('flag', 'report', () => X.reportModal({ kind: 'message', msgId: m.id, convId: c.id, title: 'this message', snapshot: p.t === 'text' ? p.text : p.t === 'gif' ? '[gif] ' + p.url : '[' + p.t + ']' })));
   if (canDelete(c, m)) kids.push(b('trash', 'delete', () => deleteWithUndo(c, [m.id])));
   return el('div', { class: 'mtools' }, kids);
 }
@@ -449,18 +475,21 @@ function renderMessages(c, stick) {
     const mine = m.senderId === S.me.id;
     const sender = memberOf(c, m.senderId);
     const p = m._p || { t: 'error' };
-    const body = p.t === 'text' ? el('div', { class: 'mtext' + (C.onlyEmoji(p.text) ? ' big' : '') }, linkify(p.text)) : p.t === 'game' ? gameCard(p) : p.t === 'gif' ? X.gifBody(p) : (X.extraBody(c, m, p) || el('div', { class: 'mtext muted-i' }, p.t === 'deleted' ? 'deleted' : 'could not decrypt'));
+    const body = p.t === 'text' ? el('div', { class: 'mtext' + (C.onlyEmoji(p.text) ? ' big' : '') }, linkify(p.text, c)) : p.t === 'game' ? gameCard(p) : p.t === 'gif' ? X.gifBody(p) : p.t === 'image' ? X.imageBody(c, m, p) : p.t === 'once' || (m.deleted && m.once) ? X.onceBody(c, m, p) : (X.extraBody(c, m, p) || el('div', { class: 'mtext muted-i' }, p.t === 'deleted' ? 'deleted' : 'could not decrypt'));
+    const tome = p.t === 'text' && !mine && X.mentionsMe(p.text);
     const seen = lastMineId && lastMineId.id === m.id && o && o.lastReadAt && new Date(o.lastReadAt) >= new Date(m.createdAt);
     const isNew = shown && !shown.has(m.id);
     const picked = sel && sel.has(m.id), selectable = sel && canDelete(c, m);
     const rx = Object.entries(m.reactions || {}).filter(([, u]) => u.length);
-    frag.append(el('div', { class: 'mrow' + (mine ? ' mine' : '') + (first ? ' first' : '') + (isNew ? ' new' : '') + (sel ? ' selecting' : '') + (picked ? ' picked' : '') },
+    frag.append(el('div', { 'data-mid': m.id, class: 'mrow' + (mine ? ' mine' : '') + (first ? ' first' : '') + (isNew ? ' new' : '') + (sel ? ' selecting' : '') + (picked ? ' picked' : '') },
       selectable ? el('span', { class: 'selbox' + (picked ? ' on' : ''), onclick: () => toggleSel(c, m.id) }, picked ? ic('check', 12) : null) : (sel ? el('span', { class: 'selbox off' }) : null),
       !mine && c.type === 'group' ? (first ? el('div', { class: 'click', onclick: () => sender && openProfile(sender.username) }, avatar(sender ? sender.displayName : '?', 30, '', sender && sender.avatar)) : el('div', { style: 'width:30px;flex:none' })) : null,
       el('div', { class: 'bubwrap' },
-        el('div', { class: 'bubble' + (p.t === 'gif' ? ' gifb' : '') + (p.t === 'sticker' ? ' stickb' : '') + (m.pinned ? ' pinned' : ''), onclick: (e) => { if (sel && selectable) return toggleSel(c, m.id); if (matchMedia('(hover: none)').matches && !e.target.closest('a,button')) { const was = e.currentTarget.classList.contains('tools-on'); box.querySelectorAll('.tools-on').forEach((n) => n.classList.remove('tools-on')); if (!was) e.currentTarget.classList.add('tools-on'); } } },
+        el('div', { class: 'bubble' + (tome ? ' tome' : '') + (p.t === 'image' ? ' imgb' : '') + (p.t === 'gif' ? ' gifb' : '') + (p.t === 'sticker' ? ' stickb' : '') + (m.pinned ? ' pinned' : ''), onclick: (e) => { if (sel && selectable) return toggleSel(c, m.id); if (matchMedia('(hover: none)').matches && !e.target.closest('a,button')) { const was = e.currentTarget.classList.contains('tools-on'); box.querySelectorAll('.tools-on').forEach((n) => n.classList.remove('tools-on')); if (!was) e.currentTarget.classList.add('tools-on'); } } },
           !m.deleted && !sel ? msgTools(c, m, mine) : null,
           first && !mine && c.type === 'group' ? el('div', { class: 'mname click', onclick: () => sender && openProfile(sender.username) }, sender ? sender.displayName : 'former member', vb(sender)) : null,
+          p.fwd ? el('div', { class: 'fwdtag' }, ic('forward', 12), 'forwarded' + (p.fwd.name ? ' from ' + p.fwd.name : '')) : null,
+          p.reply ? X.quoteEl(c, p.reply) : null,
           body,
           el('div', { class: 'mmeta' }, m.pinned ? el('span', { class: 'pinmark', title: 'pinned' }, ic('pin', 12)) : null, fmtTime(m.createdAt), m.editedAt ? el('span', { class: 'edited' }, 'edited') : null, seen ? el('span', { class: 'seen' }, ic('check', 12), 'seen') : null)),
         rx.length ? el('div', { class: 'rxrow' }, rx.map(([e, u]) => el('button', { class: 'rx' + (u.includes(S.me.id) ? ' mine' : ''), title: u.map((id) => (id === S.me.id ? 'you' : (memberOf(c, id) || {}).displayName || 'someone')).join(', '), onclick: () => X.toggleReact(c, m, e) }, C.emojiEl(e), el('span', null, u.length)))) : null)));
@@ -475,6 +504,7 @@ function notifyMessage(c, msg, payload) {
   const who = sender ? sender.displayName : 'Someone';
   const text = C.previewText(payload, false);
   const title = c.type === 'group' ? `${who} in ${c.name}` : who;
+  if (X.dndActive()) return;                                 // do not disturb: no sound, no popups
   beep();
   if (document.hidden && S.prefs.desktop && 'Notification' in window && Notification.permission === 'granted') {
     try { const n = new Notification(title, { body: text, tag: c.id, silent: true }); n.onclick = () => { window.focus(); openConv(c.id); n.close(); }; } catch {}
@@ -554,9 +584,11 @@ async function groupModal(c) {
       el('div', { class: 'ulist' }, c.members.map((u) => el('div', { class: 'urow' },
         el('div', { class: 'avwrap click', onclick: () => openProfile(u.username) }, avatar(u.displayName, 34, '', u.avatar), dot(isOnline(c, u.id))),
         el('div', { class: 'grow click', onclick: () => openProfile(u.username) }, el('div', { class: 'ctitle' }, u.displayName + (u.id === S.me.id ? ' (you)' : ''), vb(u)), el('div', { class: 'muted small' }, '@' + u.username)),
-        u.role === 'admin' ? el('span', { class: 'tag' }, 'host') : null,
-        isAdmin() && u.id !== S.me.id ? el('button', { class: 'icon-btn', title: 'remove', onclick: async () => { if (await confirmModal(`remove ${u.displayName}?`, c.isPublic ? 'they cannot rejoin.' : 'the group key changes, so they cannot read anything new.', 'remove')) { await removeMember(c, u.id); draw(); } } }, ic('x', 16)) : null))),
+        u.role === 'admin' ? el('span', { class: 'tag' }, 'host') : u.role === 'mod' ? el('span', { class: 'tag' }, 'mod') : null,
+        ...X.memberTools(c, u, draw),
+        u.id !== S.me.id && myRank(c) >= 1 && myRank(c) > rankR(u.isAdmin, u.role) ? el('button', { class: 'icon-btn', title: 'remove', onclick: async () => { if (await confirmModal(`remove ${u.displayName}?`, c.isPublic ? 'they cannot rejoin.' : 'the group key changes, so they cannot read anything new.', 'remove')) { await removeMember(c, u.id); draw(); } } }, ic('x', 16)) : null))),
       addBox,
+      X.staffSection(c, draw),
       el('div', { class: 'row between', style: 'margin-top:14px' },
         c.isPublic && !isAdmin() ? el('button', { class: 'btn ghost', onclick: () => { m.close(); X.reportModal({ kind: 'group', convId: c.id, title: c.name }); } }, ic('flag', 16), 'report') : el('span'),
         el('button', { class: 'btn danger', onclick: async () => { if (await confirmModal(`leave ${c.name}?`, '', 'leave')) { await removeMember(c, S.me.id); m.close(); } } }, ic('logout', 16), 'leave')));
@@ -634,6 +666,10 @@ function settingsModal() {
     el('h4', null, ic('palette', 14), 'look'),
     el('div', { class: 'seg small' }, themeBtn('auto', 'auto'), themeBtn('light', 'day'), themeBtn('dark', 'night')),
     el('button', { class: 'btn wide', style: 'margin-top:10px', onclick: () => { m.close(); X.themeModal(); } }, ic('palette', 16), 'custom theme', el('span', { class: 'tag gold' }, 'beta')),
+    el('div', { class: 'row gap', style: 'margin-top:8px' },
+      el('button', { class: 'btn grow', onclick: () => { m.close(); X.dndModal(); } }, ic('moon', 16), X.dndActive() ? 'dnd is on' : 'do not disturb'),
+      el('button', { class: 'btn grow', onclick: () => { m.close(); X.remindersModal(); } }, ic('bell', 16), 'reminders', el('span', { class: 'tag gold' }, 'beta'))),
+    el('button', { class: 'btn wide', style: 'margin-top:8px', onclick: () => { m.close(); X.wallpaperModal(null); } }, ic('image', 16), 'chat wallpaper', el('span', { class: 'tag gold' }, 'beta')),
     el('h4', null, 'ping me'),
     toggle('show what i am playing', S.me.shareActivity, async (v) => { try { const d = await api('PATCH', '/api/me', { shareActivity: v }); S.me.shareActivity = d.user.shareActivity; } catch (e) { toast(e.message, 'error'); return false; } }),
     toggle('sound', S.prefs.sound, (v) => { S.prefs.sound = v; savePrefs(); if (v) beep(); }),
@@ -720,7 +756,7 @@ function buildAdmin(m) {
     if (!tiles.isConnected) return;
     try {
       const d = await api('GET', '/api/admin/stats', null, { quiet: true });
-      const t = [['people', d.users], ['online', d.online], ['messages', d.messages], ['groups', d.groups], ['plays', d.plays], ['reports', d.reports], ['to verify', d.pending_verifications], ['public', d.public_groups], ['storage', fmtBytes(d.bytes)], ['vanish', d.ttlHours % 24 ? d.ttlHours + 'h' : d.ttlHours / 24 + 'd']];
+      const t = [['people', d.users], ['online', d.online], ['messages', d.messages], ['groups', d.groups], ['plays', d.plays], ['reports', d.reports], ['to verify', d.pending_verifications], ['appeals', d.pending_appeals || 0], ['public', d.public_groups], ['storage', fmtBytes(d.bytes)], ['vanish', d.ttlHours % 24 ? d.ttlHours + 'h' : d.ttlHours / 24 + 'd']];
       tiles.replaceChildren(...t.map(([l, v], i) => el('div', { class: 'tile', style: `--i:${i}` }, el('b', null, v), el('span', null, l))));
     } catch (e) { tiles.replaceChildren(el('div', { class: 'form-err' }, e.message)); }
   }
@@ -750,12 +786,16 @@ function buildAdmin(m) {
     tiles,
     (() => {
       const people = el('div', null, el('div', { class: 'searchbox' }, ic('search', 16), q), list);
-      const panes = { people, reports: el('div', { style: 'display:none' }), verify: el('div', { style: 'display:none' }), announce: el('div', { style: 'display:none' }) };
-      const loaders = { reports: () => X.adminReports(panes.reports, loadStats), verify: () => X.adminVerify(panes.verify, loadStats), announce: () => X.adminAnnounce(panes.announce) };
-      const tab = (k, label) => el('button', { class: k === 'people' ? 'on' : '', onclick: (e) => { e.currentTarget.parentNode.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b === e.currentTarget)); for (const [n, node] of Object.entries(panes)) node.style.display = n === k ? '' : 'none'; if (loaders[k]) loaders[k](); } }, label);
+      const hid = () => el('div', { style: 'display:none' });
+      const panes = { people, reports: hid(), verify: hid(), appeals: hid(), announce: hid(), audit: hid(), stats: hid() };
+      const loaders = { reports: () => X.adminReports(panes.reports, loadStats), verify: () => X.adminVerify(panes.verify, loadStats), appeals: () => X.adminAppeals(panes.appeals, loadStats), announce: () => X.adminAnnounce(panes.announce), audit: () => X.adminAudit(panes.audit), stats: () => X.adminStats(panes.stats) };
+      const tabBtns = {};
+      const tab = (k, label) => tabBtns[k] = el('button', { class: k === 'people' ? 'on' : '', onclick: (e) => { e.currentTarget.parentNode.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b === e.currentTarget)); for (const [n, node] of Object.entries(panes)) node.style.display = n === k ? '' : 'none'; if (loaders[k]) loaders[k](); } }, label);
       window.__ui.reportsChanged = () => { loadStats(); if (panes.reports.isConnected && panes.reports.style.display !== 'none') loaders.reports(); };
       window.__ui.verifyChanged = () => { loadStats(); if (panes.verify.isConnected && panes.verify.style.display !== 'none') loaders.verify(); };
-      return el('div', null, el('div', { class: 'seg wrapseg' }, tab('people', 'people'), tab('reports', 'reports'), tab('verify', 'verify'), tab('announce', 'announce')), people, panes.reports, panes.verify, panes.announce);
+      window.__ui.appealsChanged = () => { loadStats(); if (panes.appeals.isConnected && panes.appeals.style.display !== 'none') loaders.appeals(); };
+      setTimeout(() => { const k = S.adminTab; S.adminTab = null; if (k && tabBtns[k]) tabBtns[k].click(); }, 0);   // /audit, /stats and /appeals jump straight to their tab
+      return el('div', null, el('div', { class: 'seg wrapseg' }, tab('people', 'people'), tab('reports', 'reports'), tab('verify', 'verify'), tab('appeals', 'appeals'), tab('announce', 'announce'), tab('audit', 'audit log'), tab('stats', 'stats')), people, panes.reports, panes.verify, panes.appeals, panes.announce, panes.audit, panes.stats);
     })()));
   loadStats(); loadUsers();
   nowTimer = setInterval(loadStats, 20000);
@@ -866,7 +906,7 @@ function shareGameModal(path, title) {
   m.box.style.zIndex = 400;
 }
 
-window.__ui = { renderAll, renderRail, renderSide, renderHeader, renderMessages, renderTyping, renderActivityLive, notifyMessage, openConv, tickCooldown, boot: () => boot(), modal, confirmModal, userSearch, openProfile, statusFor, statusLine, isMobile, chatRef: () => chatRef, resetMain: () => { builtMain = ''; renderMain(); }, startDM, mugIcon, groupModal, removeMember, deleteWithUndo };
+window.__ui = { renderAll, renderRail, renderSide, renderHeader, renderMessages, renderTyping, renderActivityLive, notifyMessage, openConv, tickCooldown, boot: () => boot(), modal, confirmModal, userSearch, openProfile, statusFor, statusLine, isMobile, chatRef: () => chatRef, resetMain: () => { builtMain = ''; renderMain(); }, startDM, mugIcon, groupModal, removeMember, deleteWithUndo, myRank, rankR, linkify, goAdminTab: (k) => { S.adminTab = k; S.view = 'admin'; builtMain = ''; renderAll(); } };
 
 // ---------- boot ----------
 async function boot() {
