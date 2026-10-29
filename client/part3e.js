@@ -28,8 +28,13 @@ function staffSection(c, redraw) {
   if (c.type !== 'group' || U.myRank(c) < 1) return null;
   const sel = el('select', null, [[0, 'off'], [5, '5 seconds'], [10, '10 seconds'], [30, '30 seconds'], [60, '1 minute'], [300, '5 minutes'], [900, '15 minutes']].map(([v, l]) => el('option', { value: v, selected: (c.slowSeconds || 0) === v }, l)));
   sel.addEventListener('change', async () => { try { await api('PUT', `/api/conversations/${c.id}/slow`, { seconds: +sel.value }); c.slowSeconds = +sel.value || null; toast(+sel.value ? 'slow mode on' : 'slow mode off', 'success'); U.renderHeader(); X.drawModbar(c); } catch (e) { toast(e.message, 'error'); sel.value = c.slowSeconds || 0; } });
+  const gng = c.isPublic && (S.me.isAdmin || !c.systemKind) ? (() => {
+    const on = c.members.some((x) => x.isBot);
+    const b = el('button', { class: 'btn' + (on ? '' : ' primary'), onclick: async () => { try { await api('PUT', `/api/conversations/${c.id}/gng`, { on: !on }); toast(on ? 'gng left the room' : 'gng joined, say hi', 'success'); } catch (e) { toast(e.message, 'error'); } } }, on ? 'send gng away' : 'invite gng');
+    return el('div', null, el('h4', null, ic('chat', 14), 'gng the bot'), el('div', { class: 'row gap' }, b), el('p', { class: 'muted small' }, 'a gen alpha chatbot. he only joins public rooms, since he cannot read private chats. ping him with @gng or just talk and he may drop in.'));
+  })() : null;
   return el('div', null, el('h4', null, ic('timer', 14), 'slow mode'), el('div', { class: 'row gap' }, sel, el('button', { class: 'btn', onclick: () => modlogModal(c) }, ic('list', 16), 'mod log')),
-    el('p', { class: 'muted small' }, 'mods and hosts are not slowed down. type /help in the chat for mod commands.'));
+    el('p', { class: 'muted small' }, 'mods and hosts are not slowed down. type /help in the chat for mod commands.'), gng);
 }
 async function modlogModal(c) {
   const body = el('div', null, el('div', { class: 'muted pad' }, '...'));

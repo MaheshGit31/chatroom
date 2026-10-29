@@ -127,7 +127,9 @@ const PRESETS = {                                            // preset profile p
   p7: ['music', '#587a82'], p8: ['gamepad', '#8f6a3a'], p9: ['coffee', '#a2644a'], p10: ['star', '#b8843a'], p11: ['headphones', '#6d8a6a'], p12: ['compass', '#587a82'],
   p13: ['crown', '#9c5b52'], p14: ['pizza', '#c4572c'], p15: ['book', '#6c7596'], p16: ['code', '#7a8c55'],
 };
+const GNG_SVG = '<svg viewBox="0 0 64 64" width="100%" height="100%"><rect width="64" height="64" fill="#f1d98a"/><path d="M20 17c3-6 22-7 25 0 3 7 1 17-5 18-7 2-19 1-21-6-1-4-1-8 1-12z" fill="#fff6dc" stroke="#2b2118" stroke-width="2.2" stroke-linejoin="round"/><circle cx="28" cy="24" r="2.2" fill="#2b2118"/><circle cx="38" cy="23" r="2.8" fill="#2b2118"/><path d="M27 30c4 4 9 3 12-1" fill="none" stroke="#2b2118" stroke-width="2" stroke-linecap="round"/><path d="M32 36l-1 14M31 41l-10 3M32 41l12-5" stroke="#2b2118" stroke-width="2.4" stroke-linecap="round" fill="none"/><path d="M44 36l1-9c0-2 3-2 3 0l-1 5 5 1c2 1 1 4-1 4z" fill="#fff6dc" stroke="#2b2118" stroke-width="1.8" stroke-linejoin="round"/><path d="M31 50l-6 10M31 50l6 10" stroke="#2b2118" stroke-width="2.4" stroke-linecap="round"/></svg>';   // gng: a poorly drawn guy with his thumb up
 const avatar = (name, size = 40, extra = '', preset = null) => {
+  if (preset === 'gng') { const d = el('div', { class: 'avatar ' + extra, style: `width:${size}px;height:${size}px;overflow:hidden` }); d.innerHTML = GNG_SVG; return d; }
   const p = preset && PRESETS[preset];
   if (p) return el('div', { class: 'avatar ' + extra, style: `width:${size}px;height:${size}px;background:${p[1]}` }, ic(p[0], Math.round(size * 0.52)));
   return el('div', { class: 'avatar ' + extra, style: `width:${size}px;height:${size}px;font-size:${Math.round(size * 0.46)}px;background:${tone(name)}` }, (String(name).trim()[0] || '?').toLowerCase());

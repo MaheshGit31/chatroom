@@ -584,7 +584,7 @@ async function groupModal(c) {
       el('div', { class: 'ulist' }, c.members.map((u) => el('div', { class: 'urow' },
         el('div', { class: 'avwrap click', onclick: () => openProfile(u.username) }, avatar(u.displayName, 34, '', u.avatar), dot(isOnline(c, u.id))),
         el('div', { class: 'grow click', onclick: () => openProfile(u.username) }, el('div', { class: 'ctitle' }, u.displayName + (u.id === S.me.id ? ' (you)' : ''), vb(u)), el('div', { class: 'muted small' }, '@' + u.username)),
-        u.role === 'admin' ? el('span', { class: 'tag' }, 'host') : u.role === 'mod' ? el('span', { class: 'tag' }, 'mod') : null,
+        u.isBot ? el('span', { class: 'tag gold' }, 'bot') : u.role === 'admin' ? el('span', { class: 'tag' }, 'host') : u.role === 'mod' ? el('span', { class: 'tag' }, 'mod') : null,
         ...X.memberTools(c, u, draw),
         u.id !== S.me.id && myRank(c) >= 1 && myRank(c) > rankR(u.isAdmin, u.role) ? el('button', { class: 'icon-btn', title: 'remove', onclick: async () => { if (await confirmModal(`remove ${u.displayName}?`, c.isPublic ? 'they cannot rejoin.' : 'the group key changes, so they cannot read anything new.', 'remove')) { await removeMember(c, u.id); draw(); } } }, ic('x', 16)) : null))),
       addBox,

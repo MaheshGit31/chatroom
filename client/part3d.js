@@ -144,6 +144,7 @@ const CMDS = [
   { n: 'kick', a: '@user', d: 'remove someone from this group', who: 'mod' },
   { n: 'slow', a: '10s | 1m | off', d: 'slow mode for this group', who: 'mod' },
   { n: 'modlog', d: 'what the mods did here', who: 'mod' },
+  { n: 'gng', a: 'on | off', d: 'invite or dismiss the gng bot (public rooms)', who: 'mod' },
   { n: 'mod', a: '@user', d: 'make someone a mod', who: 'host' },
   { n: 'unmod', a: '@user', d: 'take mod away', who: 'host' },
   { n: 'ban', a: '@user reason', d: 'suspend an account', who: 'admin' },
@@ -227,6 +228,11 @@ async function slash(c, raw) {
         await api('PUT', `/api/conversations/${c.id}/slow`, { seconds: s }); ok(s ? `slow mode on: one message every ${niceSecs(s)}` : 'slow mode is off'); break;
       }
       case 'modlog': X0.modlogModal(c); break;
+      case 'gng': {
+        if (!c.isPublic) { toast('gng only joins public rooms, private chats are encrypted so he cannot read them', 'error'); break; }
+        const on = !/^(off|leave|stop|0)$/i.test(arg);
+        await api('PUT', `/api/conversations/${c.id}/gng`, { on }); ok(on ? 'gng joined, say hi' : 'gng left'); break;
+      }
       case 'mod': case 'unmod': {
         const w = target(); if (!w) break; const u = member(w); if (!u) break;
         await api('POST', `/api/conversations/${c.id}/mods/${u.id}`, { on: cmd.n === 'mod' }); ok(cmd.n === 'mod' ? `@${u.username} is a mod now` : `@${u.username} is not a mod anymore`); break;
