@@ -32,9 +32,17 @@ const iceQueue = (pc) => { const q = []; return { add: async (c) => { if (pc.rem
 function coopHostModal(path, title, frame) {
   if (!window.RTCPeerConnection || !(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia)) return toast('this browser cannot share a tab, try Chrome or Edge on a computer', 'error');
   const dms = S.convs.filter((c) => c.type === 'dm');
-  const list = el('div', { class: 'ulist tall' }, dms.length ? dms.map((c) => { const o = C.other(c); return el('div', { class: 'urow click', onclick: () => { m.close(); startHost(c, path, title, frame); } }, avatar(convTitle(c), 36, '', o && o.avatar), el('div', { class: 'grow' }, el('div', { class: 'ctitle' }, convTitle(c)), el('div', { class: 'muted small' }, 'send an invite')), ic('send', 16)); }) : [el('div', { class: 'muted pad' }, 'start a direct message with a friend first')]);
+  const list = el('div', { class: 'ulist tall' });
+  const q = el('input', { placeholder: 'find a friend', autocomplete: 'off' });
+  const draw = () => {
+    const needle = q.value.trim().toLowerCase();
+    const rows = dms.filter((c) => { const o = C.other(c) || {}; return !needle || convTitle(c).toLowerCase().includes(needle) || String(o.username || '').includes(needle); });
+    list.replaceChildren(...(rows.length ? rows.map((c) => { const o = C.other(c); return el('div', { class: 'urow click', onclick: () => { m.close(); startHost(c, path, title, frame); } }, avatar(convTitle(c), 36, '', o && o.avatar), el('div', { class: 'grow' }, el('div', { class: 'ctitle' }, convTitle(c)), el('div', { class: 'muted small' }, o ? '@' + o.username : 'send an invite')), ic('send', 16)); }) : [el('div', { class: 'muted pad' }, dms.length ? 'nobody matches' : 'start a direct message with a friend first')]));
+  };
+  q.addEventListener('input', draw); draw();
   const m = modal('play together', el('div', null,
-    el('p', { class: 'muted small', style: 'margin-top:0' }, 'your friend sees your game live and can press keys and click in it, from anywhere. your browser will ask what to share: pick "this tab". it goes straight between your two browsers, nothing is stored.'), list));
+    el('p', { class: 'muted small', style: 'margin-top:0' }, 'your friend sees your game live and can press keys and click in it, from anywhere. your browser will ask what to share: pick "this tab". it goes straight between your two browsers, nothing is stored.'),
+    el("div", { class: "searchbox" }, ic("search", 16), q), list));
   m.box.style.zIndex = 400;
 }
 async function startHost(conv, path, title, frame) {

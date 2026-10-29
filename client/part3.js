@@ -38,7 +38,7 @@ function confirmModal(title, text, okLabel = 'confirm', danger = true) {
 function userSearch(onPick, exclude = new Set()) {
   const list = el('div', { class: 'ulist' });
   const hint = () => el('div', { class: 'muted pad' }, 'type 2+ letters');
-  const input = el('input', { placeholder: 'find by username', autocomplete: 'off', autocapitalize: 'none', spellcheck: false });
+  const input = el('input', { placeholder: 'find by name or username', autocomplete: 'off', autocapitalize: 'none', spellcheck: false });
   const run = debounce(async () => {
     const q = input.value.trim();
     if (q.length < 2) { list.replaceChildren(hint()); return; }
