@@ -15,6 +15,7 @@ const { Games } = require('./lib/games');
 const safety = require('./lib/safety');
 const beta = require('./lib/beta');                          // beta-only extras: edits, scheduling, polls, games, stickers, folders                      // filter, verification, announcements, badges, built-in servers
 const gngBot = require('./lib/gng');                          // gng, the gen alpha bot that lives in public rooms
+const owner = require('./lib/owner');                        // owner-only: update video, console, lockdown, timed events
 const mod = require('./lib/mod');                            // group mods, slow mode, commands, audit log, appeals, stats, dnd, view-once, reminders, image blobs
 const audit = require('./lib/audit');                        // audit log + daily counters
 const features = require('./lib/features');                  // reactions, pins, reports, public groups, referrals, gifs, themes
@@ -40,6 +41,7 @@ const scrypt = (pw, salt) => new Promise((ok, no) => crypto.scrypt(pw, salt, 32,
 
 let SERVER_SECRET = '';                                      // loaded from db, used for fake salts
 let pushReady = false;
+let ownerApi = { locked: () => false, welcome: async () => {}, load: async () => {} };   // filled below
 let gngApi, modApi = { setBanned: async () => ({ error: 'starting', status: 503 }) };   // filled when the mod module mounts
 
 // ---------- cors + headers (token auth, so no cookies, so * is safe) ----------
@@ -153,6 +155,7 @@ app.post('/api/auth/salt', rl('salt', 30, 60_000), wrap(async (req, res) => {
 
 app.post('/api/auth/register', rl('register', 5, 3_600_000), wrap(async (req, res) => {
   const b = req.body;
+  if (ownerApi.locked('signups') && String(b.username || '').toLowerCase() !== ADMIN_USERNAME) return bad(res, 'new accounts are paused for a bit, try again later', 503);
   const username = String(b.username || '').toLowerCase();
   const displayName = String(b.displayName || username).trim().slice(0, 32) || username;
   if (!USERNAME.test(username)) return bad(res, 'username must be 3-20 chars: a-z 0-9 _');
@@ -558,6 +561,7 @@ app.get('/api/conversations/:id/messages', auth, byUser('msg-read', 120, 60_000)
 // message sending: strict limits + escalating mutes for spammers
 app.post('/api/conversations/:id/messages', auth, wrap(async (req, res, next) => {
   const uid = req.user.id;
+  if (ownerApi.locked('send') && !req.user.is_admin) return bad(res, 'chat is paused for a moment, only admins can send right now', 423);
   const mute = limiter.muted('mute:' + uid);                   // already muted?
   if (mute) { res.set('Retry-After', String(mute)); return res.status(429).json({ error: 'muted', retryAfter: mute, message: `slow down, you are muted for ${mute}s` }); }
   const checks = [limiter.hit('msg-burst:' + uid, 5, 5_000), limiter.hit('msg-min:' + uid, 40, 60_000), limiter.hit('msg-hour:' + uid, 600, 3_600_000)];
@@ -741,10 +745,12 @@ app.get('/api/activity/mine', auth, wrap(async (req, res) => {
 
 const ensureFor = (u) => safety.ensureSystem(q, u);
 features.mount(app, { q, pool, auth, byUser, bad, wrap, sendTo, sendToConv, notify, isUuid, loadConversations, adminOnly, ensureFor });
-safety.mount(app, { q, auth, adminOnly, byUser, bad, wrap, sendTo, notify, sockets, isUuid, ensureFor, onVerified: (u) => features.creditReferral({ q, sendTo, notify, ensureFor }, u) });   // a referral pays out when the friend gets verified
+safety.mount(app, { q, auth, adminOnly, byUser, bad, wrap, sendTo, notify, sockets, isUuid, ensureFor, onVerified: (u) => { features.creditReferral({ q, sendTo, notify, ensureFor }, u); ownerApi.welcome(u); } });   // a referral pays out when the friend gets verified
 beta.mount(app, { q, pool, auth, adminOnly, byUser, bad, wrap, sendTo, sendToConv, notify, isUuid, loadConversations, requireMember, isBlockedEitherWay, ensureFor });
 gngApi = gngBot.init({ q, sendTo, sendToConv, safety });
 gngApi.mount(app, { auth, byUser, bad, wrap, requireMember, isUuid });
+ownerApi = owner.init({ q, sendTo, sockets, ownerName: ADMIN_USERNAME, getMod: () => modApi, getGng: () => gngApi });
+ownerApi.mount(app, { auth, ownerOnly, byUser, bad, wrap });
 modApi = mod.mount(app, { q, auth, adminOnly, byUser, bad, wrap, sendTo, sendToConv, notify, isUuid, requireMember, sockets, secret: () => SERVER_SECRET, adminName: ADMIN_USERNAME, ensureFor, rl });
 
 // ---------- static client ----------
@@ -841,6 +847,7 @@ async function getSetting(key, make) {
   if (!process.env.DATABASE_URL) { console.error('DATABASE_URL is missing'); process.exit(1); }
   await init();
   await safety.initSystem(q);                                // Everyone + Beta lounge
+  await ownerApi.load();                                     // update video, lockdown switches, timed events
   SERVER_SECRET = await getSetting('server_secret', () => crypto.randomBytes(32).toString('hex'));
   try {                                                      // web push keys are generated once and kept in the db
     const keys = JSON.parse(await getSetting('vapid', () => JSON.stringify(webpush.generateVAPIDKeys())));
