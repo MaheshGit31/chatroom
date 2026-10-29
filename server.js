@@ -14,6 +14,7 @@ const { Games } = require('./lib/games');
 
 const safety = require('./lib/safety');
 const beta = require('./lib/beta');                          // beta-only extras: edits, scheduling, polls, games, stickers, folders                      // filter, verification, announcements, badges, built-in servers
+const gngBot = require('./lib/gng');                          // gng, the gen alpha bot that lives in public rooms
 const mod = require('./lib/mod');                            // group mods, slow mode, commands, audit log, appeals, stats, dnd, view-once, reminders, image blobs
 const audit = require('./lib/audit');                        // audit log + daily counters
 const features = require('./lib/features');                  // reactions, pins, reports, public groups, referrals, gifs, themes
@@ -39,7 +40,7 @@ const scrypt = (pw, salt) => new Promise((ok, no) => crypto.scrypt(pw, salt, 32,
 
 let SERVER_SECRET = '';                                      // loaded from db, used for fake salts
 let pushReady = false;
-let modApi = { setBanned: async () => ({ error: 'starting', status: 503 }) };   // filled when the mod module mounts
+let gngApi, modApi = { setBanned: async () => ({ error: 'starting', status: 503 }) };   // filled when the mod module mounts
 
 // ---------- cors + headers (token auth, so no cookies, so * is safe) ----------
 app.use((req, res, next) => {
@@ -155,6 +156,7 @@ app.post('/api/auth/register', rl('register', 5, 3_600_000), wrap(async (req, re
   const username = String(b.username || '').toLowerCase();
   const displayName = String(b.displayName || username).trim().slice(0, 32) || username;
   if (!USERNAME.test(username)) return bad(res, 'username must be 3-20 chars: a-z 0-9 _');
+  if (username === 'gng') return bad(res, 'that name is taken');
   if (safety.F.check(username) || safety.F.check(displayName)) return bad(res, 'pick a cleaner name');
   if (username === ADMIN_USERNAME && ADMIN_SETUP_KEY && sha256(String(b.setupKey || '')) !== sha256(ADMIN_SETUP_KEY)) return res.status(403).json({ error: 'setup_key_required', message: 'this name is reserved, enter the setup key' });
   if (![b.kdfSalt, b.authSecret, b.publicKey, b.wrappedPriv, b.wrappedPrivIv].every((x) => isB64(x, 2000))) return bad(res, 'bad key material');
@@ -365,7 +367,7 @@ async function loadConversations(userId, onlyId) {
   const ids = convs.rows.map((c) => c.id);
   if (!ids.length) return { conversations: [], keyUsers: {} };
   const mem = await q(
-    `select cm.conv_id,cm.role,cm.last_read_at,u.id,u.username,u.display_name,u.public_key,u.status_text,u.status_icon,u.status_mode,u.is_admin,u.verified,u.avatar from members cm join users u on u.id=cm.user_id join conversations cc on cc.id=cm.conv_id
+    `select cm.conv_id,cm.role,cm.last_read_at,u.id,u.username,u.display_name,u.public_key,u.status_text,u.status_icon,u.status_mode,u.is_admin,u.verified,u.avatar,u.is_bot from members cm join users u on u.id=cm.user_id join conversations cc on cc.id=cm.conv_id
      where cm.conv_id=any($1) and (cc.system_kind is null or u.id=$2 or u.is_admin or exists(select 1 from messages mm where mm.conv_id=cm.conv_id and mm.sender_id=u.id)) order by cm.joined_at`, [ids, userId]); // the big built-in rooms only list people who have spoken, plus admins
   const keys = await q('select conv_id,version,wrapped_key,iv,wrapped_by from group_keys where user_id=$1 and conv_id=any($2)', [userId, ids]);
   const wrappers = [...new Set(keys.rows.map((k) => k.wrapped_by).filter(Boolean))];
@@ -375,7 +377,7 @@ async function loadConversations(userId, onlyId) {
   const conversations = convs.rows.map((c) => ({
     id: c.id, type: c.type, name: c.name, memberCount: c.member_count, isPublic: c.is_public, ttlSeconds: c.ttl_seconds || null, slowSeconds: c.slow_seconds || null, mutedUntil: c.muted_until && new Date(c.muted_until) > new Date() ? c.muted_until : null, systemKind: c.system_kind || null, description: c.description || '', topic: c.topic || '', keyVersion: c.key_version, createdAt: c.created_at, role: c.role, muted: c.muted,
     lastReadAt: c.last_read_at, joinedAt: c.joined_at, unread: c.unread, lastMessage: c.last_message,
-    members: mem.rows.filter((m) => m.conv_id === c.id).map((m) => ({ id: m.id, username: m.username, displayName: m.display_name, avatar: m.avatar || null, publicKey: m.public_key, role: m.role, lastReadAt: m.last_read_at, online: sockets.has(m.id) && m.status_mode !== 'invisible', mode: m.status_mode, verified: safety.verifiedOn(m), status: statusOf(m), isAdmin: m.is_admin })),
+    members: mem.rows.filter((m) => m.conv_id === c.id).map((m) => ({ id: m.id, username: m.username, displayName: m.display_name, avatar: m.avatar || null, publicKey: m.public_key, role: m.role, lastReadAt: m.last_read_at, online: !!m.is_bot || (sockets.has(m.id) && m.status_mode !== 'invisible'), isBot: !!m.is_bot, mode: m.status_mode, verified: safety.verifiedOn(m), status: statusOf(m), isAdmin: m.is_admin })),
     keys: keys.rows.filter((k) => k.conv_id === c.id).map((k) => ({ version: k.version, wrappedKey: k.wrapped_key, iv: k.iv, wrappedBy: k.wrapped_by })),
   }));
   return { conversations, keyUsers };
@@ -384,8 +386,9 @@ async function loadConversations(userId, onlyId) {
 app.get('/api/conversations', auth, wrap(async (req, res) => res.json(await loadConversations(req.user.id))));
 
 app.post('/api/conversations/dm', auth, byUser('conv-create', 15, 3_600_000), wrap(async (req, res) => {
-  const t = await q('select id from users where username=$1', [String(req.body.username || '').toLowerCase()]);
+  const t = await q('select id,is_bot from users where username=$1', [String(req.body.username || '').toLowerCase()]);
   if (!t.rows[0]) return bad(res, 'user not found', 404);
+  if (t.rows[0].is_bot) return bad(res, 'gng lives in public rooms, ping him in Everyone with @gng');
   const other = t.rows[0].id;
   if (other === req.user.id) return bad(res, 'cannot dm yourself');
   if (await isBlockedEitherWay(req.user.id, other)) return bad(res, 'blocked', 403);
@@ -578,8 +581,9 @@ app.post('/api/conversations/:id/messages', auth, wrap(async (req, res, next) =>
   let adminDm = false;                                       // chatting with an admin is always free, so people can ask for help or for a manual verify
   if (m.type === 'dm' && !safety.verifiedOn(req.user) && (req.user.msg_count || 0) >= safety.FREE_MSGS) adminDm = !!(await q('select 1 from members mm join users uu on uu.id=mm.user_id where mm.conv_id=$1 and mm.user_id<>$2 and uu.is_admin', [req.params.id, uid])).rows[0];
   if (!adminDm && !safety.verifiedOn(req.user) && (req.user.msg_count || 0) >= safety.FREE_MSGS) return res.status(403).json({ error: 'verify_required', message: `you used your ${safety.FREE_MSGS} free messages, verify to keep chatting` });
+  let pubPayload = null;
   if (m.is_public) {                                         // public rooms are readable by the server, so they are filtered here too
-    const p = safety.decryptPublic(req.params.id, uid, keyVersion, ciphertext, iv);
+    const p = safety.decryptPublic(req.params.id, uid, keyVersion, ciphertext, iv); pubPayload = p;
     if (!p) return bad(res, 'could not read that message');
     if (safety.payloadDirty(p)) return res.status(400).json({ error: 'blocked_word', message: 'keep it clean' });
   }
@@ -594,6 +598,7 @@ app.post('/api/conversations/:id/messages', auth, wrap(async (req, res, next) =>
   mod.afterSend({ q, sendTo, notify, pushTo, limiter, sockets, isBlockedEitherWay }, { user: req.user, conv: m, convId: req.params.id, message, mentions: req.body.mentions }).catch(() => {});   // @mentions
   q('update users set msg_count=msg_count+1 where id=$1', [uid]).then(() => safety.badgeCheck(q, uid)).catch(() => {});
   const mems = await q('select user_id,muted from members where conv_id=$1', [req.params.id]);
+  if (pubPayload && gngApi) gngApi.onMessage({ convId: req.params.id, sender: req.user, message, payload: pubPayload, mentions: Array.isArray(req.body.mentions) ? req.body.mentions : [] }).catch(() => {});   // gng reads public rooms
   for (const mm of mems.rows) {
     sendTo(mm.user_id, { t: 'msg', convId: req.params.id, message, cid: req.body.cid || null, muted: mm.muted });
     if (!m.is_public && mm.user_id !== uid && !mm.muted && !sockets.has(mm.user_id)) pushTo(mm.user_id, req.params.id).catch(() => {}); // offline => web push
@@ -738,6 +743,8 @@ const ensureFor = (u) => safety.ensureSystem(q, u);
 features.mount(app, { q, pool, auth, byUser, bad, wrap, sendTo, sendToConv, notify, isUuid, loadConversations, adminOnly, ensureFor });
 safety.mount(app, { q, auth, adminOnly, byUser, bad, wrap, sendTo, notify, sockets, isUuid, ensureFor, onVerified: (u) => features.creditReferral({ q, sendTo, notify, ensureFor }, u) });   // a referral pays out when the friend gets verified
 beta.mount(app, { q, pool, auth, adminOnly, byUser, bad, wrap, sendTo, sendToConv, notify, isUuid, loadConversations, requireMember, isBlockedEitherWay, ensureFor });
+gngApi = gngBot.init({ q, sendTo, sendToConv, safety });
+gngApi.mount(app, { auth, byUser, bad, wrap, requireMember, isUuid });
 modApi = mod.mount(app, { q, auth, adminOnly, byUser, bad, wrap, sendTo, sendToConv, notify, isUuid, requireMember, sockets, secret: () => SERVER_SECRET, adminName: ADMIN_USERNAME, ensureFor, rl });
 
 // ---------- static client ----------
@@ -854,6 +861,7 @@ async function getSetting(key, make) {
   sweepExpired().catch((e) => console.warn('sweep', e.message));
   setInterval(() => sweepExpired().catch((e) => console.warn('sweep', e.message)), 5 * 60_000).unref();
   beta.start({ q, sendTo, notify, pushTo, sockets, isBlockedEitherWay });
+  gngApi.start().catch((e) => console.warn('gng start failed', e.message));
   mod.start({ q, notify, pushTo });                          // reminders + housekeeping    // sends scheduled messages and clears short-timer chats
   server.listen(PORT, '0.0.0.0', () => console.log('chatroom listening on', PORT));
 })().catch((e) => { console.error('fatal', e); process.exit(1); });

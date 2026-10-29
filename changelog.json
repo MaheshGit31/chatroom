@@ -1,5 +1,14 @@
 [
   {
+    "id": "2026-10-28-d",
+    "date": "2026-10-28",
+    "title": "gng is here",
+    "items": [
+      "meet gng: a gen alpha chat bot that lives in Everyone. ping him with @gng, say his name, or just talk and he might drop in",
+      "hosts and mods can invite him to their public group with /gng on (or the button in group details). he cannot join private chats since those are encrypted"
+    ]
+  },
+  {
     "id": "2026-10-28-c",
     "date": "2026-10-28",
     "title": "search by display name",
