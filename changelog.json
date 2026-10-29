@@ -1,5 +1,14 @@
 [
   {
+    "id": "2026-10-28-b",
+    "date": "2026-10-28",
+    "title": "play together",
+    "items": [
+      "new play together button in the game player: a friend far away joins your game, sees it live and plays it with you using their keyboard and mouse (or taps on a phone)",
+      "it runs straight between your two browsers, so it costs nothing to host. use Chrome or Edge on a computer to host; works for any game in the library, though a few games that need pointer lock or a gamepad will not respond to the friend"
+    ]
+  },
+  {
     "id": "2026-10-28-a",
     "date": "2026-10-28",
     "title": "replies, mods, photos and more",

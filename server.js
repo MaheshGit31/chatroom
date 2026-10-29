@@ -658,6 +658,13 @@ app.get(/^\/g\/(.+)$/, rl('gameload', 60, 60_000), wrap(async (req, res) => {
   } catch (e) { res.status(502).type('text/plain').send('could not load game: ' + e.message); }
 }));
 
+// ice servers for play together: free public stun by default; add TURN_URL / TURN_USER / TURN_PASS on railway only if you want to cover strict networks (that relay costs bandwidth)
+app.get('/api/rtc-config', auth, wrap(async (req, res) => {
+  const iceServers = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun.cloudflare.com:3478'] }];
+  if (process.env.TURN_URL) iceServers.push({ urls: process.env.TURN_URL.split(','), username: process.env.TURN_USER || '', credential: process.env.TURN_PASS || '' });
+  res.json({ iceServers, turn: !!process.env.TURN_URL });
+}));
+
 // ---------- activity ----------
 app.post('/api/activity/start', auth, byUser('play-start', 20, 60_000), wrap(async (req, res) => {
   const g = games.byId.get(String(req.body.path || ''));
@@ -793,6 +800,11 @@ wss.on('connection', (ws) => {
         if (!limiter.hit(`typing:${ws.userId}:${m.convId}`, 1, 2_000).ok) return; // 1 typing event / 2s / conversation
         const ok = await q('select 1 from members where conv_id=$1 and user_id=$2', [m.convId, ws.userId]);
         if (ok.rows[0]) await sendToConv(m.convId, { t: 'typing', convId: m.convId, userId: ws.userId }, ws.userId);
+      } else if (m.t === 'rtc' && isUuid(m.to) && m.to !== ws.userId) {   // play together: relay webrtc handshakes between two people who share a dm (the video itself never touches the server)
+        if (typeof m.room !== 'string' || m.room.length > 40 || !['join', 'offer', 'answer', 'ice', 'bye'].includes(m.kind) || (m.data && String(m.data).length > 20000)) return;
+        const dm = await q(`select 1 from members a join members b on a.conv_id=b.conv_id join conversations c on c.id=a.conv_id where c.type='dm' and a.user_id=$1 and b.user_id=$2 limit 1`, [ws.userId, m.to]);
+        if (!dm.rows[0] || await isBlockedEitherWay(ws.userId, m.to)) return;
+        sendTo(m.to, { t: 'rtc', from: ws.userId, room: m.room, kind: m.kind, data: m.data || null });
       } else if (m.t === 'ping') ws.send('{"t":"pong"}');
     } catch (e) { console.error('ws error', e.message); }
   });
