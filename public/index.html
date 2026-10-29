@@ -667,7 +667,9 @@ const PRESETS = {                                            // preset profile p
   p7: ['music', '#587a82'], p8: ['gamepad', '#8f6a3a'], p9: ['coffee', '#a2644a'], p10: ['star', '#b8843a'], p11: ['headphones', '#6d8a6a'], p12: ['compass', '#587a82'],
   p13: ['crown', '#9c5b52'], p14: ['pizza', '#c4572c'], p15: ['book', '#6c7596'], p16: ['code', '#7a8c55'],
 };
+const GNG_SVG = '<svg viewBox="0 0 64 64" width="100%" height="100%"><rect width="64" height="64" fill="#f1d98a"/><path d="M20 17c3-6 22-7 25 0 3 7 1 17-5 18-7 2-19 1-21-6-1-4-1-8 1-12z" fill="#fff6dc" stroke="#2b2118" stroke-width="2.2" stroke-linejoin="round"/><circle cx="28" cy="24" r="2.2" fill="#2b2118"/><circle cx="38" cy="23" r="2.8" fill="#2b2118"/><path d="M27 30c4 4 9 3 12-1" fill="none" stroke="#2b2118" stroke-width="2" stroke-linecap="round"/><path d="M32 36l-1 14M31 41l-10 3M32 41l12-5" stroke="#2b2118" stroke-width="2.4" stroke-linecap="round" fill="none"/><path d="M44 36l1-9c0-2 3-2 3 0l-1 5 5 1c2 1 1 4-1 4z" fill="#fff6dc" stroke="#2b2118" stroke-width="1.8" stroke-linejoin="round"/><path d="M31 50l-6 10M31 50l6 10" stroke="#2b2118" stroke-width="2.4" stroke-linecap="round"/></svg>';   // gng: a poorly drawn guy with his thumb up
 const avatar = (name, size = 40, extra = '', preset = null) => {
+  if (preset === 'gng') { const d = el('div', { class: 'avatar ' + extra, style: `width:${size}px;height:${size}px;overflow:hidden` }); d.innerHTML = GNG_SVG; return d; }
   const p = preset && PRESETS[preset];
   if (p) return el('div', { class: 'avatar ' + extra, style: `width:${size}px;height:${size}px;background:${p[1]}` }, ic(p[0], Math.round(size * 0.52)));
   return el('div', { class: 'avatar ' + extra, style: `width:${size}px;height:${size}px;font-size:${Math.round(size * 0.46)}px;background:${tone(name)}` }, (String(name).trim()[0] || '?').toLowerCase());
@@ -1701,7 +1703,7 @@ async function groupModal(c) {
       el('div', { class: 'ulist' }, c.members.map((u) => el('div', { class: 'urow' },
         el('div', { class: 'avwrap click', onclick: () => openProfile(u.username) }, avatar(u.displayName, 34, '', u.avatar), dot(isOnline(c, u.id))),
         el('div', { class: 'grow click', onclick: () => openProfile(u.username) }, el('div', { class: 'ctitle' }, u.displayName + (u.id === S.me.id ? ' (you)' : ''), vb(u)), el('div', { class: 'muted small' }, '@' + u.username)),
-        u.role === 'admin' ? el('span', { class: 'tag' }, 'host') : u.role === 'mod' ? el('span', { class: 'tag' }, 'mod') : null,
+        u.isBot ? el('span', { class: 'tag gold' }, 'bot') : u.role === 'admin' ? el('span', { class: 'tag' }, 'host') : u.role === 'mod' ? el('span', { class: 'tag' }, 'mod') : null,
         ...X.memberTools(c, u, draw),
         u.id !== S.me.id && myRank(c) >= 1 && myRank(c) > rankR(u.isAdmin, u.role) ? el('button', { class: 'icon-btn', title: 'remove', onclick: async () => { if (await confirmModal(`remove ${u.displayName}?`, c.isPublic ? 'they cannot rejoin.' : 'the group key changes, so they cannot read anything new.', 'remove')) { await removeMember(c, u.id); draw(); } } }, ic('x', 16)) : null))),
       addBox,
@@ -3230,6 +3232,7 @@ const CMDS = [
   { n: 'kick', a: '@user', d: 'remove someone from this group', who: 'mod' },
   { n: 'slow', a: '10s | 1m | off', d: 'slow mode for this group', who: 'mod' },
   { n: 'modlog', d: 'what the mods did here', who: 'mod' },
+  { n: 'gng', a: 'on | off', d: 'invite or dismiss the gng bot (public rooms)', who: 'mod' },
   { n: 'mod', a: '@user', d: 'make someone a mod', who: 'host' },
   { n: 'unmod', a: '@user', d: 'take mod away', who: 'host' },
   { n: 'ban', a: '@user reason', d: 'suspend an account', who: 'admin' },
@@ -3313,6 +3316,11 @@ async function slash(c, raw) {
         await api('PUT', `/api/conversations/${c.id}/slow`, { seconds: s }); ok(s ? `slow mode on: one message every ${niceSecs(s)}` : 'slow mode is off'); break;
       }
       case 'modlog': X0.modlogModal(c); break;
+      case 'gng': {
+        if (!c.isPublic) { toast('gng only joins public rooms, private chats are encrypted so he cannot read them', 'error'); break; }
+        const on = !/^(off|leave|stop|0)$/i.test(arg);
+        await api('PUT', `/api/conversations/${c.id}/gng`, { on }); ok(on ? 'gng joined, say hi' : 'gng left'); break;
+      }
       case 'mod': case 'unmod': {
         const w = target(); if (!w) break; const u = member(w); if (!u) break;
         await api('POST', `/api/conversations/${c.id}/mods/${u.id}`, { on: cmd.n === 'mod' }); ok(cmd.n === 'mod' ? `@${u.username} is a mod now` : `@${u.username} is not a mod anymore`); break;
@@ -3904,8 +3912,13 @@ function staffSection(c, redraw) {
   if (c.type !== 'group' || U.myRank(c) < 1) return null;
   const sel = el('select', null, [[0, 'off'], [5, '5 seconds'], [10, '10 seconds'], [30, '30 seconds'], [60, '1 minute'], [300, '5 minutes'], [900, '15 minutes']].map(([v, l]) => el('option', { value: v, selected: (c.slowSeconds || 0) === v }, l)));
   sel.addEventListener('change', async () => { try { await api('PUT', `/api/conversations/${c.id}/slow`, { seconds: +sel.value }); c.slowSeconds = +sel.value || null; toast(+sel.value ? 'slow mode on' : 'slow mode off', 'success'); U.renderHeader(); X.drawModbar(c); } catch (e) { toast(e.message, 'error'); sel.value = c.slowSeconds || 0; } });
+  const gng = c.isPublic && (S.me.isAdmin || !c.systemKind) ? (() => {
+    const on = c.members.some((x) => x.isBot);
+    const b = el('button', { class: 'btn' + (on ? '' : ' primary'), onclick: async () => { try { await api('PUT', `/api/conversations/${c.id}/gng`, { on: !on }); toast(on ? 'gng left the room' : 'gng joined, say hi', 'success'); } catch (e) { toast(e.message, 'error'); } } }, on ? 'send gng away' : 'invite gng');
+    return el('div', null, el('h4', null, ic('chat', 14), 'gng the bot'), el('div', { class: 'row gap' }, b), el('p', { class: 'muted small' }, 'a gen alpha chatbot. he only joins public rooms, since he cannot read private chats. ping him with @gng or just talk and he may drop in.'));
+  })() : null;
   return el('div', null, el('h4', null, ic('timer', 14), 'slow mode'), el('div', { class: 'row gap' }, sel, el('button', { class: 'btn', onclick: () => modlogModal(c) }, ic('list', 16), 'mod log')),
-    el('p', { class: 'muted small' }, 'mods and hosts are not slowed down. type /help in the chat for mod commands.'));
+    el('p', { class: 'muted small' }, 'mods and hosts are not slowed down. type /help in the chat for mod commands.'), gng);
 }
 async function modlogModal(c) {
   const body = el('div', null, el('div', { class: 'muted pad' }, '...'));
