@@ -787,15 +787,15 @@ function buildAdmin(m) {
     (() => {
       const people = el('div', null, el('div', { class: 'searchbox' }, ic('search', 16), q), list);
       const hid = () => el('div', { style: 'display:none' });
-      const panes = { people, reports: hid(), verify: hid(), appeals: hid(), announce: hid(), audit: hid(), stats: hid() };
-      const loaders = { reports: () => X.adminReports(panes.reports, loadStats), verify: () => X.adminVerify(panes.verify, loadStats), appeals: () => X.adminAppeals(panes.appeals, loadStats), announce: () => X.adminAnnounce(panes.announce), audit: () => X.adminAudit(panes.audit), stats: () => X.adminStats(panes.stats) };
+      const panes = { people, reports: hid(), verify: hid(), appeals: hid(), announce: hid(), audit: hid(), stats: hid(), owner: hid() };
+      const loaders = { reports: () => X.adminReports(panes.reports, loadStats), verify: () => X.adminVerify(panes.verify, loadStats), appeals: () => X.adminAppeals(panes.appeals, loadStats), announce: () => X.adminAnnounce(panes.announce), audit: () => X.adminAudit(panes.audit), stats: () => X.adminStats(panes.stats), owner: () => X.adminOwner(panes.owner) };
       const tabBtns = {};
       const tab = (k, label) => tabBtns[k] = el('button', { class: k === 'people' ? 'on' : '', onclick: (e) => { e.currentTarget.parentNode.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b === e.currentTarget)); for (const [n, node] of Object.entries(panes)) node.style.display = n === k ? '' : 'none'; if (loaders[k]) loaders[k](); } }, label);
       window.__ui.reportsChanged = () => { loadStats(); if (panes.reports.isConnected && panes.reports.style.display !== 'none') loaders.reports(); };
       window.__ui.verifyChanged = () => { loadStats(); if (panes.verify.isConnected && panes.verify.style.display !== 'none') loaders.verify(); };
       window.__ui.appealsChanged = () => { loadStats(); if (panes.appeals.isConnected && panes.appeals.style.display !== 'none') loaders.appeals(); };
       setTimeout(() => { const k = S.adminTab; S.adminTab = null; if (k && tabBtns[k]) tabBtns[k].click(); }, 0);   // /audit, /stats and /appeals jump straight to their tab
-      return el('div', null, el('div', { class: 'seg wrapseg' }, tab('people', 'people'), tab('reports', 'reports'), tab('verify', 'verify'), tab('appeals', 'appeals'), tab('announce', 'announce'), tab('audit', 'audit log'), tab('stats', 'stats')), people, panes.reports, panes.verify, panes.appeals, panes.announce, panes.audit, panes.stats);
+      return el('div', null, el('div', { class: 'seg wrapseg' }, tab('people', 'people'), tab('reports', 'reports'), tab('verify', 'verify'), tab('appeals', 'appeals'), tab('announce', 'announce'), tab('audit', 'audit log'), tab('stats', 'stats'), isOwner ? tab('owner', 'owner') : null), people, panes.reports, panes.verify, panes.appeals, panes.announce, panes.audit, panes.stats, isOwner ? panes.owner : null);
     })()));
   loadStats(); loadUsers();
   nowTimer = setInterval(loadStats, 20000);

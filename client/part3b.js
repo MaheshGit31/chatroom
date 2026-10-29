@@ -21,6 +21,7 @@ async function announce() {
   } catch {}
   api('GET', '/api/announcements', null, { quiet: true }).then((d) => { anns = d.announcements; renderTop(); }).catch(() => {});
   if (S.me && S.me.isAdmin) refreshReportCount();
+  if (window.__ext.videoGate) window.__ext.videoGate();                             // a new update video takes over the screen once
 }
 async function newsModal() {
   if (!news) { try { news = (await api('GET', '/api/changelog', null, { quiet: true })).entries || []; } catch { news = []; } }
@@ -113,7 +114,7 @@ async function inviteModal() {
       el('div', { class: 'betacard' + (active ? ' on' : '') }, ic('star', 20), el('div', { class: 'grow' }, el('b', null, 'beta ' + (active ? 'active' : 'off')), el('div', { class: 'muted small' }, left))),
       el('h4', null, 'your link'), field(link),
       el('h4', null, 'your code'), field(r.code),
-      el('div', { class: 'stats' }, el('div', null, el('b', null, r.referred), el('span', null, 'joined')), el('div', null, el('b', null, r.credited), el('span', null, `earned (max ${r.cap})`)), el('div', null, el('b', null, r.minutes), el('span', null, 'min each'))),
+      el('div', { class: 'stats' }, el('div', null, el('b', null, r.referred), el('span', null, 'joined')), el('div', null, el('b', null, r.credited), el('span', null, `earned (max ${r.cap})`)), el('div', null, el('b', null, r.minutes), el('span', null, r.bonusUntil ? 'min each (limited time)' : 'min each'))),
       el('p', { class: 'muted small', style: 'margin-bottom:0' }, 'a friend counts once they join and get verified'));
   } catch (e) { body.replaceChildren(el('div', { class: 'form-err' }, e.message)); }
 }

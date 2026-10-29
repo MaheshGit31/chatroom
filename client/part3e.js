@@ -148,7 +148,77 @@ function appealModal(data, username) {
     can ? el('div', null, msg, err, send) : ap.status !== 'pending' && ap.waitMinutes ? el('p', { class: 'muted small' }, `you can appeal again in ${X.niceSecs(ap.waitMinutes * 60)}.`) : null));
 }
 
-Object.assign(window.__ext, { memberTools, staffSection, modlogModal, adminAppeals, adminAudit, adminStats, appealModal });
+// ---------- update video: fullscreen takeover (everyone sees each new one once) ----------
+async function videoGate() {
+  try {
+    const d = await api('GET', '/api/update-video', null, { quiet: true });
+    if (d.video && !d.seen) videoTakeover(d.video, true);        // a new video this person has not watched yet
+  } catch {}
+}
+function videoTakeover(v, markSeen) {
+  if (document.querySelector('.vtake')) return;
+  const key = (e) => { if (e.key === 'Escape') done(); };       // escape also closes it
+  const done = () => { node.remove(); document.removeEventListener('keydown', key); if (markSeen) api('POST', '/api/update-video/seen', { id: v.id }, { quiet: true }).catch(() => {}); };
+  const node = el('div', { class: 'vtake', role: 'dialog', 'aria-label': v.title },
+    el('div', { class: 'vhead' }, el('div', { class: 'grow' }, el('div', { class: 'vkick' }, 'new update'), el('h2', null, v.title), v.note ? el('p', { class: 'muted', style: 'margin:4px 0 0' }, v.note) : null)),
+    el('div', { class: 'vframe' }, el('iframe', { src: v.embed, allow: 'autoplay; fullscreen', allowfullscreen: true, referrerpolicy: 'no-referrer', title: v.title })),
+    el('div', { class: 'vfoot' }, el('a', { href: v.link, target: '_blank', rel: 'noopener noreferrer', class: 'muted small' }, 'trouble playing? open it in drive'), el('button', { class: 'btn primary', onclick: done }, 'continue to chatroom')));
+  document.addEventListener('keydown', key);
+  document.body.append(node);
+}
+
+// ---------- owner tab: update video, running events, and the console ----------
+async function adminOwner(box) {
+  const status = el('div', { class: 'muted small', style: 'margin:6px 0' });
+  const link = el('input', { placeholder: 'google drive link (share it as anyone with the link)' });
+  const title = el('input', { placeholder: 'title, like "october update"', maxLength: 60 });
+  const note = el('input', { placeholder: 'one line under the title (optional)', maxLength: 300 });
+  const evBox = el('div', { class: 'ownev' });
+  const out = el('div', { class: 'conout', tabindex: 0 });
+  const input = el('input', { class: 'conin', placeholder: 'type help', autocomplete: 'off', autocapitalize: 'off', spellcheck: false });
+  const hist = []; let hi = 0;
+  const print = (lines, cls) => { for (const l of [].concat(lines)) out.append(el('div', { class: 'conline' + (cls ? ' ' + cls : '') }, l === '' ? ' ' : l)); out.scrollTop = out.scrollHeight; };
+  async function refresh() {
+    try {
+      const d = await api('GET', '/api/owner/state', null, { quiet: true });
+      status.textContent = d.video ? `live: "${d.video.title}" (set ${new Date(d.video.at).toLocaleDateString()}). people who have not seen it get it fullscreen on their next open.` : 'no update video set';
+      evBox.replaceChildren(...(d.events.length ? d.events.map((e) => el('div', { class: 'tag gold', style: 'margin:0 6px 6px 0' }, `${e.kind} ${e.value} - ${Math.max(1, Math.round((new Date(e.until) - Date.now()) / 60000))} min left`)) : [el('span', { class: 'muted small' }, 'no events running')]));
+    } catch (e) { status.textContent = e.message; }
+  }
+  async function runLine(line) {
+    if (!line.trim()) return;
+    hist.push(line); hi = hist.length;
+    print('> ' + line, 'cmd');
+    if (line.trim() === 'clear') { out.replaceChildren(); return; }
+    try { const d = await api('POST', '/api/owner/console', { line }, { quiet: true }); print(d.out); } catch (e) { print(e.message, 'err'); }
+    refresh();
+  }
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { const v = input.value; input.value = ''; runLine(v); }
+    else if (e.key === 'ArrowUp' && hist.length) { hi = Math.max(0, hi - 1); input.value = hist[hi]; e.preventDefault(); }
+    else if (e.key === 'ArrowDown' && hist.length) { hi = Math.min(hist.length, hi + 1); input.value = hist[hi] || ''; e.preventDefault(); }
+  });
+  const setVideo = async () => {
+    try { await api('POST', '/api/owner/video', { link: link.value, title: title.value, note: note.value }); toast('update video is live', 'success'); link.value = ''; title.value = ''; note.value = ''; refresh(); } catch (e) { toast(e.message, 'error'); }
+  };
+  const preview = async () => {
+    try { const d = await api('GET', '/api/update-video', null, { quiet: true }); if (d.video) videoTakeover(d.video, false); else toast('no video set yet', 'info'); } catch (e) { toast(e.message, 'error'); }
+  };
+  const remove = async () => { if (await confirmModal('remove the update video?', 'nobody will see it anymore.', 'remove')) { try { await api('POST', '/api/owner/video', { clear: true }); toast('removed', 'success'); refresh(); } catch (e) { toast(e.message, 'error'); } } };
+  box.replaceChildren(
+    el('h4', null, 'update video'),
+    el('p', { class: 'muted small', style: 'margin-top:0' }, 'paste a google drive link. set it once per update: everyone who has not watched this one sees it fullscreen when they next open chatroom.'),
+    el('div', { class: 'col gap-s' }, link, title, note),
+    el('div', { class: 'row gap-s', style: 'margin-top:8px' }, el('button', { class: 'btn primary small', onclick: setVideo }, 'post video'), el('button', { class: 'btn small', onclick: preview }, 'preview'), el('button', { class: 'btn small', onclick: remove }, 'remove')),
+    status,
+    el('h4', null, 'running events'), evBox,
+    el('h4', null, 'console'), el('div', { class: 'concard', onclick: () => input.focus() }, out, el('div', { class: 'conrow' }, el('span', null, '>'), input)));
+  print(['owner console. type help for commands.', '']);
+  refresh();
+}
+
+
+Object.assign(window.__ext, { videoGate, videoTakeover, adminOwner, memberTools, staffSection, modlogModal, adminAppeals, adminAudit, adminStats, appealModal });
 
 try { const r = new URLSearchParams(location.search).get('ref'); if (r) { C.lsSet('chatroom.ref', r.slice(0, 16)); history.replaceState(null, '', location.pathname); } } catch {}
 U.boot();                                                    // everything is defined, start the app

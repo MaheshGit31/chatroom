@@ -519,6 +519,7 @@ async function onWS(m) {
     case 'appeals_changed': if (window.__ui.appealsChanged) window.__ui.appealsChanged(); break;
     case 'extra': window.__ext && window.__ext.onExtra(m); break;
     case 'announce': window.__ext && window.__ext.onAnnounce(m.announcement); break;
+    case 'owner_note': toast(String(m.text || '').slice(0, 200), 'info'); break;
     case 'announce_end': window.__ext && window.__ext.endAnnounce(m.id); break;
     case 'verify_changed': window.__ui.verifyChanged && window.__ui.verifyChanged(); break;
     case 'badge': toast('badge earned: ' + m.badge.name, 'success', () => window.__ext && window.__ext.badgesModal()); window.__ext && window.__ext.badgeEarned && window.__ext.badgeEarned(m.badge); break;
