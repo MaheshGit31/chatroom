@@ -313,9 +313,11 @@ async function sweepExpired() {
 
 // ---------- users ----------
 app.get('/api/users/search', auth, byUser('usearch', 30, 60_000), wrap(async (req, res) => {
-  const s = String(req.query.q || '').toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 20);
+  const s = String(req.query.q || '').toLowerCase().replace(/^@/, '').replace(/[^\p{L}\p{N}_ ]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 30);   // username or display name, any letters
   if (s.length < 2) return res.json({ users: [] });
-  const r = await q(`select id,username,display_name,verified,is_admin,avatar from users where username like $1 and id<>$2 order by username limit 10`, [s + '%', req.user.id]);
+  const like = s.replace(/[\\%_]/g, (c) => '\\' + c);
+  const r = await q(`select id,username,display_name,verified,is_admin,avatar from users where id<>$2 and not banned and (username like $1 or lower(display_name) like $1 or lower(display_name) like $3)
+    order by (username like $1) desc, (lower(display_name) like $1) desc, username limit 10`, [like + '%', req.user.id, '% ' + like + '%']);   // starts with, or any word in the name starts with
   res.json({ users: r.rows.map((u) => ({ id: u.id, username: u.username, displayName: u.display_name, avatar: u.avatar || null, verified: safety.verifiedOn(u) })) });
 }));
 

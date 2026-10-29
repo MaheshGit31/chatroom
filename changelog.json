@@ -1,5 +1,14 @@
 [
   {
+    "id": "2026-10-28-c",
+    "date": "2026-10-28",
+    "title": "search by display name",
+    "items": [
+      "finding people now works with display names too (any word in the name), not just usernames",
+      "the play together friend picker has a search box"
+    ]
+  },
+  {
     "id": "2026-10-28-b",
     "date": "2026-10-28",
     "title": "play together",
