@@ -1,5 +1,23 @@
 [
   {
+    "id": "2026-10-28-a",
+    "date": "2026-10-28",
+    "title": "replies, mods, photos and more",
+    "items": [
+      "replies: tap the arrow on a message to quote it, tap a quote to jump back to it",
+      "@mentions: type @ to pick someone, they get a notification and the message is highlighted for them",
+      "search inside a chat, forward messages to other chats, and a remind me bell on every message (beta)",
+      "do not disturb: mute sounds and pushes for a while, or set daily quiet hours (settings or /dnd)",
+      "view once messages and photos in dms: they vanish after being opened (screenshots can still happen)",
+      "beta: send photos up to 5 MB, end-to-end encrypted, in dms and private groups; chat wallpapers; folder limit raised from 8 to 20",
+      "new beta games: connect 4, word duel and trivia duel",
+      "groups: hosts can pick mods, mods can mute and remove people, and anyone staff can turn on slow mode",
+      "slash commands: type / in any chat, /help lists what you can use (mods: /mute /kick /slow, admins: /ban /warn /verify /beta and more)",
+      "suspended people can now appeal from the sign in screen",
+      "admins get an audit log, appeals queue and a stats page"
+    ]
+  },
+  {
     "id": "2026-10-23-d",
     "date": "2026-10-23",
     "title": "sticker link fix",
