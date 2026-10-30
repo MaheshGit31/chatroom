@@ -332,6 +332,21 @@ input:focus-visible,textarea:focus-visible{outline:none}
 .conout{height:320px;overflow:auto;white-space:pre-wrap;word-break:break-word}.conline.cmd{color:#e5855a}.conline.err{color:#ff8a7a}
 .conrow{display:flex;gap:8px;align-items:center;border-top:1px solid #3a322b;margin-top:8px;padding-top:8px}.conin{flex:1;background:transparent;border:0;outline:0;color:inherit;font:inherit;padding:0}
 .ownev{margin:4px 0 10px}
+.memepicking .mrow{cursor:pointer}.memepicking .mrow.mpicked .bubble{outline:2px solid var(--accent);outline-offset:2px}
+.memepicking .mrow.mpicked::after{content:attr(data-mn);position:absolute;right:10px;top:50%;transform:translateY(-50%);background:var(--accent);color:var(--accent-ink);width:22px;height:22px;border-radius:99px;display:grid;place-items:center;font-size:12px;font-weight:600}
+.memepicking .mrow{position:relative}
+.memebar{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);z-index:300;display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow);padding:6px 8px 6px 14px;border-radius:99px;font-size:var(--t-sm);max-width:94vw}
+.meme{background:#1d1917;color:#fff;border-radius:16px;overflow:hidden;padding:12px;max-width:min(360px,100%);display:flex;flex-direction:column;gap:8px}
+.mmid{display:flex;flex-direction:column;gap:6px}
+.mcap{font:800 22px/1.1 Impact,'Arial Black',system-ui,sans-serif;text-transform:uppercase;text-align:center;letter-spacing:.01em;text-shadow:-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000,2px 2px 0 #000;word-break:break-word}
+.mbub{background:#2e2925;border-radius:14px;padding:6px 10px;display:flex;flex-direction:column;font-size:14px;line-height:1.3;word-break:break-word}.mbub b{font-size:11px;color:#e5855a;font-weight:600}
+.mdrake{display:flex;align-items:stretch;gap:8px;border-radius:12px;overflow:hidden;background:#fff;color:#111;min-height:56px}
+.mdicon{width:56px;flex:none;display:grid;place-items:center;color:#fff}.mdrake.no .mdicon{background:#c9503e}.mdrake.yes .mdicon{background:#4f9a62}
+.mdtext{padding:8px 10px 8px 2px;display:flex;align-items:center;font:600 15px/1.25 system-ui,sans-serif;word-break:break-word}
+.mbrain{display:flex;align-items:center;gap:10px;border-radius:12px;padding:8px 10px;background:color-mix(in srgb,#3a3532,#f0b43a calc(var(--lvl)*100%));color:color-mix(in srgb,#fff,#1d1206 calc(var(--lvl)*85%));box-shadow:0 0 calc(var(--lvl)*22px) rgba(240,180,58,calc(var(--lvl)*.8))}
+.mblvl{flex:none;opacity:calc(.35 + var(--lvl)*.65)}.mbtext{font:600 calc(13px + var(--lvl)*5px)/1.25 system-ui,sans-serif;word-break:break-word}
+.memeprev{display:flex;justify-content:center;padding:6px 0}
+.s-chat .mmid{gap:4px}
 .newdot{position:absolute;top:8px;right:14px;width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px var(--panel);animation:pop .4s var(--spring)}
 .newdot.inline{position:static;display:inline-block;margin-left:8px}
 .rbtn{position:relative}
@@ -890,6 +905,7 @@ function previewText(p, mine) {
   if (p.t === 'poll') return pre + 'made a poll: ' + p.q;
   if (p.t === 'g2') return pre + ({ rps: 'started rock paper scissors', c4: 'started connect 4', wd: 'started a word duel', tr: 'started a trivia duel' }[p.kind] || 'started tic-tac-toe');
   if (p.t === 'coop') return pre + 'invited to play together: ' + p.title;
+  if (p.t === 'meme') return pre + 'sent a meme';
   if (p.t === 'image') return pre + 'sent a photo' + (p.fwd ? ' (forwarded)' : '');
   if (p.t === 'once') return pre + 'sent a view once message';
   if (p.t === 'deleted') return p.once ? 'view once, opened' : 'message deleted';
@@ -979,7 +995,8 @@ function connectWS() {
   const ws = new WebSocket(WSURL);
   S.ws = ws;
   ws.onopen = () => ws.send(JSON.stringify({ t: 'auth', token: S.token }));
-  ws.onmessage = (ev) => { let m; try { m = JSON.parse(ev.data); } catch { return; } onWS(m).catch((e) => console.error('ws handler', e)); };
+  ws.binaryType = 'arraybuffer';
+  ws.onmessage = (ev) => { if (typeof ev.data !== 'string') { window.__ext && window.__ext.onRelay && window.__ext.onRelay(ev.data); return; } let m; try { m = JSON.parse(ev.data); } catch { return; } onWS(m).catch((e) => console.error('ws handler', e)); };
   ws.onclose = (ev) => {
     S.wsOk = false; clearInterval(hb); window.__ui && window.__ui.renderRail();
     if (ev.code === 4001) return window.__chatroomLogout(true);   // token rejected
@@ -2936,6 +2953,7 @@ function extraBody(c, m, p) {                                // called for every
   if (p.t === 'poll') return pollBody(c, m, p);
   if (p.t === 'g2') return gameBody(c, m, p);
   if (p.t === 'coop') return window.__ext.coopBody(c, m, p);
+  if (p.t === 'meme') return window.__ext.memeBody(c, m, p);
   return null;
 }
 
@@ -3237,6 +3255,7 @@ const CMDS = [
   { n: 'block', a: '@user', d: 'block someone', who: 'all' },
   { n: 'unblock', a: '@user', d: 'unblock someone', who: 'all' },
   { n: 'shrug', a: 'text', d: 'add a shrug', who: 'all' },
+  { n: 'meme', d: 'turn up to 5 messages into a meme', who: 'all' },
   { n: 'mute', a: '@user 10m', d: 'mute someone in this group', who: 'mod' },
   { n: 'unmute', a: '@user', d: 'let them talk again', who: 'mod' },
   { n: 'kick', a: '@user', d: 'remove someone from this group', who: 'mod' },
@@ -3295,6 +3314,7 @@ async function slash(c, raw) {
         await setDnd({ minutes: Math.max(1, Math.round(s / 60)) }); ok(`do not disturb for ${niceSecs(s)}`); break;
       }
       case 'search': searchModal(c, arg); break;
+      case 'meme': X0.memePick(c); break;
       case 'remind': {
         if (!betaGate('reminders')) break;
         const w = String(arg).match(/^(\S+)\s*([\s\S]*)$/);
@@ -3696,6 +3716,15 @@ const sig = (to, room, kind, data) => C.sendWS({ t: 'rtc', to, room, kind, data:
 const parse = (s) => { try { return JSON.parse(s); } catch { return null; } };
 const MAXBPS = 1_800_000;                                    // caps what the host uploads, about 800 MB an hour
 let host = null, guest = null;
+const uuidBytes = (id) => { const h = String(id).replace(/-/g, ''); const b = new Uint8Array(16); for (let i = 0; i < 16; i++) b[i] = parseInt(h.slice(i * 2, i * 2 + 2), 16); return b; };
+const bytesUuid = (b) => { const h = Array.from(b, (x) => x.toString(16).padStart(2, '0')).join(''); return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`; };
+const enc = new TextEncoder(), dec = new TextDecoder();
+function sendBin(kind, to, payload) {                         // strict network fallback: frames ride the normal chat websocket (port 443)
+  const ws = S.ws; if (!ws || ws.readyState !== 1) return false;
+  const out = new Uint8Array(17 + payload.length); out[0] = kind; out.set(uuidBytes(to), 1); out.set(payload, 17);
+  ws.send(out); return true;
+}
+const sendCtl = (kind, to, obj) => sendBin(kind, to, enc.encode(JSON.stringify(obj)));
 
 async function makePc() {
   const cfg = await api('GET', '/api/rtc-config', null, { quiet: true });
@@ -3759,17 +3788,56 @@ async function hostPeer(from) {
   pc.onicecandidate = (e) => { if (e.candidate && host === h) sig(from, h.room, 'ice', e.candidate); };
   pc.onconnectionstatechange = () => {
     if (host !== h || h.pc !== pc) return;
-    if (pc.connectionState === 'failed') { toast('could not connect directly, their network is strict. try again, or play from another network', 'error'); dropGuest(); }
+    if (h.relay) return;                                     // the friend moved to the server relay, this peer connection is done
+    if (pc.connectionState === 'failed') bar('their network is strict, switching to compatibility mode...');   // the friend asks for the relay by themselves
     else if (pc.connectionState === 'disconnected' || pc.connectionState === 'closed') dropGuest();
   };
-  const connectTimer = setTimeout(() => { if (host === h && h.pc === pc && pc.connectionState !== 'connected') { toast('they could not connect in time', 'error'); dropGuest(); } }, 25000);
+  const connectTimer = h.connectTimer = setTimeout(() => { if (host === h && h.pc === pc && !h.relay && pc.connectionState !== 'connected') { toast('they could not connect in time', 'error'); dropGuest(); } }, 40000);
   pc.addEventListener('connectionstatechange', () => { if (pc.connectionState === 'connected') clearTimeout(connectTimer); });
   await pc.setLocalDescription(await pc.createOffer());
   sig(from, h.room, 'offer', pc.localDescription);
 }
+async function hostRelay(from) {
+  const h = host; if (!h || h.relay || h.guestId !== from) return;
+  if (!window.VideoEncoder) { toast('your friend needs compatibility mode, but this browser cannot do it. use Chrome or Edge', 'error'); return dropGuest(); }
+  clearTimeout(h.connectTimer); try { h.pc && h.pc.close(); } catch {}
+  const track = h.stream.getVideoTracks()[0];
+  const vid = document.createElement('video'); vid.muted = true; vid.srcObject = new MediaStream([track]);
+  try { await vid.play(); } catch {}
+  for (let i = 0; i < 40 && !vid.videoWidth; i++) await new Promise((r) => setTimeout(r, 100));
+  const cv = document.createElement('canvas'), cx = cv.getContext('2d');
+  let encoder = null, w = 0, h2 = 0, lastKey = 0, force = true, dead = false;
+  const sendChunk = (chunk) => {
+    const n = chunk.byteLength; if (17 + 5 + n > 96 * 1024 - 64) { force = true; return; }
+    if (S.ws && S.ws.bufferedAmount > 500_000) { force = true; return; }   // the link is slow, skip and send a fresh full frame next
+    const out = new Uint8Array(5 + n); out[0] = chunk.type === 'key' ? 1 : 0; new DataView(out.buffer).setUint32(1, Math.round(chunk.timestamp / 1000) >>> 0); chunk.copyTo(out.subarray(5));
+    sendBin(1, from, out);
+  };
+  const configure = (nw, nh) => {
+    try { encoder && encoder.close(); } catch {}
+    w = nw; h2 = nh;
+    encoder = new VideoEncoder({ output: sendChunk, error: () => { force = true; } });
+    encoder.configure({ codec: 'vp8', width: w, height: h2, bitrate: 800_000, framerate: 15, latencyMode: 'realtime' });
+    force = true;
+  };
+  const timer = setInterval(() => {
+    if (dead || !vid.videoWidth) return;
+    const nw = Math.min(800, vid.videoWidth) & ~1, nh = Math.round(vid.videoHeight * nw / vid.videoWidth) & ~1;
+    if (!encoder || nw !== w || nh !== h2) { cv.width = nw; cv.height = nh; try { configure(nw, nh); } catch { dead = true; clearInterval(timer); return; } }
+    if (encoder.encodeQueueSize > 3) return;
+    cx.drawImage(vid, 0, 0, w, h2);
+    const f = new VideoFrame(cv, { timestamp: performance.now() * 1000 });
+    const now = Date.now(); const key = force || now - lastKey > 1500; if (key) { lastKey = now; force = false; }
+    try { encoder.encode(f, { keyFrame: key }); } catch { force = true; }
+    f.close();
+  }, 66);
+  h.relay = { stop: () => { dead = true; clearInterval(timer); try { encoder && encoder.close(); } catch {} vid.srcObject = null; }, key: () => { force = true; } };
+  bar(`playing with ${nameOf(h.conv, from)} (compatibility mode, no sound)`);
+}
 function nameOf(conv, id) { const u = memberOf(conv, id); return u ? u.displayName : 'your friend'; }
 function dropGuest() {
   if (!host) return;
+  clearTimeout(host.connectTimer); if (host.relay) { host.relay.stop(); host.relay = null; }
   try { host.pc && host.pc.close(); } catch {}
   if (host.guestId) sig(host.guestId, host.room, 'bye');
   host.pc = null; host.dc = null; host.guestId = null; bar('waiting for someone to join...');
@@ -3820,24 +3888,26 @@ async function joinGame(c, m, p) {
   const hostId = m.senderId, room = String(p.room || '');
   const video = el('video', { class: 'coopvideo', playsinline: true, autoplay: true });
   video.muted = true;
+  const canvas = el('canvas', { class: 'coopvideo', style: 'display:none' });
   const status = el('div', { class: 'coopstatus' }, el('div', { class: 'spinner' }), el('div', null, 'connecting...'));
   const mute = el('button', { class: 'btn small', onclick: () => { video.muted = !video.muted; mute.textContent = video.muted ? 'sound off' : 'sound on'; } }, 'sound off');
   const top = el('div', { class: 'coopctl' }, el('b', { class: 'grow' }, String(p.title || 'game').slice(0, 60)), mute,
     el('button', { class: 'btn small', onclick: () => (video.requestFullscreen || (() => {})).call(box) }, ic('expand', 14)), el('button', { class: 'btn small danger', onclick: () => leaveGuest() }, 'leave'));
-  const box = el('div', { class: 'coopview', tabindex: 0 }, top, video, status);
+  const box = el('div', { class: 'coopview', tabindex: 0 }, top, video, canvas, status);
   document.body.append(box); box.focus();
-  const g = guest = { room, hostId, box, video, status, pc: null, dc: null, cleanup: [], conv: c };
-  g.timer = setTimeout(() => { if (guest === g && !g.connected) { toast('could not connect, the host may have stopped sharing', 'error'); leaveGuest(); } }, 22000);
+  const g = guest = { room, hostId, box, video, canvas, status, pc: null, dc: null, cleanup: [], conv: c, relay: false };
+  g.relayTimer = setTimeout(() => startRelay(g), 8000);      // direct connection not up in 8 seconds: use the server relay
+  g.timer = setTimeout(() => { if (guest === g && !g.connected) { toast('could not connect, the host may have stopped sharing', 'error'); leaveGuest(); } }, 30000);
   attachInput(g);
   sig(hostId, room, 'join');
 }
 async function guestOffer(m) {
-  const g = guest;
+  const g = guest; if (g.relay) return;
   const pc = await makePc(); g.pc = pc; const iq = iceQueue(pc); g.iq = iq;
   pc.onicecandidate = (e) => { if (e.candidate && guest === g) sig(g.hostId, g.room, 'ice', e.candidate); };
-  pc.ontrack = (e) => { g.video.srcObject = e.streams[0]; g.video.play().catch(() => {}); g.connected = true; g.status.remove(); clearTimeout(g.timer); };
+  pc.ontrack = (e) => { clearTimeout(g.relayTimer); g.video.srcObject = e.streams[0]; g.video.play().catch(() => {}); g.connected = true; g.status.remove(); clearTimeout(g.timer); };
   pc.ondatachannel = (e) => { g.dc = e.channel; };
-  pc.onconnectionstatechange = () => { if (guest === g && ['failed', 'closed'].includes(pc.connectionState)) { toast('connection lost', 'error'); leaveGuest(); } };
+  pc.onconnectionstatechange = () => { if (guest !== g || g.relay) return; if (pc.connectionState === 'failed' && !g.connected) startRelay(g); else if (['failed', 'closed'].includes(pc.connectionState)) { toast('connection lost', 'error'); leaveGuest(); } };
   await pc.setRemoteDescription(parse(m.data)); await iq.flush();
   await pc.setLocalDescription(await pc.createAnswer());
   sig(g.hostId, g.room, 'answer', pc.localDescription);
@@ -3845,16 +3915,54 @@ async function guestOffer(m) {
 function leaveGuest(quiet) {
   if (!guest) return;
   const g = guest; guest = null;
-  clearTimeout(g.timer);
+  clearTimeout(g.timer); clearTimeout(g.relayTimer);
+  try { g.decoder && g.decoder.close(); } catch {}
   g.cleanup.forEach((f) => f());
   if (!quiet) sig(g.hostId, g.room, 'bye');
   try { g.pc && g.pc.close(); } catch {}
   g.box.remove();
 }
+function startRelay(g) {
+  if (guest !== g || g.connected || g.relay) return;
+  if (!window.VideoDecoder) { toast('your network blocks direct play and this browser cannot use compatibility mode. try Chrome or Edge', 'error'); return leaveGuest(); }
+  g.relay = true; clearTimeout(g.relayTimer);
+  try { g.pc && g.pc.close(); } catch {}
+  g.video.style.display = 'none'; g.canvas.style.display = '';
+  g.status.lastChild.textContent = 'strict network, connecting through the server...';
+  const cx = g.canvas.getContext('2d');
+  g.needKey = true;
+  const mk = () => {
+    g.decoder = new VideoDecoder({
+      output: (f) => { if (guest !== g) return f.close(); if (g.canvas.width !== f.displayWidth || g.canvas.height !== f.displayHeight) { g.canvas.width = f.displayWidth; g.canvas.height = f.displayHeight; } cx.drawImage(f, 0, 0); f.close(); if (!g.connected) { g.connected = true; g.status.remove(); clearTimeout(g.timer); toast('compatibility mode: works on strict networks, no sound', 'info'); } },
+      error: () => { g.needKey = true; sendCtl(3, g.hostId, { k: 'kf' }); try { g.decoder.close(); } catch {} mk(); },
+    });
+    g.decoder.configure({ codec: 'vp8' });
+  };
+  mk();
+  sig(g.hostId, g.room, 'relay');
+  g.keyAsk = setInterval(() => { if (guest !== g) return clearInterval(g.keyAsk); if (!g.connected || g.needKey) sendCtl(3, g.hostId, { k: 'kf' }); }, 1500);
+  g.cleanup.push(() => clearInterval(g.keyAsk));
+}
+function onRelay(buf) {                                      // a binary frame from the server: video (to the guest) or input (to the host)
+  const b = new Uint8Array(buf); if (b.length < 18) return;
+  const kind = b[0], from = bytesUuid(b.subarray(1, 17)), body = b.subarray(17);
+  if (kind === 1 && guest && guest.relay && from === guest.hostId && guest.decoder) {
+    const g = guest, key = body[0] === 1;
+    if (g.needKey && !key) return;
+    if (g.decoder.decodeQueueSize > 6 && !key) { g.needKey = true; return; }
+    if (key) g.needKey = false;
+    try { g.decoder.decode(new EncodedVideoChunk({ type: key ? 'key' : 'delta', timestamp: new DataView(body.buffer, body.byteOffset).getUint32(1) * 1000, data: body.subarray(5) })); } catch { g.needKey = true; }
+  } else if (host && host.relay && from === host.guestId) {
+    const o = parse(dec.decode(body)); if (!o) return;
+    if (kind === 2) hostInput(o); else if (kind === 3 && o.k === 'kf') host.relay.key();
+  }
+}
 function attachInput(g) {
-  const send = (o) => { if (g.dc && g.dc.readyState === 'open') g.dc.send(JSON.stringify(o)); };
+  const send = (o) => { if (g.relay) sendCtl(2, g.hostId, o); else if (g.dc && g.dc.readyState === 'open') g.dc.send(JSON.stringify(o)); };
+  const view = () => (g.relay ? g.canvas : g.video);
+  const onv = (ev, fn, o) => { on(g.video, ev, fn, o); on(g.canvas, ev, fn, o); };
   const norm = (e) => {                                     // position inside the picture (the video is letterboxed), as 0 to 1
-    const v = g.video, r = v.getBoundingClientRect(), vw = v.videoWidth, vh = v.videoHeight; if (!vw) return null;
+    const v = view(), r = v.getBoundingClientRect(), vw = v.videoWidth || v.width, vh = v.videoHeight || v.height; if (!vw) return null;
     const s = Math.min(r.width / vw, r.height / vh), w = vw * s, h = vh * s, ox = r.left + (r.width - w) / 2, oy = r.top + (r.height - h) / 2;
     const x = (e.clientX - ox) / w, y = (e.clientY - oy) / h;
     return x < 0 || y < 0 || x > 1 || y > 1 ? null : { x, y };
@@ -3863,13 +3971,13 @@ function attachInput(g) {
   const keyEv = (type) => (e) => { if (e.ctrlKey || e.metaKey || e.altKey || e.key === 'F5' || e.key === 'F12') return; e.preventDefault(); send({ k: 'key', type, key: e.key, code: e.code, keyCode: e.keyCode, repeat: e.repeat }); };
   on(document, 'keydown', keyEv('down'), true); on(document, 'keyup', keyEv('up'), true);
   let last = 0;
-  on(g.video, 'mousemove', (e) => { const n = norm(e); if (!n || Date.now() - last < 30) return; last = Date.now(); send({ k: 'mouse', type: 'move', ...n }); });
-  on(g.video, 'mousedown', (e) => { const n = norm(e); if (n) { e.preventDefault(); send({ k: 'mouse', type: 'down', button: e.button, ...n }); } });
-  on(g.video, 'mouseup', (e) => { const n = norm(e); if (n) send({ k: 'mouse', type: 'up', button: e.button, ...n }); });
-  on(g.video, 'contextmenu', (e) => e.preventDefault());
-  on(g.video, 'wheel', (e) => { const n = norm(e); if (n) { e.preventDefault(); send({ k: 'wheel', dy: e.deltaY, ...n }); } }, { passive: false });
+  onv('mousemove', (e) => { const n = norm(e); if (!n || Date.now() - last < 30) return; last = Date.now(); send({ k: 'mouse', type: 'move', ...n }); });
+  onv('mousedown', (e) => { const n = norm(e); if (n) { e.preventDefault(); send({ k: 'mouse', type: 'down', button: e.button, ...n }); } });
+  onv('mouseup', (e) => { const n = norm(e); if (n) send({ k: 'mouse', type: 'up', button: e.button, ...n }); });
+  onv('contextmenu', (e) => e.preventDefault());
+  onv('wheel', (e) => { const n = norm(e); if (n) { e.preventDefault(); send({ k: 'wheel', dy: e.deltaY, ...n }); } }, { passive: false });
   const touch = (type) => (e) => { const t = e.changedTouches[0]; const n = t && norm(t); if (n) { e.preventDefault(); send({ k: 'mouse', type, button: 0, ...n }); } };   // phones: a touch is a click
-  on(g.video, 'touchstart', (e) => { touch('move')(e); touch('down')(e); }, { passive: false }); on(g.video, 'touchmove', touch('move'), { passive: false }); on(g.video, 'touchend', touch('up'), { passive: false });
+  onv('touchstart', (e) => { touch('move')(e); touch('down')(e); }, { passive: false }); onv('touchmove', touch('move'), { passive: false }); onv('touchend', touch('up'), { passive: false });
 }
 
 // ---------- handshake messages from the server ----------
@@ -3877,6 +3985,7 @@ async function onRtc(m) {
   try {
     if (host && m.room === host.room) {
       if (m.kind === 'join') { if (host.guestId && host.guestId !== m.from) return sig(m.from, m.room, 'bye', 'busy'); if (host.pc) dropGuest(); await hostPeer(m.from); }
+      else if (m.kind === 'relay' && m.from === host.guestId) await hostRelay(m.from);
       else if (m.from !== host.guestId || !host.pc) return;
       else if (m.kind === 'answer') { await host.pc.setRemoteDescription(parse(m.data)); await host.iq.flush(); }
       else if (m.kind === 'ice') await host.iq.add(parse(m.data));
@@ -3889,7 +3998,84 @@ async function onRtc(m) {
   } catch (e) { toast('play together hit a problem: ' + e.message, 'error'); }
 }
 
-Object.assign(window.__ext, { coopHostModal, coopBody, onRtc, coopStopHost: () => stopHost() });
+Object.assign(window.__ext, { onRelay, coopHostModal, coopBody, onRtc, coopStopHost: () => stopHost() });
+})();
+
+/* ===== Chatroom client: /meme (pick up to 5 messages, choose a style, send a meme card) ===== */
+(() => {
+'use strict';
+const C = window.__core, U = window.__ui;
+const { S, el, ic, toast, convOf, sendPayload } = C;
+const { modal } = U;
+
+const MAX = 5;
+const STYLES = [['classic', 'classic'], ['chat', 'screenshot'], ['drake', 'nope / yes'], ['brain', 'big brain']];
+const clip = (s, n) => String(s || '').slice(0, n);
+
+function memeCard(p) {
+  const lines = (Array.isArray(p.lines) ? p.lines : []).slice(0, MAX);
+  const style = STYLES.some(([k]) => k === p.style) ? p.style : 'classic';
+  const cap = (t, cls) => (t ? el('div', { class: 'mcap ' + cls }, clip(t, 90)) : null);
+  const bubble = (l) => el('div', { class: 'mbub' }, el('b', null, clip(l.n, 32)), el('span', null, clip(l.s, 200)));
+  let mid;
+  if (style === 'drake') {
+    mid = lines.map((l, i) => el('div', { class: 'mdrake ' + (i % 2 ? 'yes' : 'no') }, el('div', { class: 'mdicon' }, ic(i % 2 ? 'check' : 'x', 26)), el('div', { class: 'mdtext' }, clip(l.s, 200))));
+  } else if (style === 'brain') {
+    mid = lines.map((l, i) => el('div', { class: 'mbrain', style: `--lvl:${lines.length > 1 ? i / (lines.length - 1) : 1}` }, el('div', { class: 'mblvl' }, ic('sparkle', 18)), el('div', { class: 'mbtext' }, clip(l.s, 200))));
+  } else mid = lines.map(bubble);
+  return el('div', { class: 'meme s-' + style }, cap(p.top, 'top'), el('div', { class: 'mmid' }, mid), cap(p.bottom, 'bot'));
+}
+
+let pick = null;
+function memePick(c) {
+  if (pick) pickStop();
+  const box = U.chatRef().msgs; if (!box) return;
+  const ids = [];
+  const bar = el('div', { class: 'memebar' }, el('span', { class: 'grow' }), el('button', { class: 'btn small', onclick: () => pickStop() }, 'cancel'));
+  const label = bar.querySelector('.grow'), go = el('button', { class: 'btn small primary', onclick: () => { const chosen = ids.map((id) => c.msgs.find((m) => m.id === id)).filter(Boolean); pickStop(); maker(c, chosen); } }, 'next');
+  bar.append(go);
+  const paint = () => {
+    box.querySelectorAll('.mrow').forEach((r) => { const id = Number(r.dataset.mid), i = ids.indexOf(id); r.classList.toggle('mpicked', i >= 0); r.dataset.mn = i >= 0 ? String(i + 1) : ''; });
+    label.textContent = ids.length ? `${ids.length} of ${MAX} picked, in the order you tapped` : `tap up to ${MAX} messages`; go.disabled = !ids.length;
+  };
+  const click = (e) => {
+    const row = e.target.closest('.mrow'); if (!row) return;
+    e.preventDefault(); e.stopPropagation();
+    const id = Number(row.dataset.mid), m = c.msgs.find((x) => x.id === id), i = ids.indexOf(id);
+    if (i >= 0) ids.splice(i, 1);
+    else if (!m || m.deleted || !m._p || m._p.t !== 'text') return toast('only text messages can go in a meme', 'error');
+    else if (ids.length >= MAX) return toast(`up to ${MAX} messages`, 'error');
+    else ids.push(id);
+    paint();
+  };
+  const watch = new MutationObserver(() => { if (U.chatRef().convId !== c.id) return pickStop(); paint(); });
+  box.addEventListener('click', click, true); watch.observe(box, { childList: true });
+  box.classList.add('memepicking'); document.body.append(bar);
+  pick = { stop: () => { box.removeEventListener('click', click, true); watch.disconnect(); box.classList.remove('memepicking'); box.querySelectorAll('.mpicked').forEach((r) => r.classList.remove('mpicked')); bar.remove(); } };
+  paint();
+}
+function pickStop() { if (pick) { pick.stop(); pick = null; } }
+
+function maker(c, msgs) {
+  if (!msgs.length) return;
+  const nameOf = (m) => (m.senderId === S.me.id ? S.me.displayName : ((c.members.find((x) => x.id === m.senderId) || {}).displayName || 'someone'));
+  const lines = msgs.map((m) => ({ n: nameOf(m), s: clip(m._p.text, 160) }));
+  const st = { style: msgs.length === 2 ? 'drake' : 'classic', top: '', bottom: '' };
+  const preview = el('div', { class: 'memeprev' });
+  const draw = () => { preview.replaceChildren(memeCard({ t: 'meme', ...st, lines })); chips.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.k === st.style)); };
+  const chips = el('div', { class: 'seg' }, STYLES.map(([k, label]) => el('button', { 'data-k': k, onclick: () => { st.style = k; draw(); } }, label)));
+  const top = el('input', { placeholder: 'top caption (optional)', maxLength: 90, oninput: () => { st.top = top.value; draw(); } });
+  const bot = el('input', { placeholder: 'bottom caption (optional)', maxLength: 90, oninput: () => { st.bottom = bot.value; draw(); } });
+  const send = el('button', { class: 'btn primary wide', onclick: async () => {
+    send.disabled = true;
+    const ok = await sendPayload(c, { t: 'meme', style: st.style, top: st.top.trim(), bottom: st.bottom.trim(), lines });
+    if (ok) m.close(); else send.disabled = false;
+  } }, ic('send', 16), 'send meme');
+  const m = modal('make a meme', el('div', { class: 'col gap-s' }, chips, top, bot, preview, send));
+  draw();
+}
+
+Object.assign(window.__ext, { memeBody: (c, m, p) => el('div', { class: 'memewrap' }, memeCard(p)), memePick, memeStop: pickStop });
 })();
 
 /* ===== Chatroom client: mod tools, admin panes (appeals, audit log, stats), appeal screen, and app start ===== */
