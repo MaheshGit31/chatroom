@@ -332,6 +332,21 @@ input:focus-visible,textarea:focus-visible{outline:none}
 .conout{height:320px;overflow:auto;white-space:pre-wrap;word-break:break-word}.conline.cmd{color:#e5855a}.conline.err{color:#ff8a7a}
 .conrow{display:flex;gap:8px;align-items:center;border-top:1px solid #3a322b;margin-top:8px;padding-top:8px}.conin{flex:1;background:transparent;border:0;outline:0;color:inherit;font:inherit;padding:0}
 .ownev{margin:4px 0 10px}
+.memepicking .mrow{cursor:pointer}.memepicking .mrow.mpicked .bubble{outline:2px solid var(--accent);outline-offset:2px}
+.memepicking .mrow.mpicked::after{content:attr(data-mn);position:absolute;right:10px;top:50%;transform:translateY(-50%);background:var(--accent);color:var(--accent-ink);width:22px;height:22px;border-radius:99px;display:grid;place-items:center;font-size:12px;font-weight:600}
+.memepicking .mrow{position:relative}
+.memebar{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);z-index:300;display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow);padding:6px 8px 6px 14px;border-radius:99px;font-size:var(--t-sm);max-width:94vw}
+.meme{background:#1d1917;color:#fff;border-radius:16px;overflow:hidden;padding:12px;max-width:min(360px,100%);display:flex;flex-direction:column;gap:8px}
+.mmid{display:flex;flex-direction:column;gap:6px}
+.mcap{font:800 22px/1.1 Impact,'Arial Black',system-ui,sans-serif;text-transform:uppercase;text-align:center;letter-spacing:.01em;text-shadow:-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000,2px 2px 0 #000;word-break:break-word}
+.mbub{background:#2e2925;border-radius:14px;padding:6px 10px;display:flex;flex-direction:column;font-size:14px;line-height:1.3;word-break:break-word}.mbub b{font-size:11px;color:#e5855a;font-weight:600}
+.mdrake{display:flex;align-items:stretch;gap:8px;border-radius:12px;overflow:hidden;background:#fff;color:#111;min-height:56px}
+.mdicon{width:56px;flex:none;display:grid;place-items:center;color:#fff}.mdrake.no .mdicon{background:#c9503e}.mdrake.yes .mdicon{background:#4f9a62}
+.mdtext{padding:8px 10px 8px 2px;display:flex;align-items:center;font:600 15px/1.25 system-ui,sans-serif;word-break:break-word}
+.mbrain{display:flex;align-items:center;gap:10px;border-radius:12px;padding:8px 10px;background:color-mix(in srgb,#3a3532,#f0b43a calc(var(--lvl)*100%));color:color-mix(in srgb,#fff,#1d1206 calc(var(--lvl)*85%));box-shadow:0 0 calc(var(--lvl)*22px) rgba(240,180,58,calc(var(--lvl)*.8))}
+.mblvl{flex:none;opacity:calc(.35 + var(--lvl)*.65)}.mbtext{font:600 calc(13px + var(--lvl)*5px)/1.25 system-ui,sans-serif;word-break:break-word}
+.memeprev{display:flex;justify-content:center;padding:6px 0}
+.s-chat .mmid{gap:4px}
 .newdot{position:absolute;top:8px;right:14px;width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px var(--panel);animation:pop .4s var(--spring)}
 .newdot.inline{position:static;display:inline-block;margin-left:8px}
 .rbtn{position:relative}

@@ -318,6 +318,7 @@ function extraBody(c, m, p) {                                // called for every
   if (p.t === 'poll') return pollBody(c, m, p);
   if (p.t === 'g2') return gameBody(c, m, p);
   if (p.t === 'coop') return window.__ext.coopBody(c, m, p);
+  if (p.t === 'meme') return window.__ext.memeBody(c, m, p);
   return null;
 }
 

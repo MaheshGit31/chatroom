@@ -139,6 +139,7 @@ const CMDS = [
   { n: 'block', a: '@user', d: 'block someone', who: 'all' },
   { n: 'unblock', a: '@user', d: 'unblock someone', who: 'all' },
   { n: 'shrug', a: 'text', d: 'add a shrug', who: 'all' },
+  { n: 'meme', d: 'turn up to 5 messages into a meme', who: 'all' },
   { n: 'mute', a: '@user 10m', d: 'mute someone in this group', who: 'mod' },
   { n: 'unmute', a: '@user', d: 'let them talk again', who: 'mod' },
   { n: 'kick', a: '@user', d: 'remove someone from this group', who: 'mod' },
@@ -197,6 +198,7 @@ async function slash(c, raw) {
         await setDnd({ minutes: Math.max(1, Math.round(s / 60)) }); ok(`do not disturb for ${niceSecs(s)}`); break;
       }
       case 'search': searchModal(c, arg); break;
+      case 'meme': X0.memePick(c); break;
       case 'remind': {
         if (!betaGate('reminders')) break;
         const w = String(arg).match(/^(\S+)\s*([\s\S]*)$/);

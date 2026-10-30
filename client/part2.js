@@ -342,6 +342,7 @@ function previewText(p, mine) {
   if (p.t === 'poll') return pre + 'made a poll: ' + p.q;
   if (p.t === 'g2') return pre + ({ rps: 'started rock paper scissors', c4: 'started connect 4', wd: 'started a word duel', tr: 'started a trivia duel' }[p.kind] || 'started tic-tac-toe');
   if (p.t === 'coop') return pre + 'invited to play together: ' + p.title;
+  if (p.t === 'meme') return pre + 'sent a meme';
   if (p.t === 'image') return pre + 'sent a photo' + (p.fwd ? ' (forwarded)' : '');
   if (p.t === 'once') return pre + 'sent a view once message';
   if (p.t === 'deleted') return p.once ? 'view once, opened' : 'message deleted';
@@ -431,7 +432,8 @@ function connectWS() {
   const ws = new WebSocket(WSURL);
   S.ws = ws;
   ws.onopen = () => ws.send(JSON.stringify({ t: 'auth', token: S.token }));
-  ws.onmessage = (ev) => { let m; try { m = JSON.parse(ev.data); } catch { return; } onWS(m).catch((e) => console.error('ws handler', e)); };
+  ws.binaryType = 'arraybuffer';
+  ws.onmessage = (ev) => { if (typeof ev.data !== 'string') { window.__ext && window.__ext.onRelay && window.__ext.onRelay(ev.data); return; } let m; try { m = JSON.parse(ev.data); } catch { return; } onWS(m).catch((e) => console.error('ws handler', e)); };
   ws.onclose = (ev) => {
     S.wsOk = false; clearInterval(hb); window.__ui && window.__ui.renderRail();
     if (ev.code === 4001) return window.__chatroomLogout(true);   // token rejected
