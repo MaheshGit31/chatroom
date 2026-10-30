@@ -776,7 +776,25 @@ app.use((err, req, res, next) => {                           // last resort, nev
 
 // ---------- websocket ----------
 const server = http.createServer(app);
-const wss = new WebSocketServer({ noServer: true, maxPayload: 8 * 1024 });
+const wss = new WebSocketServer({ noServer: true, maxPayload: 96 * 1024 });   // text events stay tiny (checked below), only play-together video frames use the room
+const relayPairs = new Map();                                // userId -> the one friend their game picture is being relayed to/from (strict network fallback)
+const relayBytes = new Map();                                // userId -> { t, n } byte budget, so nobody can flood the server through the relay
+const RELAY_BPS = (parseInt(process.env.RELAY_KBPS, 10) || 400) * 1024;   // most a person may push through the relay per second
+const uuidToBuf = (id) => Buffer.from(String(id).replace(/-/g, ''), 'hex');
+const bufToUuid = (b) => { const h = b.toString('hex'); return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`; };
+function relayFrame(ws, raw) {                               // binary frame: 1 byte kind, 16 bytes friend id, then the payload (video chunk or input)
+  if (!ws.userId || raw.length < 18) return;
+  const to = bufToUuid(raw.subarray(1, 17));
+  if (relayPairs.get(ws.userId) !== to) return;              // only the friend you agreed a relay with
+  const now = Date.now(), b = relayBytes.get(ws.userId) || { t: now, n: 0 };
+  if (now - b.t >= 1000) { b.t = now; b.n = 0; }
+  b.n += raw.length; relayBytes.set(ws.userId, b);
+  if (b.n > RELAY_BPS) return;
+  const set = sockets.get(to); if (!set) return;
+  const out = Buffer.concat([raw.subarray(0, 1), uuidToBuf(ws.userId), raw.subarray(17)]);
+  for (const s of set) if (s.readyState === 1 && s.bufferedAmount < 1_500_000) s.send(out, { binary: true });
+}
+function relayEnd(userId) { const peer = relayPairs.get(userId); relayPairs.delete(userId); relayBytes.delete(userId); if (peer && relayPairs.get(peer) === userId) { relayPairs.delete(peer); relayBytes.delete(peer); } }
 const clientIp = (req) => { const x = (req.headers['x-forwarded-for'] || '').split(',').map((s) => s.trim()).filter(Boolean); return x.length ? x[x.length - 1] : req.socket.remoteAddress; };
 
 server.on('upgrade', (req, socket, head) => {
@@ -792,7 +810,9 @@ wss.on('connection', (ws) => {
   ws.userId = null;
   const authTimer = setTimeout(() => { if (!ws.userId) ws.close(4001, 'auth timeout'); }, 10_000); // must auth fast
   ws.on('pong', () => { ws.alive = true; });
-  ws.on('message', async (raw) => {
+  ws.on('message', async (raw, isBinary) => {
+    if (isBinary) return relayFrame(ws, raw);                  // play together relay frames have their own byte budget
+    if (raw.length > 8192) return;                             // ordinary events are small
     if (!limiter.hit('ws:' + ws.ip + ':' + (ws.userId || ''), 40, 10_000).ok) return ws.close(1008, 'too many events'); // flood => disconnect
     let m; try { m = JSON.parse(raw.toString()); } catch { return; }
     try {
@@ -816,9 +836,11 @@ wss.on('connection', (ws) => {
         const ok = await q('select 1 from members where conv_id=$1 and user_id=$2', [m.convId, ws.userId]);
         if (ok.rows[0]) await sendToConv(m.convId, { t: 'typing', convId: m.convId, userId: ws.userId }, ws.userId);
       } else if (m.t === 'rtc' && isUuid(m.to) && m.to !== ws.userId) {   // play together: relay webrtc handshakes between two people who share a dm (the video itself never touches the server)
-        if (typeof m.room !== 'string' || m.room.length > 40 || !['join', 'offer', 'answer', 'ice', 'bye'].includes(m.kind) || (m.data && String(m.data).length > 20000)) return;
+        if (typeof m.room !== 'string' || m.room.length > 40 || !['join', 'offer', 'answer', 'ice', 'bye', 'relay'].includes(m.kind) || (m.data && String(m.data).length > 20000)) return;
         const dm = await q(`select 1 from members a join members b on a.conv_id=b.conv_id join conversations c on c.id=a.conv_id where c.type='dm' and a.user_id=$1 and b.user_id=$2 limit 1`, [ws.userId, m.to]);
         if (!dm.rows[0] || await isBlockedEitherWay(ws.userId, m.to)) return;
+        if (m.kind === 'relay') { relayEnd(ws.userId); relayEnd(m.to); relayPairs.set(ws.userId, m.to); relayPairs.set(m.to, ws.userId); }   // both sides may now exchange frames
+        else if (m.kind === 'bye' && relayPairs.get(ws.userId) === m.to) relayEnd(ws.userId);
         sendTo(m.to, { t: 'rtc', from: ws.userId, room: m.room, kind: m.kind, data: m.data || null });
       } else if (m.t === 'ping') ws.send('{"t":"pong"}');
     } catch (e) { console.error('ws error', e.message); }
@@ -829,7 +851,7 @@ wss.on('connection', (ws) => {
     if (n <= 0) ipConns.delete(ws.ip); else ipConns.set(ws.ip, n);
     if (!ws.userId) return;
     const set = sockets.get(ws.userId);
-    if (set) { set.delete(ws); if (!set.size) { sockets.delete(ws.userId); endPlay(ws.userId).catch(() => {}); broadcastPresence(ws.userId).catch(() => {}); } }
+    if (set) { set.delete(ws); if (!set.size) { sockets.delete(ws.userId); relayEnd(ws.userId); endPlay(ws.userId).catch(() => {}); broadcastPresence(ws.userId).catch(() => {}); } }
   });
 });
 setInterval(() => { for (const ws of wss.clients) { if (!ws.alive) { ws.terminate(); continue; } ws.alive = false; ws.ping(); } }, 30_000).unref(); // drop dead sockets

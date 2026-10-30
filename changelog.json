@@ -1,5 +1,14 @@
 [
   {
+    "id": "2026-10-29-b",
+    "date": "2026-10-29",
+    "title": "memes and play together anywhere",
+    "items": [
+      "new /meme command: tap up to 5 messages, pick a style (classic, screenshot, nope/yes, big brain), add captions and send it as a meme card. works for everyone",
+      "play together now works on strict networks like school wifi: if a direct connection cannot be made it switches to compatibility mode automatically (no sound there)"
+    ]
+  },
+  {
     "id": "2026-10-29-a",
     "date": "2026-10-29",
     "title": "update videos and bonus events",
