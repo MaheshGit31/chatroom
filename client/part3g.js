@@ -6,7 +6,7 @@ const { S, el, ic, toast, convOf, sendPayload } = C;
 const { modal } = U;
 
 const MAX = 5;
-const STYLES = [['classic', 'classic'], ['chat', 'screenshot'], ['drake', 'nope / yes'], ['brain', 'big brain']];
+const STYLES = [['classic', 'classic'], ['chat', 'screenshot'], ['drake', 'nope / yes'], ['brain', 'big brain'], ['buttons', 'two buttons'], ['change', 'change my mind']];
 const clip = (s, n) => String(s || '').slice(0, n);
 
 function memeCard(p) {
@@ -19,6 +19,12 @@ function memeCard(p) {
     mid = lines.map((l, i) => el('div', { class: 'mdrake ' + (i % 2 ? 'yes' : 'no') }, el('div', { class: 'mdicon' }, ic(i % 2 ? 'check' : 'x', 26)), el('div', { class: 'mdtext' }, clip(l.s, 200))));
   } else if (style === 'brain') {
     mid = lines.map((l, i) => el('div', { class: 'mbrain', style: `--lvl:${lines.length > 1 ? i / (lines.length - 1) : 1}` }, el('div', { class: 'mblvl' }, ic('sparkle', 18)), el('div', { class: 'mbtext' }, clip(l.s, 200))));
+  } else if (style === 'buttons') {
+    const two = lines.slice(0, 2);
+    mid = [el('div', { class: 'mbtns' }, two.map((l, i) => el('div', { class: 'mbtn b' + i }, clip(l.s, 120)))), lines[2] ? el('div', { class: 'mbtnsweat' }, ic('sparkle', 18), clip(lines[2].s, 160)) : null];
+  } else if (style === 'change') {
+    const l = lines[0];
+    mid = [el('div', { class: 'mchange' }, el('div', { class: 'mchsign' }, clip(l ? l.s : '', 160)), lines[1] ? el('div', { class: 'mchsub' }, clip(lines[1].s, 160)) : null)];
   } else mid = lines.map(bubble);
   return el('div', { class: 'meme s-' + style }, cap(p.top, 'top'), el('div', { class: 'mmid' }, mid), cap(p.bottom, 'bot'));
 }
@@ -60,7 +66,7 @@ function maker(c, msgs) {
   const st = { style: msgs.length === 2 ? 'drake' : 'classic', top: '', bottom: '' };
   const preview = el('div', { class: 'memeprev' });
   const draw = () => { preview.replaceChildren(memeCard({ t: 'meme', ...st, lines })); chips.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.k === st.style)); };
-  const chips = el('div', { class: 'seg' }, STYLES.map(([k, label]) => el('button', { 'data-k': k, onclick: () => { st.style = k; draw(); } }, label)));
+  const chips = el('div', { class: 'seg memeseg' }, STYLES.map(([k, label]) => el('button', { 'data-k': k, onclick: () => { st.style = k; draw(); } }, label)));
   const top = el('input', { placeholder: 'top caption (optional)', maxLength: 90, oninput: () => { st.top = top.value; draw(); } });
   const bot = el('input', { placeholder: 'bottom caption (optional)', maxLength: 90, oninput: () => { st.bottom = bot.value; draw(); } });
   const send = el('button', { class: 'btn primary wide', onclick: async () => {

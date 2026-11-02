@@ -370,6 +370,7 @@ function renderHeader() {
     el('div', { class: 'grow click', onclick: () => (o ? openProfile(o.username) : groupModal(c)) }, el('div', { class: 'ctitle' }, convTitle(c), o ? vb(o) : null), el('div', { class: 'small' }, sub)),
     el('span', { class: 'ic muted', title: c.isPublic ? 'public room: open to everyone, not end-to-end encrypted' : 'end-to-end encrypted' }, ic(c.isPublic ? 'globe' : 'lock', 16)),
     !c.systemKind && (c.type === 'dm' || c.role === 'admin') ? el('button', { class: 'icon-btn' + (c.ttlSeconds ? ' on' : ''), title: 'disappearing messages', onclick: () => X.ttlModal(c) }, ic('timer', 20)) : null,
+    !c.systemKind || c.gamePath ? el('button', { class: 'icon-btn' + (c.gamePath ? ' on' : ''), title: c.gamePath ? 'game room: ' + c.gameTitle : 'pin a game here', onclick: () => X.gameRoomModal(c) }, ic('gamepad', 20)) : null,
     el('button', { class: 'icon-btn', title: 'search this chat', onclick: () => X.searchModal(c) }, ic('search', 20)),
     X.dndActive() ? el('button', { class: 'icon-btn on', title: 'do not disturb is on', onclick: () => X.dndModal() }, ic('moon', 20)) : null,
     el('button', { class: 'icon-btn', title: c.muted ? 'unmute' : 'mute', onclick: async () => { c.muted = !c.muted; await api('PATCH', `/api/conversations/${c.id}/me`, { muted: c.muted }).catch(() => {}); renderHeader(); renderSide(); updateBadge(); } }, ic(c.muted ? 'mute' : 'volume', 20)),
@@ -632,6 +633,7 @@ async function openProfile(username) {
         el('button', { class: 'btn primary', onclick: () => startDM(p.username, m) }, ic('chat', 16), 'message'),
         el('button', { class: 'btn ' + (p.blocked ? '' : 'danger'), onclick: async () => { try { await api(p.blocked ? 'DELETE' : 'POST', '/api/blocks/' + encodeURIComponent(p.username)); toast(p.blocked ? 'unblocked' : 'blocked', 'success'); m.close(); } catch (e) { toast(e.message, 'error'); } } }, ic('ban', 16), p.blocked ? 'unblock' : 'block'),
         el('button', { class: 'btn ghost', onclick: () => { m.close(); X.reportModal({ kind: 'user', username: p.username, title: p.displayName }); } }, ic('flag', 16), 'report')));
+    window.__ext.profileDecorate(body, p, m);
   } catch (e) { body.replaceChildren(el('div', { class: 'form-err' }, e.message)); }
 }
 function avatarModal() {                                     // pick one of the preset pictures, or go back to the letter
@@ -665,7 +667,8 @@ function settingsModal() {
       el('button', { class: 'btn grow', onclick: () => { m.close(); X.newsModal(); } }, ic('newspaper', 16), "what's new", X.newsUnseen() ? el('span', { class: 'newdot inline' }) : null)),
     el('h4', null, ic('palette', 14), 'look'),
     el('div', { class: 'seg small' }, themeBtn('auto', 'auto'), themeBtn('light', 'day'), themeBtn('dark', 'night')),
-    el('button', { class: 'btn wide', style: 'margin-top:10px', onclick: () => { m.close(); X.themeModal(); } }, ic('palette', 16), 'custom theme', el('span', { class: 'tag gold' }, 'beta')),
+    el('button', { class: 'btn wide', style: 'margin-top:10px', onclick: () => { m.close(); X.profileEditModal(); } }, ic('sparkle', 16), 'profile glow-up', el('span', { class: 'tag gold' }, 'beta')),
+    el('button', { class: 'btn wide', style: 'margin-top:8px', onclick: () => { m.close(); X.themeModal(); } }, ic('palette', 16), 'custom theme', el('span', { class: 'tag gold' }, 'beta')),
     el('div', { class: 'row gap', style: 'margin-top:8px' },
       el('button', { class: 'btn grow', onclick: () => { m.close(); X.dndModal(); } }, ic('moon', 16), X.dndActive() ? 'dnd is on' : 'do not disturb'),
       el('button', { class: 'btn grow', onclick: () => { m.close(); X.remindersModal(); } }, ic('bell', 16), 'reminders', el('span', { class: 'tag gold' }, 'beta'))),
@@ -819,7 +822,9 @@ function buildGames(m) {
   const content = el('div', { class: 'gcontent' });
   const tabs = el('div', { class: 'seg' },
     el('button', { class: G.tab === 'library' ? 'on' : '', onclick: () => { G.tab = 'library'; builtMain = ''; renderMain(); } }, ic('gamepad', 16), 'library'),
-    el('button', { class: G.tab === 'activity' ? 'on' : '', onclick: () => { G.tab = 'activity'; builtMain = ''; renderMain(); } }, ic('activity', 16), 'activity'));
+    el('button', { class: G.tab === 'activity' ? 'on' : '', onclick: () => { G.tab = 'activity'; builtMain = ''; renderMain(); } }, ic('activity', 16), 'activity'),
+    el('button', { class: G.tab === 'daily' ? 'on' : '', onclick: () => { G.tab = 'daily'; builtMain = ''; renderMain(); } }, ic('sparkle', 16), 'daily'),
+    el('button', { class: G.tab === 'boards' ? 'on' : '', onclick: () => { G.tab = 'boards'; builtMain = ''; renderMain(); } }, ic('trophy', 16), 'boards'));
   m.append(el('div', { class: 'page' }, el('div', { class: 'page-head' }, el('h2', null, 'games', el('i', null, 'place')), tabs), content));
   if (G.tab === 'library') {
     const input = el('input', { placeholder: 'search', value: G.q, oninput: debounce(() => { G.q = input.value; loadGames(true); }, 300) });
@@ -828,6 +833,12 @@ function buildGames(m) {
     content.append(el('div', { class: 'searchbox' }, ic('search', 16), input), chips, grid, more);
     if (!G.items.length) loadGames(true); else renderGameGrid();
     loadNow(); nowTimer = setInterval(loadNow, 20000);
+  } else if (G.tab === 'daily') {
+    gridRef = {};
+    window.__ext.dailyBuild(content);
+  } else if (G.tab === 'boards') {
+    gridRef = {};
+    window.__ext.boardsBuild(content);
   } else {
     gridRef = {};
     loadActivity(content); actTimer = setInterval(() => loadActivity(content), 15000);
@@ -871,13 +882,29 @@ let player = null;
 function closePlayer() {
   if (!player) return;
   clearInterval(player.timer);
+  window.__ext.dockClose && window.__ext.dockClose();
   window.__ext.coopStopHost && window.__ext.coopStopHost();
   player.node.remove();
   api('POST', '/api/activity/stop', null, { quiet: true, keepalive: true }).catch(() => {});
   player = null;
 }
-function openGame(path, title) {
+const GAME_CREDITS = {
+  'extra/donottakethiscathome/index.html': {
+    creator: 'Pixeliminal', creatorUrl: 'https://pixeliminal.itch.io/do-not-take-this-cat-home',
+    port: 'genizy', portUrl: 'https://github.com/genizy/web-port/tree/main/donottakethiscathome',
+  },
+};
+function creditsModal(title, cr) {
+  const link = (label, url, icon) => el('a', { class: 'urow click', href: url, target: '_blank', rel: 'noopener noreferrer' }, ic(icon, 20), el('div', { class: 'grow' }, label));
+  const m = modal('credits', el('div', { class: 'stack' },
+    el('div', null, title + ' was made by ' + cr.creator + '. this is a web port by ' + cr.port + ', shown here with credit. if you like it, go support the people who made it.'),
+    link('support ' + cr.creator + ' on itch.io', cr.creatorUrl, 'star'),
+    link('port by ' + cr.port + ' on github', cr.portUrl, 'link')));
+  m.box.style.zIndex = 400;
+}
+function openGame(path, title, opts) {
   closePlayer();
+  opts = opts || {};
   const url = API + '/g/' + path.split('/').map(encodeURIComponent).join('/');
   const frame = el('iframe', { class: 'gframe', src: url, allow: 'autoplay; fullscreen; gamepad; clipboard-write', referrerPolicy: 'no-referrer' });
   frame.setAttribute('sandbox', 'allow-scripts allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-forms allow-modals allow-downloads allow-orientation-lock');
@@ -887,6 +914,7 @@ function openGame(path, title) {
     el('div', { class: 'player-bar' },
       el('button', { class: 'icon-btn', title: 'close', onclick: closePlayer }, ic('back', 22)),
       el('div', { class: 'grow' }, el('div', { class: 'ctitle' }, title), el('div', { class: 'muted small' }, S.me.shareActivity ? 'friends can see this' : 'private')),
+      GAME_CREDITS[path] ? el('button', { class: 'icon-btn', title: 'credits', onclick: () => creditsModal(title, GAME_CREDITS[path]) }, ic('star', 20)) : null,
       el('button', { class: 'icon-btn', title: 'play together: a friend joins your game from far away', onclick: () => window.__ext.coopHostModal(path, title, frame) }, ic('users', 20)),
       el('button', { class: 'icon-btn', title: 'Share to a chat', onclick: () => shareGameModal(path, title) }, ic('share', 20)),
       el('button', { class: 'icon-btn', title: 'Fullscreen', onclick: () => { (frame.requestFullscreen || frame.webkitRequestFullscreen || (() => {})).call(frame); } }, ic('expand', 20)),
@@ -894,13 +922,15 @@ function openGame(path, title) {
       el('button', { class: 'icon-btn', title: 'Close', onclick: closePlayer }, ic('x', 22))),
     el('div', { class: 'player-body' }, frame, spin));
   document.body.append(node);
-  player = { node, frame, timer: null, playId: null };
+  player = { node, frame, timer: null, playId: null, lastAct: Date.now() };
+  if (window.__ext.dockOpen) window.__ext.dockOpen(node, opts.convId || S.active);
   api('POST', '/api/activity/start', { path }, { quiet: true }).then((r) => {
     if (!player || player.node !== node) return api('POST', '/api/activity/stop', null, { quiet: true }).catch(() => {});
     player.playId = r.playId;
-    player.timer = setInterval(() => api('POST', '/api/activity/ping', { playId: r.playId }, { quiet: true }).catch(() => {}), 25000);
+    player.timer = setInterval(() => { if (document.hidden || Date.now() - player.lastAct > 300000) return; api('POST', '/api/activity/ping', { playId: r.playId }, { quiet: true }).catch(() => {}); }, 25000);
   }).catch(() => {});
 }
+window.addEventListener('message', (ev) => { if (player && ev.source === player.frame.contentWindow && ev.data && ev.data.__act) player.lastAct = Date.now(); });
 window.addEventListener('pagehide', () => { if (player && S.token) api('POST', '/api/activity/stop', null, { quiet: true, keepalive: true }).catch(() => {}); });
 function shareGameModal(path, title) {
   const list = S.convs.map((c) => el('div', { class: 'urow click', onclick: async () => { m.close(); if (await sendPayload(c, { t: 'game', path, title })) toast('sent to ' + convTitle(c), 'success'); } }, avatar(convTitle(c), 34), el('div', { class: 'grow' }, convTitle(c)), ic('send', 16)));
@@ -908,7 +938,7 @@ function shareGameModal(path, title) {
   m.box.style.zIndex = 400;
 }
 
-window.__ui = { renderAll, renderRail, renderSide, renderHeader, renderMessages, renderTyping, renderActivityLive, notifyMessage, openConv, tickCooldown, boot: () => boot(), modal, confirmModal, userSearch, openProfile, statusFor, statusLine, isMobile, chatRef: () => chatRef, resetMain: () => { builtMain = ''; renderMain(); }, startDM, mugIcon, groupModal, removeMember, deleteWithUndo, myRank, rankR, linkify, goAdminTab: (k) => { S.adminTab = k; S.view = 'admin'; builtMain = ''; renderAll(); } };
+window.__ui = { openGame, renderAll, renderRail, renderSide, renderHeader, renderMessages, renderTyping, renderActivityLive, notifyMessage, openConv, tickCooldown, boot: () => boot(), modal, confirmModal, userSearch, openProfile, statusFor, statusLine, isMobile, chatRef: () => chatRef, resetMain: () => { builtMain = ''; renderMain(); }, startDM, mugIcon, groupModal, removeMember, deleteWithUndo, myRank, rankR, linkify, goAdminTab: (k) => { S.adminTab = k; S.view = 'admin'; builtMain = ''; renderAll(); } };
 
 // ---------- boot ----------
 async function boot() {
