@@ -340,6 +340,35 @@ input:focus-visible,textarea:focus-visible{outline:none}
 .mmid{display:flex;flex-direction:column;gap:6px}
 .mcap{font:800 22px/1.1 Impact,'Arial Black',system-ui,sans-serif;text-transform:uppercase;text-align:center;letter-spacing:.01em;text-shadow:-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000,2px 2px 0 #000;word-break:break-word}
 .mbub{background:#2e2925;border-radius:14px;padding:6px 10px;display:flex;flex-direction:column;font-size:14px;line-height:1.3;word-break:break-word}.mbub b{font-size:11px;color:#e5855a;font-weight:600}
+.dgrid{display:grid;gap:6px;margin:12px 0;justify-content:center}
+.drow{display:flex;gap:6px;justify-content:center}
+.dcell{width:46px;height:46px;border-radius:8px;border:2px solid var(--line,#8884);display:grid;place-items:center;font-weight:800;font-size:1.3rem}
+.dcell.dg{background:#4f9a62;border-color:#4f9a62;color:#fff}.dcell.dy{background:#c79a2e;border-color:#c79a2e;color:#fff}.dcell.dx{background:#6b6560;border-color:#6b6560;color:#fff}
+.daily{max-width:380px;margin:0 auto 16px;text-align:center}.daily .row{justify-content:center}
+.dres{font-weight:800;margin:10px 0}.dres.win{color:#4f9a62}.dres.lose{color:#c9503e}
+.mwk{display:grid;gap:8px;margin:14px 0;padding-bottom:12px;border-bottom:1px solid #8883}
+.chips-wrap{display:flex;flex-wrap:wrap;gap:6px}
+.avwrap.frame{border-radius:50%;padding:3px;width:fit-content;height:fit-content}
+.frame-gold{background:linear-gradient(135deg,#f6d365,#c9892b)}.frame-neon{background:linear-gradient(135deg,#00f5a0,#00b4ff);box-shadow:0 0 14px #00f5a088}.frame-sunset{background:linear-gradient(135deg,#ff8a5b,#c2306a)}.frame-ocean{background:linear-gradient(135deg,#36d1dc,#3a47d5)}.frame-rose{background:linear-gradient(135deg,#ffb6c9,#d6457a)}
+.prof-head.pacc{background:linear-gradient(135deg,color-mix(in srgb,var(--pacc) 28%,transparent),transparent 70%);border-radius:14px;padding:10px;border-bottom:2px solid var(--pacc)}
+.pextra{display:grid;gap:4px;margin:10px 0}.topfr{display:flex;gap:10px}.tf{display:grid;justify-items:center;gap:4px;position:relative}.tfn{position:absolute;top:-4px;left:-4px;z-index:1;background:var(--pacc,#c9892b);color:#fff;border-radius:50%;width:18px;height:18px;display:grid;place-items:center;font-size:.7rem;font-weight:800}
+.gdock{position:absolute;left:12px;bottom:12px;z-index:5;display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.gdbub{position:relative;width:48px;height:48px;border-radius:50%;border:0;background:var(--panel,#222);color:var(--text,#fff);display:grid;place-items:center;box-shadow:0 4px 16px rgba(0,0,0,.5);cursor:pointer;opacity:.9}
+.gdbadge{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;border-radius:9px;background:#c9503e;color:#fff;font-size:.7rem;font-weight:800;display:grid;place-items:center;padding:0 4px}
+.gdpanel{display:none;width:min(320px,calc(100vw - 24px));height:min(380px,50vh);background:var(--panel,#222);color:var(--text,#fff);border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.6);flex-direction:column;overflow:hidden}
+.gdock.open .gdpanel{display:flex}.gdock.open .gdbub{display:none}
+.gdhead{display:flex;align-items:center;gap:6px;padding:6px 8px;border-bottom:1px solid #8883}.gdsel{flex:1;min-width:0;background:transparent;color:inherit;border:0;font-weight:700}
+.gdmsgs{flex:1;overflow:auto;padding:8px;display:flex;flex-direction:column;gap:6px}
+.gdm{display:flex;flex-direction:column;font-size:.85rem;background:#8882;border-radius:10px;padding:6px 9px;align-self:flex-start;max-width:90%;word-break:break-word}.gdm.mine{align-self:flex-end;background:color-mix(in srgb,var(--accent,#c9892b) 30%,transparent)}.gdm b{font-size:.7rem;opacity:.7}
+.gdin{display:flex;gap:4px;padding:6px;border-top:1px solid #8883}.gdin input{flex:1;min-width:0}
+.memeseg{flex-wrap:wrap;justify-content:center}.memeseg button{flex:0 1 auto}
+.mbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mbtn{border-radius:10px 10px 4px 4px;padding:12px 10px;text-align:center;font-weight:800;font-size:.95rem;color:#fff;background:#c9503e;box-shadow:0 3px 0 rgba(0,0,0,.25);word-break:break-word}
+.mbtn.b1{background:#3f7fc4}
+.mbtnsweat{display:flex;align-items:center;gap:8px;justify-content:center;background:rgba(255,255,255,.1);border-radius:10px;padding:10px;font-style:italic;text-align:center}
+.mchange{display:grid;gap:8px;justify-items:start}
+.mchsign{background:#f4efe3;color:#1d1a16;border:3px solid #8a6b3d;border-radius:6px;padding:14px 16px;font-weight:900;font-size:1.05rem;transform:rotate(-1.5deg);word-break:break-word;box-shadow:0 4px 0 rgba(0,0,0,.25)}
+.mchsub{opacity:.85;font-size:.85rem;padding-left:6px}
 .mdrake{display:flex;align-items:stretch;gap:8px;border-radius:12px;overflow:hidden;background:#fff;color:#111;min-height:56px}
 .mdicon{width:56px;flex:none;display:grid;place-items:center;color:#fff}.mdrake.no .mdicon{background:#c9503e}.mdrake.yes .mdicon{background:#4f9a62}
 .mdtext{padding:8px 10px 8px 2px;display:flex;align-items:center;font:600 15px/1.25 system-ui,sans-serif;word-break:break-word}
@@ -1515,6 +1544,7 @@ function renderHeader() {
     el('div', { class: 'grow click', onclick: () => (o ? openProfile(o.username) : groupModal(c)) }, el('div', { class: 'ctitle' }, convTitle(c), o ? vb(o) : null), el('div', { class: 'small' }, sub)),
     el('span', { class: 'ic muted', title: c.isPublic ? 'public room: open to everyone, not end-to-end encrypted' : 'end-to-end encrypted' }, ic(c.isPublic ? 'globe' : 'lock', 16)),
     !c.systemKind && (c.type === 'dm' || c.role === 'admin') ? el('button', { class: 'icon-btn' + (c.ttlSeconds ? ' on' : ''), title: 'disappearing messages', onclick: () => X.ttlModal(c) }, ic('timer', 20)) : null,
+    !c.systemKind || c.gamePath ? el('button', { class: 'icon-btn' + (c.gamePath ? ' on' : ''), title: c.gamePath ? 'game room: ' + c.gameTitle : 'pin a game here', onclick: () => X.gameRoomModal(c) }, ic('gamepad', 20)) : null,
     el('button', { class: 'icon-btn', title: 'search this chat', onclick: () => X.searchModal(c) }, ic('search', 20)),
     X.dndActive() ? el('button', { class: 'icon-btn on', title: 'do not disturb is on', onclick: () => X.dndModal() }, ic('moon', 20)) : null,
     el('button', { class: 'icon-btn', title: c.muted ? 'unmute' : 'mute', onclick: async () => { c.muted = !c.muted; await api('PATCH', `/api/conversations/${c.id}/me`, { muted: c.muted }).catch(() => {}); renderHeader(); renderSide(); updateBadge(); } }, ic(c.muted ? 'mute' : 'volume', 20)),
@@ -1777,6 +1807,7 @@ async function openProfile(username) {
         el('button', { class: 'btn primary', onclick: () => startDM(p.username, m) }, ic('chat', 16), 'message'),
         el('button', { class: 'btn ' + (p.blocked ? '' : 'danger'), onclick: async () => { try { await api(p.blocked ? 'DELETE' : 'POST', '/api/blocks/' + encodeURIComponent(p.username)); toast(p.blocked ? 'unblocked' : 'blocked', 'success'); m.close(); } catch (e) { toast(e.message, 'error'); } } }, ic('ban', 16), p.blocked ? 'unblock' : 'block'),
         el('button', { class: 'btn ghost', onclick: () => { m.close(); X.reportModal({ kind: 'user', username: p.username, title: p.displayName }); } }, ic('flag', 16), 'report')));
+    window.__ext.profileDecorate(body, p, m);
   } catch (e) { body.replaceChildren(el('div', { class: 'form-err' }, e.message)); }
 }
 function avatarModal() {                                     // pick one of the preset pictures, or go back to the letter
@@ -1810,7 +1841,8 @@ function settingsModal() {
       el('button', { class: 'btn grow', onclick: () => { m.close(); X.newsModal(); } }, ic('newspaper', 16), "what's new", X.newsUnseen() ? el('span', { class: 'newdot inline' }) : null)),
     el('h4', null, ic('palette', 14), 'look'),
     el('div', { class: 'seg small' }, themeBtn('auto', 'auto'), themeBtn('light', 'day'), themeBtn('dark', 'night')),
-    el('button', { class: 'btn wide', style: 'margin-top:10px', onclick: () => { m.close(); X.themeModal(); } }, ic('palette', 16), 'custom theme', el('span', { class: 'tag gold' }, 'beta')),
+    el('button', { class: 'btn wide', style: 'margin-top:10px', onclick: () => { m.close(); X.profileEditModal(); } }, ic('sparkle', 16), 'profile glow-up', el('span', { class: 'tag gold' }, 'beta')),
+    el('button', { class: 'btn wide', style: 'margin-top:8px', onclick: () => { m.close(); X.themeModal(); } }, ic('palette', 16), 'custom theme', el('span', { class: 'tag gold' }, 'beta')),
     el('div', { class: 'row gap', style: 'margin-top:8px' },
       el('button', { class: 'btn grow', onclick: () => { m.close(); X.dndModal(); } }, ic('moon', 16), X.dndActive() ? 'dnd is on' : 'do not disturb'),
       el('button', { class: 'btn grow', onclick: () => { m.close(); X.remindersModal(); } }, ic('bell', 16), 'reminders', el('span', { class: 'tag gold' }, 'beta'))),
@@ -1964,7 +1996,9 @@ function buildGames(m) {
   const content = el('div', { class: 'gcontent' });
   const tabs = el('div', { class: 'seg' },
     el('button', { class: G.tab === 'library' ? 'on' : '', onclick: () => { G.tab = 'library'; builtMain = ''; renderMain(); } }, ic('gamepad', 16), 'library'),
-    el('button', { class: G.tab === 'activity' ? 'on' : '', onclick: () => { G.tab = 'activity'; builtMain = ''; renderMain(); } }, ic('activity', 16), 'activity'));
+    el('button', { class: G.tab === 'activity' ? 'on' : '', onclick: () => { G.tab = 'activity'; builtMain = ''; renderMain(); } }, ic('activity', 16), 'activity'),
+    el('button', { class: G.tab === 'daily' ? 'on' : '', onclick: () => { G.tab = 'daily'; builtMain = ''; renderMain(); } }, ic('sparkle', 16), 'daily'),
+    el('button', { class: G.tab === 'boards' ? 'on' : '', onclick: () => { G.tab = 'boards'; builtMain = ''; renderMain(); } }, ic('trophy', 16), 'boards'));
   m.append(el('div', { class: 'page' }, el('div', { class: 'page-head' }, el('h2', null, 'games', el('i', null, 'place')), tabs), content));
   if (G.tab === 'library') {
     const input = el('input', { placeholder: 'search', value: G.q, oninput: debounce(() => { G.q = input.value; loadGames(true); }, 300) });
@@ -1973,6 +2007,12 @@ function buildGames(m) {
     content.append(el('div', { class: 'searchbox' }, ic('search', 16), input), chips, grid, more);
     if (!G.items.length) loadGames(true); else renderGameGrid();
     loadNow(); nowTimer = setInterval(loadNow, 20000);
+  } else if (G.tab === 'daily') {
+    gridRef = {};
+    window.__ext.dailyBuild(content);
+  } else if (G.tab === 'boards') {
+    gridRef = {};
+    window.__ext.boardsBuild(content);
   } else {
     gridRef = {};
     loadActivity(content); actTimer = setInterval(() => loadActivity(content), 15000);
@@ -2016,13 +2056,29 @@ let player = null;
 function closePlayer() {
   if (!player) return;
   clearInterval(player.timer);
+  window.__ext.dockClose && window.__ext.dockClose();
   window.__ext.coopStopHost && window.__ext.coopStopHost();
   player.node.remove();
   api('POST', '/api/activity/stop', null, { quiet: true, keepalive: true }).catch(() => {});
   player = null;
 }
-function openGame(path, title) {
+const GAME_CREDITS = {
+  'extra/donottakethiscathome/index.html': {
+    creator: 'Pixeliminal', creatorUrl: 'https://pixeliminal.itch.io/do-not-take-this-cat-home',
+    port: 'genizy', portUrl: 'https://github.com/genizy/web-port/tree/main/donottakethiscathome',
+  },
+};
+function creditsModal(title, cr) {
+  const link = (label, url, icon) => el('a', { class: 'urow click', href: url, target: '_blank', rel: 'noopener noreferrer' }, ic(icon, 20), el('div', { class: 'grow' }, label));
+  const m = modal('credits', el('div', { class: 'stack' },
+    el('div', null, title + ' was made by ' + cr.creator + '. this is a web port by ' + cr.port + ', shown here with credit. if you like it, go support the people who made it.'),
+    link('support ' + cr.creator + ' on itch.io', cr.creatorUrl, 'star'),
+    link('port by ' + cr.port + ' on github', cr.portUrl, 'link')));
+  m.box.style.zIndex = 400;
+}
+function openGame(path, title, opts) {
   closePlayer();
+  opts = opts || {};
   const url = API + '/g/' + path.split('/').map(encodeURIComponent).join('/');
   const frame = el('iframe', { class: 'gframe', src: url, allow: 'autoplay; fullscreen; gamepad; clipboard-write', referrerPolicy: 'no-referrer' });
   frame.setAttribute('sandbox', 'allow-scripts allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-forms allow-modals allow-downloads allow-orientation-lock');
@@ -2032,6 +2088,7 @@ function openGame(path, title) {
     el('div', { class: 'player-bar' },
       el('button', { class: 'icon-btn', title: 'close', onclick: closePlayer }, ic('back', 22)),
       el('div', { class: 'grow' }, el('div', { class: 'ctitle' }, title), el('div', { class: 'muted small' }, S.me.shareActivity ? 'friends can see this' : 'private')),
+      GAME_CREDITS[path] ? el('button', { class: 'icon-btn', title: 'credits', onclick: () => creditsModal(title, GAME_CREDITS[path]) }, ic('star', 20)) : null,
       el('button', { class: 'icon-btn', title: 'play together: a friend joins your game from far away', onclick: () => window.__ext.coopHostModal(path, title, frame) }, ic('users', 20)),
       el('button', { class: 'icon-btn', title: 'Share to a chat', onclick: () => shareGameModal(path, title) }, ic('share', 20)),
       el('button', { class: 'icon-btn', title: 'Fullscreen', onclick: () => { (frame.requestFullscreen || frame.webkitRequestFullscreen || (() => {})).call(frame); } }, ic('expand', 20)),
@@ -2039,13 +2096,15 @@ function openGame(path, title) {
       el('button', { class: 'icon-btn', title: 'Close', onclick: closePlayer }, ic('x', 22))),
     el('div', { class: 'player-body' }, frame, spin));
   document.body.append(node);
-  player = { node, frame, timer: null, playId: null };
+  player = { node, frame, timer: null, playId: null, lastAct: Date.now() };
+  if (window.__ext.dockOpen) window.__ext.dockOpen(node, opts.convId || S.active);
   api('POST', '/api/activity/start', { path }, { quiet: true }).then((r) => {
     if (!player || player.node !== node) return api('POST', '/api/activity/stop', null, { quiet: true }).catch(() => {});
     player.playId = r.playId;
-    player.timer = setInterval(() => api('POST', '/api/activity/ping', { playId: r.playId }, { quiet: true }).catch(() => {}), 25000);
+    player.timer = setInterval(() => { if (document.hidden || Date.now() - player.lastAct > 300000) return; api('POST', '/api/activity/ping', { playId: r.playId }, { quiet: true }).catch(() => {}); }, 25000);
   }).catch(() => {});
 }
+window.addEventListener('message', (ev) => { if (player && ev.source === player.frame.contentWindow && ev.data && ev.data.__act) player.lastAct = Date.now(); });
 window.addEventListener('pagehide', () => { if (player && S.token) api('POST', '/api/activity/stop', null, { quiet: true, keepalive: true }).catch(() => {}); });
 function shareGameModal(path, title) {
   const list = S.convs.map((c) => el('div', { class: 'urow click', onclick: async () => { m.close(); if (await sendPayload(c, { t: 'game', path, title })) toast('sent to ' + convTitle(c), 'success'); } }, avatar(convTitle(c), 34), el('div', { class: 'grow' }, convTitle(c)), ic('send', 16)));
@@ -2053,7 +2112,7 @@ function shareGameModal(path, title) {
   m.box.style.zIndex = 400;
 }
 
-window.__ui = { renderAll, renderRail, renderSide, renderHeader, renderMessages, renderTyping, renderActivityLive, notifyMessage, openConv, tickCooldown, boot: () => boot(), modal, confirmModal, userSearch, openProfile, statusFor, statusLine, isMobile, chatRef: () => chatRef, resetMain: () => { builtMain = ''; renderMain(); }, startDM, mugIcon, groupModal, removeMember, deleteWithUndo, myRank, rankR, linkify, goAdminTab: (k) => { S.adminTab = k; S.view = 'admin'; builtMain = ''; renderAll(); } };
+window.__ui = { openGame, renderAll, renderRail, renderSide, renderHeader, renderMessages, renderTyping, renderActivityLive, notifyMessage, openConv, tickCooldown, boot: () => boot(), modal, confirmModal, userSearch, openProfile, statusFor, statusLine, isMobile, chatRef: () => chatRef, resetMain: () => { builtMain = ''; renderMain(); }, startDM, mugIcon, groupModal, removeMember, deleteWithUndo, myRank, rankR, linkify, goAdminTab: (k) => { S.adminTab = k; S.view = 'admin'; builtMain = ''; renderAll(); } };
 
 // ---------- boot ----------
 async function boot() {
@@ -4033,7 +4092,7 @@ const { S, el, ic, toast, convOf, sendPayload } = C;
 const { modal } = U;
 
 const MAX = 5;
-const STYLES = [['classic', 'classic'], ['chat', 'screenshot'], ['drake', 'nope / yes'], ['brain', 'big brain']];
+const STYLES = [['classic', 'classic'], ['chat', 'screenshot'], ['drake', 'nope / yes'], ['brain', 'big brain'], ['buttons', 'two buttons'], ['change', 'change my mind']];
 const clip = (s, n) => String(s || '').slice(0, n);
 
 function memeCard(p) {
@@ -4046,6 +4105,12 @@ function memeCard(p) {
     mid = lines.map((l, i) => el('div', { class: 'mdrake ' + (i % 2 ? 'yes' : 'no') }, el('div', { class: 'mdicon' }, ic(i % 2 ? 'check' : 'x', 26)), el('div', { class: 'mdtext' }, clip(l.s, 200))));
   } else if (style === 'brain') {
     mid = lines.map((l, i) => el('div', { class: 'mbrain', style: `--lvl:${lines.length > 1 ? i / (lines.length - 1) : 1}` }, el('div', { class: 'mblvl' }, ic('sparkle', 18)), el('div', { class: 'mbtext' }, clip(l.s, 200))));
+  } else if (style === 'buttons') {
+    const two = lines.slice(0, 2);
+    mid = [el('div', { class: 'mbtns' }, two.map((l, i) => el('div', { class: 'mbtn b' + i }, clip(l.s, 120)))), lines[2] ? el('div', { class: 'mbtnsweat' }, ic('sparkle', 18), clip(lines[2].s, 160)) : null];
+  } else if (style === 'change') {
+    const l = lines[0];
+    mid = [el('div', { class: 'mchange' }, el('div', { class: 'mchsign' }, clip(l ? l.s : '', 160)), lines[1] ? el('div', { class: 'mchsub' }, clip(lines[1].s, 160)) : null)];
   } else mid = lines.map(bubble);
   return el('div', { class: 'meme s-' + style }, cap(p.top, 'top'), el('div', { class: 'mmid' }, mid), cap(p.bottom, 'bot'));
 }
@@ -4087,7 +4152,7 @@ function maker(c, msgs) {
   const st = { style: msgs.length === 2 ? 'drake' : 'classic', top: '', bottom: '' };
   const preview = el('div', { class: 'memeprev' });
   const draw = () => { preview.replaceChildren(memeCard({ t: 'meme', ...st, lines })); chips.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.k === st.style)); };
-  const chips = el('div', { class: 'seg' }, STYLES.map(([k, label]) => el('button', { 'data-k': k, onclick: () => { st.style = k; draw(); } }, label)));
+  const chips = el('div', { class: 'seg memeseg' }, STYLES.map(([k, label]) => el('button', { 'data-k': k, onclick: () => { st.style = k; draw(); } }, label)));
   const top = el('input', { placeholder: 'top caption (optional)', maxLength: 90, oninput: () => { st.top = top.value; draw(); } });
   const bot = el('input', { placeholder: 'bottom caption (optional)', maxLength: 90, oninput: () => { st.bottom = bot.value; draw(); } });
   const send = el('button', { class: 'btn primary wide', onclick: async () => {
@@ -4100,6 +4165,228 @@ function maker(c, msgs) {
 }
 
 Object.assign(window.__ext, { memeBody: (c, m, p) => el('div', { class: 'memewrap' }, memeCard(p)), memePick, memeStop: pickStop });
+})();
+
+(() => {
+'use strict';
+const C = window.__core, U = window.__ui, X = window.__ext;
+const { S, el, ic, toast, convOf, convTitle, memberOf, sendPayload, api, avatar, previewText } = C;
+const { modal } = U;
+
+const FRAMES = [['none', 'none'], ['gold', 'gold'], ['neon', 'neon'], ['sunset', 'sunset'], ['ocean', 'ocean'], ['rose', 'rose']];
+const nameRow = (u, sub, right) => el('div', { class: 'urow click', onclick: () => U.openProfile(u.username) }, avatar(u.displayName, 34, '', u.avatar), el('div', { class: 'grow' }, el('div', { class: 'ctitle' }, u.displayName), sub ? el('div', { class: 'muted small' }, sub) : null), right);
+
+function dailyBuild(box) {
+  const rowsBox = el('div', { class: 'dgrid' });
+  const info = el('div', { class: 'muted small' });
+  const top = el('div', { class: 'card' });
+  const input = el('input', { placeholder: 'type a 5 letter word', maxLength: 5, autocapitalize: 'off', autocomplete: 'off', spellcheck: false });
+  const go = el('button', { class: 'btn primary', onclick: () => submit() }, ic('send', 16), 'guess');
+  const form = el('div', { class: 'row gap' }, input, go);
+  const result = el('div', null);
+  let st = null;
+  function draw() {
+    if (!st) return;
+    const cells = [];
+    for (let r = 0; r < st.tries; r++) {
+      const row = st.rows[r];
+      cells.push(el('div', { class: 'drow' }, [0, 1, 2, 3, 4].map((i) => el('div', { class: 'dcell' + (row ? ' d' + row.fb[i] : '') }, row ? row.word[i].toUpperCase() : ''))));
+    }
+    rowsBox.replaceChildren(...cells);
+    info.replaceChildren(ic('flame', 14), ' streak ' + st.streak + (st.streak === 1 ? ' day' : ' days') + ' · same word for everyone, resets at midnight utc');
+    form.style.display = st.done ? 'none' : '';
+    if (st.done) {
+      const grid = st.rows.map((r) => r.fb.replace(/g/g, '\u{1F7E9}').replace(/y/g, '\u{1F7E8}').replace(/x/g, '⬛')).join('\n');
+      result.replaceChildren(el('div', { class: 'dres ' + (st.won ? 'win' : 'lose') }, st.won ? `got it in ${st.rows.length}` : `it was ${st.answer.toUpperCase()}`),
+        el('button', { class: 'btn small', onclick: () => { navigator.clipboard && navigator.clipboard.writeText(`chatroom word ${st.day}  ${st.won ? st.rows.length : 'X'}/${st.tries}\n${grid}`).then(() => toast('copied', 'success')).catch(() => {}); } }, ic('copy', 14), 'copy result'));
+    } else result.replaceChildren();
+  }
+  async function loadTop() {
+    try {
+      const d = await api('GET', '/api/daily/top', null, { quiet: true });
+      top.replaceChildren(el('h3', null, ic('trophy', 16), "today's top 10"), d.top.length ? d.top.map((u, i) => nameRow(u, null, el('b', null, u.tries + '/6'))) : el('div', { class: 'muted pad' }, 'nobody has solved it yet'));
+    } catch {}
+  }
+  async function submit() {
+    const w = input.value.trim().toLowerCase();
+    if (w.length !== 5) return toast('five letters', 'error');
+    go.disabled = true;
+    try { st = await api('POST', '/api/daily/guess', { word: w }); input.value = ''; draw(); if (st.done) loadTop(); } catch (e) { toast(e.message, 'error'); }
+    go.disabled = false;
+    input.focus();
+  }
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+  box.replaceChildren(el('div', { class: 'daily' }, el('h3', null, ic('sparkle', 16), 'word of the day'), info, rowsBox, form, result), top);
+  api('GET', '/api/daily', null, { quiet: true }).then((d) => { st = d; draw(); if (d.done) loadTop(); else loadTop(); }).catch((e) => box.replaceChildren(el('div', { class: 'form-err' }, e.message)));
+}
+
+const BOARDS = [['wins', 'game wins', 'last 30 days, 2 player games'], ['streak', 'streaks', 'daily word streaks'], ['reacts', 'reactions', 'reactions you got, last 7 days'], ['memes', 'meme of the week', 'most reacted memes in public rooms']];
+let boardKind = 'wins';
+function boardsBuild(box) {
+  const body = el('div', { class: 'card' });
+  const seg = el('div', { class: 'seg small' });
+  const paintSeg = () => seg.replaceChildren(...BOARDS.map(([k, l]) => el('button', { class: boardKind === k ? 'on' : '', onclick: () => { boardKind = k; paintSeg(); load(); } }, l)));
+  async function load() {
+    const meta = BOARDS.find((b) => b[0] === boardKind);
+    body.replaceChildren(el('div', { class: 'muted pad' }, '...'));
+    try {
+      const d = await api('GET', '/api/boards/' + boardKind, null, { quiet: true });
+      if (boardKind === 'memes') {
+        body.replaceChildren(el('h3', null, ic('trophy', 16), meta[1]), el('div', { class: 'muted small' }, meta[2] + '. react to a meme in the room to vote'),
+          d.rows.length ? d.rows.map((r, i) => el('div', { class: 'mwk' },
+            el('div', { class: 'row gap' }, el('b', null, '#' + (i + 1)), el('span', { class: 'grow muted small' }, 'by ' + r.displayName + ' in ' + r.convName), el('b', null, r.votes + ' votes')),
+            X.memeBody(null, null, r.meme),
+            S.convs.some((c) => c.id === r.convId) ? el('button', { class: 'btn small', onclick: () => { S.view = 'chats'; U.openConv(r.convId); } }, ic('chat', 14), 'open room') : null)) : el('div', { class: 'muted pad' }, 'no memes with votes yet, send one with /meme'));
+      } else {
+        body.replaceChildren(el('h3', null, ic('trophy', 16), meta[1]), el('div', { class: 'muted small' }, meta[2]),
+          d.rows.length ? d.rows.map((u, i) => nameRow(u, null, el('b', null, '#' + (i + 1) + '  ' + u.value + ' ' + u.label))) : el('div', { class: 'muted pad' }, 'nothing here yet'));
+      }
+    } catch (e) { body.replaceChildren(el('div', { class: 'form-err' }, e.message)); }
+  }
+  paintSeg();
+  box.replaceChildren(seg, body);
+  load();
+}
+
+async function profileEditModal() {
+  let d;
+  try { d = await api('GET', '/api/me/profile-extra'); } catch (e) { return toast(e.message, 'error'); }
+  const st = { accent: d.accent || '#c9503e', hasAccent: !!d.accent, frame: d.frame || 'none', game: d.game, gameTitle: '', friends: [...d.friends] };
+  const color = el('input', { type: 'color', value: st.accent, oninput: () => { st.accent = color.value; st.hasAccent = true; } });
+  const frames = el('div', { class: 'seg small' });
+  const paintFrames = () => frames.replaceChildren(...FRAMES.map(([k, l]) => el('button', { class: st.frame === k ? 'on' : '', onclick: () => { st.frame = k; paintFrames(); } }, l)));
+  paintFrames();
+  const gameLbl = el('div', { class: 'muted small' });
+  const paintGame = () => { gameLbl.textContent = st.game ? 'pinned: ' + (st.gameTitle || st.game.split('/').pop().replace(/\.html?$/i, '')) : 'nothing pinned'; };
+  paintGame();
+  const gq = el('input', { placeholder: 'search a game to pin' });
+  const gres = el('div', { class: 'ulist' });
+  let t;
+  gq.addEventListener('input', () => {
+    clearTimeout(t);
+    t = setTimeout(async () => {
+      if (!gq.value.trim()) return gres.replaceChildren();
+      try { const r = await api('GET', '/api/games?limit=6&q=' + encodeURIComponent(gq.value.trim()), null, { quiet: true }); gres.replaceChildren(...r.items.map((g) => el('div', { class: 'urow click', onclick: () => { st.game = g.id; st.gameTitle = g.title; paintGame(); gres.replaceChildren(); gq.value = ''; } }, el('div', { class: 'grow' }, g.title)))); } catch {}
+    }, 300);
+  });
+  const url = el('input', { placeholder: 'https:// song or profile link (youtube, spotify, soundcloud...)', value: d.link ? d.link.url : '' });
+  const label = el('input', { placeholder: 'label, like "my song rn"', maxLength: 40, value: d.link ? d.link.label : '' });
+  const dms = S.convs.filter((c) => c.type === 'dm').map((c) => C.other(c)).filter((o) => o && !o.isBot);
+  const fr = el('div', { class: 'chips-wrap' });
+  const paintFr = () => fr.replaceChildren(...dms.map((o) => el('button', { class: 'chip-b' + (st.friends.includes(o.username) ? ' on' : ''), onclick: () => { const i = st.friends.indexOf(o.username); if (i >= 0) st.friends.splice(i, 1); else if (st.friends.length < 3) st.friends.push(o.username); else toast('top 3 only', 'error'); paintFr(); } }, o.displayName)));
+  paintFr();
+  const save = el('button', { class: 'btn primary wide', onclick: async () => {
+    save.disabled = true;
+    try {
+      await api('PUT', '/api/me/profile-extra', { accent: st.hasAccent ? st.accent : '', frame: st.frame, game: st.game || '', linkUrl: url.value.trim(), linkLabel: label.value.trim(), friends: st.friends });
+      toast('saved', 'success'); m.close();
+    } catch (e) { toast(e.message, 'error'); save.disabled = false; }
+  } }, 'save');
+  const m = modal('profile glow-up', el('div', { class: 'col gap-s' },
+    d.beta ? null : el('div', { class: 'form-err' }, 'setting these is a beta perk. everyone can still see what beta people set.'),
+    el('h4', null, 'accent color'), el('div', { class: 'row gap' }, color, el('span', { class: 'muted small' }, 'tints your profile')),
+    el('h4', null, 'avatar frame'), frames,
+    el('h4', null, 'favorite game'), gameLbl, gq, gres,
+    el('h4', null, 'bio song or link'), url, label,
+    el('h4', null, 'top 3 friends'), dms.length ? fr : el('div', { class: 'muted small' }, 'start a dm with someone first'),
+    save));
+}
+
+function profileDecorate(body, p, m) {
+  const head = body.querySelector('.prof-head');
+  const x = p.extra;
+  if (head && p.streak) head.querySelector('.grow') && head.querySelector('.grow').append(el('div', { class: 'small', style: 'margin-top:4px' }, el('span', { class: 'tag gold' }, ic('flame', 12), p.streak + ' day word streak')));
+  if (!x || !head) return;
+  if (x.accent) { head.style.setProperty('--pacc', x.accent); head.classList.add('pacc'); }
+  const av = head.querySelector('.avwrap');
+  if (av && x.frame && x.frame !== 'none') av.classList.add('frame', 'frame-' + x.frame);
+  const blocks = [];
+  if (x.game) blocks.push(el('div', { class: 'urow click', onclick: () => { m.close(); window.__ext.openGameFromProfile(x.game.path, x.game.title); } }, ic('gamepad', 18), el('div', { class: 'grow' }, el('div', { class: 'muted small' }, 'favorite game'), el('div', { class: 'ctitle' }, x.game.title))));
+  if (x.link) blocks.push(el('a', { class: 'urow click', href: x.link.url, target: '_blank', rel: 'noopener noreferrer nofollow' }, ic('link', 18), el('div', { class: 'grow' }, el('div', { class: 'muted small' }, 'on repeat'), el('div', { class: 'ctitle' }, x.link.label))));
+  if (x.friends && x.friends.length) blocks.push(el('div', null, el('div', { class: 'muted small', style: 'margin:6px 0' }, (x.friends.length === 1 ? 'top friend' : 'top ' + x.friends.length + ' friends')), el('div', { class: 'topfr' }, x.friends.map((f, i) => el('div', { class: 'tf click', onclick: () => { m.close(); U.openProfile(f.username); } }, el('span', { class: 'tfn' }, i + 1), avatar(f.displayName, 38, '', f.avatar), el('span', { class: 'small' }, f.displayName))))));
+  if (blocks.length) head.insertAdjacentElement('afterend', el('div', { class: 'pextra' }, blocks));
+}
+
+function gameRoomModal(c) {
+  const body = el('div', { class: 'col gap-s' });
+  const m = modal('game room', body);
+  const set = async (path, title) => {
+    try { await api('PUT', `/api/conversations/${c.id}/game`, { path }); c.gamePath = path; c.gameTitle = title || null; toast(path ? 'game pinned' : 'unpinned', 'success'); U.renderHeader(); draw(); } catch (e) { toast(e.message, 'error'); }
+  };
+  const q = el('input', { placeholder: 'search a game to pin here' });
+  const res = el('div', { class: 'ulist' });
+  let t;
+  q.addEventListener('input', () => {
+    clearTimeout(t);
+    t = setTimeout(async () => {
+      if (!q.value.trim()) return res.replaceChildren();
+      try { const r = await api('GET', '/api/games?limit=8&q=' + encodeURIComponent(q.value.trim()), null, { quiet: true }); res.replaceChildren(...r.items.map((g) => el('div', { class: 'urow click', onclick: () => set(g.id, g.title) }, ic('gamepad', 16), el('div', { class: 'grow' }, g.title)))); } catch {}
+    }, 300);
+  });
+  function draw() {
+    body.replaceChildren(
+      c.gamePath ? el('div', { class: 'col gap-s' }, el('div', { class: 'muted small' }, 'pinned in this chat'), el('div', { class: 'ctitle' }, c.gameTitle || 'game'),
+        el('button', { class: 'btn primary wide', onclick: () => { m.close(); window.__ext.openGameFromProfile(c.gamePath, c.gameTitle || 'game', c.id); } }, ic('play', 16), 'drop in'),
+        el('button', { class: 'btn wide', onclick: () => set(null) }, 'unpin')) : el('div', { class: 'muted small' }, 'pin a game here so everyone in this chat can drop in and out. the chat stays open on top of the game.'),
+      q, res);
+  }
+  draw();
+}
+
+let dock = null;
+function dockOpen(playerNode, convId) {
+  dockClose();
+  let cid = convId && convOf(convId) ? convId : (S.convs[0] && S.convs[0].id);
+  if (!cid) return;
+  const box = el('div', { class: 'gdock' });
+  const list = el('div', { class: 'gdmsgs' });
+  const sel = el('select', { class: 'gdsel', onchange: () => { cid = sel.value; seen = 0; unread = 0; prime(); } }, S.convs.map((c) => el('option', { value: c.id }, convTitle(c))));
+  sel.value = cid;
+  const input = el('input', { placeholder: 'say something', maxLength: 2000 });
+  const badge = el('span', { class: 'gdbadge' });
+  const bubble = el('button', { class: 'gdbub', title: 'chat', onclick: () => toggle(true) }, ic('chat', 22), badge);
+  const panel = el('div', { class: 'gdpanel' },
+    el('div', { class: 'gdhead' }, sel, el('button', { class: 'icon-btn', title: 'hide chat', onclick: () => toggle(false) }, ic('x', 18))),
+    list,
+    el('div', { class: 'gdin' }, input, el('button', { class: 'icon-btn', onclick: () => send() }, ic('send', 18))));
+  box.append(bubble, panel);
+  playerNode.append(box);
+  let open = false, seen = 0, unread = 0;
+  const cur = () => convOf(cid);
+  async function prime() { const c = cur(); if (c && !c.loaded) { try { await C.loadMessages(c); } catch {} } paint(); }
+  function paint() {
+    const c = cur(); if (!c) return;
+    const msgs = (c.msgs || []).filter((m) => !m.deleted).slice(-30);
+    const last = msgs.length ? msgs[msgs.length - 1].id : 0;
+    if (!seen) seen = last;
+    if (open) { seen = last; unread = 0; if (c.unread) C.markRead(c); }
+    else unread = msgs.filter((m) => m.id > seen && m.senderId !== S.me.id).length;
+    badge.textContent = unread ? String(unread) : '';
+    badge.style.display = unread ? '' : 'none';
+    if (!open) return;
+    list.replaceChildren(...msgs.map((m) => {
+      const mine = m.senderId === S.me.id, p = m._p || {};
+      const who = mine ? 'you' : ((memberOf(c, m.senderId) || {}).displayName || 'someone');
+      return el('div', { class: 'gdm' + (mine ? ' mine' : '') }, el('b', null, who), el('span', null, p.t === 'text' ? p.text : previewText(p, false)));
+    }));
+    list.scrollTop = list.scrollHeight;
+  }
+  async function send() {
+    const c = cur(), text = input.value.trim();
+    if (!c || !text) return;
+    input.value = '';
+    if (!(await sendPayload(c, { t: 'text', text }))) input.value = text;
+    paint();
+  }
+  input.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') send(); });
+  input.addEventListener('keyup', (e) => e.stopPropagation());
+  function toggle(v) { open = v; box.classList.toggle('open', v); paint(); if (v) setTimeout(() => input.focus(), 50); }
+  dock = { box, timer: setInterval(paint, 1200) };
+  prime();
+}
+function dockClose() { if (dock) { clearInterval(dock.timer); dock.box.remove(); dock = null; } }
+
+Object.assign(window.__ext, { openGameFromProfile: (path, title, convId) => U.openGame(path, title, { convId }), dailyBuild, boardsBuild, profileEditModal, profileDecorate, gameRoomModal, dockOpen, dockClose });
 })();
 
 /* ===== Chatroom client: mod tools, admin panes (appeals, audit log, stats), appeal screen, and app start ===== */
