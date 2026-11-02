@@ -11,6 +11,7 @@ const webpush = require('web-push');
 const { q, pool, init } = require('./lib/db');
 const { limiter, rl } = require('./lib/limiter');
 const { Games } = require('./lib/games');
+const gamesLib = require('./lib/games');
 
 const safety = require('./lib/safety');
 const beta = require('./lib/beta');                          // beta-only extras: edits, scheduling, polls, games, stickers, folders                      // filter, verification, announcements, badges, built-in servers
@@ -668,6 +669,26 @@ app.get(/^\/g\/(.+)$/, rl('gameload', 60, 60_000), wrap(async (req, res) => {
     });
     res.send(html);
   } catch (e) { res.status(502).type('text/plain').send('could not load game: ' + e.message); }
+}));
+
+app.get(/^\/gt\/(.+)$/, rl('gamethumb', 400, 60_000), wrap(async (req, res) => {
+  const p = decodeURIComponent(req.params[0]);
+  if (!games.byId.has(p)) return res.status(404).end();
+  const t = await games.thumb(p);
+  if (!t) return res.set('Cache-Control', 'public, max-age=600').status(404).end();
+  res.set({ 'Content-Type': t.type, 'Cache-Control': 'public, max-age=604800', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox", 'Cross-Origin-Resource-Policy': 'cross-origin' });
+  res.send(t.buf);
+}));
+
+app.get(/^\/gx\/([a-z0-9_-]+)\/(.+)$/, rl('gameasset', 600, 60_000), wrap(async (req, res) => {
+  const src = gamesLib.assetSource(req.params[0], decodeURIComponent(req.params[1]));
+  if (!src) return res.status(404).type('text/plain').send('not found');
+  try {
+    const r = await gamesLib.tfetch(src.url, {}, 60_000);
+    if (!r.ok || !r.body) return res.status(r.status === 404 ? 404 : 502).type('text/plain').send('asset unavailable');
+    res.set({ 'Content-Type': src.type, 'Access-Control-Allow-Origin': '*', 'Cross-Origin-Resource-Policy': 'cross-origin', 'Cache-Control': 'public, max-age=604800, immutable' });
+    require('stream').Readable.fromWeb(r.body).on('error', () => res.destroy()).pipe(res);
+  } catch (e) { if (!res.headersSent) res.status(502).type('text/plain').send('asset failed'); else res.destroy(); }
 }));
 
 // ice servers for play together: free public stun by default; add TURN_URL / TURN_USER / TURN_PASS on railway only if you want to cover strict networks (that relay costs bandwidth)

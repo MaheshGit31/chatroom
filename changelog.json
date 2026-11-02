@@ -1,5 +1,14 @@
 [
   {
+    "id": "2026-11-02-a",
+    "date": "2026-11-02",
+    "title": "game photos and cat game fix",
+    "items": [
+      "games now show cover photos when we can find one, otherwise the letter tile stays",
+      "fixed Do NOT Take This Cat Home getting stuck on the loading spinner, it now loads through our own server and starts in a few seconds"
+    ]
+  },
+  {
     "id": "2026-11-01-a",
     "date": "2026-11-01",
     "title": "daily word, boards, game rooms and glow-ups",
