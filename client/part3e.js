@@ -213,6 +213,9 @@ async function adminOwner(box) {
     status,
     el('h4', null, 'running events'), evBox,
     el('h4', null, 'console'), el('div', { class: 'concard', onclick: () => input.focus() }, out, el('div', { class: 'conrow' }, el('span', null, '>'), input)));
+  const botsBox = el('div');
+  box.append(botsBox);
+  window.__ext.ownerBots(botsBox);
   print(['owner console. type help for commands.', '']);
   refresh();
 }

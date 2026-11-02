@@ -133,6 +133,7 @@ const mentionsMe = (text) => new RegExp('(^|[^a-z0-9_])@' + S.me.username + '(?!
 // ---------- slash commands ----------
 const CMDS = [
   { n: 'help', d: 'every command you can use', who: 'all' },
+  { n: 'bot', a: 'name your message', d: 'ask a bot (bots only see what you type here)', who: 'all' },
   { n: 'dnd', a: '30m | 2h | off', d: 'do not disturb', who: 'all' },
   { n: 'search', a: 'words', d: 'search this chat', who: 'all' },
   { n: 'remind', a: '10m note', d: 'remind me later (beta)', who: 'all' },
@@ -199,6 +200,7 @@ async function slash(c, raw) {
       }
       case 'search': searchModal(c, arg); break;
       case 'meme': X0.memePick(c); break;
+      case 'bot': X0.runBotCommand(c, arg); break;
       case 'remind': {
         if (!betaGate('reminders')) break;
         const w = String(arg).match(/^(\S+)\s*([\s\S]*)$/);

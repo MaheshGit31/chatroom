@@ -574,7 +574,7 @@ async function groupModal(c) {
           await loadConvs(); toast(`${p.displayName} is in`, 'success'); draw();
         } catch (e) { toast(e.message, 'error'); }
       }, new Set(c.members.map((x) => x.id)));
-      addBox.append(el('h4', null, 'add someone'), s.node);
+      addBox.append(el('h4', null, 'add someone'), s.node, el('button', { class: 'btn small', style: 'margin-top:8px', onclick: () => X.groupBotPicker(c, draw) }, ic('sparkle', 14), 'add a bot'));
     }
     body.replaceChildren(
       c.isPublic ? el('div', { class: 'row gap-s', style: 'margin-bottom:8px' }, el('span', { class: 'tag' }, 'public'), el('span', { class: 'tag' }, c.topic || 'other')) : null,
@@ -667,7 +667,10 @@ function settingsModal() {
       el('button', { class: 'btn grow', onclick: () => { m.close(); X.newsModal(); } }, ic('newspaper', 16), "what's new", X.newsUnseen() ? el('span', { class: 'newdot inline' }) : null)),
     el('h4', null, ic('palette', 14), 'look'),
     el('div', { class: 'seg small' }, themeBtn('auto', 'auto'), themeBtn('light', 'day'), themeBtn('dark', 'night')),
-    el('button', { class: 'btn wide', style: 'margin-top:10px', onclick: () => { m.close(); X.profileEditModal(); } }, ic('sparkle', 16), 'profile glow-up', el('span', { class: 'tag gold' }, 'beta')),
+    el('div', { class: 'row gap', style: 'margin-top:10px' },
+      el('button', { class: 'btn grow', onclick: () => { m.close(); X.myBots(); } }, ic('sparkle', 16), 'my bots'),
+      el('button', { class: 'btn grow', onclick: () => { m.close(); X.botDirectory(); } }, ic('compass', 16), 'browse bots')),
+    el('button', { class: 'btn wide', style: 'margin-top:8px', onclick: () => { m.close(); X.profileEditModal(); } }, ic('sparkle', 16), 'profile glow-up', el('span', { class: 'tag gold' }, 'beta')),
     el('button', { class: 'btn wide', style: 'margin-top:8px', onclick: () => { m.close(); X.themeModal(); } }, ic('palette', 16), 'custom theme', el('span', { class: 'tag gold' }, 'beta')),
     el('div', { class: 'row gap', style: 'margin-top:8px' },
       el('button', { class: 'btn grow', onclick: () => { m.close(); X.dndModal(); } }, ic('moon', 16), X.dndActive() ? 'dnd is on' : 'do not disturb'),

@@ -343,6 +343,7 @@ function previewText(p, mine) {
   if (p.t === 'g2') return pre + ({ rps: 'started rock paper scissors', c4: 'started connect 4', wd: 'started a word duel', tr: 'started a trivia duel' }[p.kind] || 'started tic-tac-toe');
   if (p.t === 'coop') return pre + 'invited to play together: ' + p.title;
   if (p.t === 'meme') return pre + 'sent a meme';
+  if (p.t === 'botreply') return pre + (p.bot || 'bot') + ': ' + p.text;
   if (p.t === 'image') return pre + 'sent a photo' + (p.fwd ? ' (forwarded)' : '');
   if (p.t === 'once') return pre + 'sent a view once message';
   if (p.t === 'deleted') return p.once ? 'view once, opened' : 'message deleted';
@@ -521,6 +522,7 @@ async function onWS(m) {
     case 'appeals_changed': if (window.__ui.appealsChanged) window.__ui.appealsChanged(); break;
     case 'extra': window.__ext && window.__ext.onExtra(m); break;
     case 'announce': window.__ext && window.__ext.onAnnounce(m.announcement); break;
+    case 'bot_status': toast('your bot ' + m.name + (m.status === 'approved' ? ' is live' : ' was ' + m.status + (m.reason ? ': ' + m.reason : '')), m.status === 'approved' ? 'success' : 'info'); break;
     case 'owner_note': toast(String(m.text || '').slice(0, 200), 'info'); break;
     case 'announce_end': window.__ext && window.__ext.endAnnounce(m.id); break;
     case 'verify_changed': window.__ui.verifyChanged && window.__ui.verifyChanged(); break;

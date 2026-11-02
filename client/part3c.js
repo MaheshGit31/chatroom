@@ -319,6 +319,7 @@ function extraBody(c, m, p) {                                // called for every
   if (p.t === 'g2') return gameBody(c, m, p);
   if (p.t === 'coop') return window.__ext.coopBody(c, m, p);
   if (p.t === 'meme') return window.__ext.memeBody(c, m, p);
+  if (p.t === 'botreply') return window.__ext.botBody(c, m, p);
   return null;
 }
 
