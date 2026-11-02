@@ -18,6 +18,7 @@ const gngBot = require('./lib/gng');                          // gng, the gen al
 const owner = require('./lib/owner');                        // owner-only: update video, console, lockdown, timed events
 const mod = require('./lib/mod');                            // group mods, slow mode, commands, audit log, appeals, stats, dnd, view-once, reminders, image blobs
 const audit = require('./lib/audit');                        // audit log + daily counters
+const extrasLib = require('./lib/extras');
 const features = require('./lib/features');                  // reactions, pins, reports, public groups, referrals, gifs, themes
 const PORT = process.env.PORT || 3000;
 const ADMIN_USERNAME = (process.env.ADMIN_USERNAME || 'bart').toLowerCase();   // this username becomes the owner/admin
@@ -42,7 +43,7 @@ const scrypt = (pw, salt) => new Promise((ok, no) => crypto.scrypt(pw, salt, 32,
 let SERVER_SECRET = '';                                      // loaded from db, used for fake salts
 let pushReady = false;
 let ownerApi = { locked: () => false, welcome: async () => {}, load: async () => {} };   // filled below
-let gngApi, modApi = { setBanned: async () => ({ error: 'starting', status: 503 }) };   // filled when the mod module mounts
+let extrasApi, gngApi, modApi = { setBanned: async () => ({ error: 'starting', status: 503 }) };   // filled when the mod module mounts
 
 // ---------- cors + headers (token auth, so no cookies, so * is safe) ----------
 app.use((req, res, next) => {
@@ -142,7 +143,7 @@ async function makeSession(userId, ua) {
 const statusOf = (u) => (u.status_text || u.status_icon ? { text: u.status_text || '', icon: u.status_icon || '' } : null);
 const publicUser = (u) => ({ id: u.id, username: u.username, displayName: u.display_name, shareActivity: u.share_activity, isAdmin: !!u.is_admin, isOwner: u.username === ADMIN_USERNAME, mode: u.status_mode || 'online', status: statusOf(u), statusExpires: u.status_expires || null, beta: features.betaOn(u), betaUntil: u.beta_until || null, theme: u.theme || null, avatar: u.avatar || null, bio: u.bio || '', banner: u.banner || null, folders: Array.isArray(u.folders) ? u.folders : [], dndUntil: u.dnd_until || null, quiet: u.quiet || null, wallpapers: u.wallpapers || {}, mutedUntil: u.muted_until && new Date(u.muted_until) > new Date() ? u.muted_until : null, verified: safety.verifiedOn(u), msgCount: u.msg_count || 0, freeMessages: safety.FREE_MSGS });
 
-const SECS = "(case when p.ended_at is null then floor(extract(epoch from (now()-p.started_at)))::int else p.seconds end)"; // running sessions count live
+const SECS = "least(10800, case when p.ended_at is null then floor(extract(epoch from (now()-p.started_at)))::int else p.seconds end)"; // running sessions count live
 const USERNAME = /^[a-z0-9_]{3,20}$/;
 app.post('/api/auth/salt', rl('salt', 30, 60_000), wrap(async (req, res) => {
   const username = String(req.body.username || '').toLowerCase();
@@ -337,7 +338,7 @@ app.get('/api/users/:username', auth, byUser('uprofile', 60, 60_000), wrap(async
     stats = { totalSeconds: t.rows[0].total, gamesPlayed: t.rows[0].games, top: top.rows.map((x) => ({ path: x.game_path, title: x.game_title, seconds: x.seconds })) };
   }
   const blocked = await q('select 1 from blocks where blocker=$1 and blocked=$2', [req.user.id, u.id]);
-  res.json({ id: u.id, username: u.username, displayName: u.display_name, avatar: u.avatar || null, bio: u.bio || '', banner: u.banner || null, publicKey: u.public_key, createdAt: u.created_at, online: sockets.has(u.id) && u.status_mode !== 'invisible', mode: u.status_mode, status: statusOf(u), isAdmin: u.is_admin, verified: safety.verifiedOn(u), badges: await safety.badgesOf(q, u.id), isOwner: u.username === ADMIN_USERNAME, blocked: !!blocked.rows[0], stats, activity: u.share_activity && activityNow.get(u.id) ? { title: activityNow.get(u.id).title, path: activityNow.get(u.id).path } : null });
+  res.json({ id: u.id, username: u.username, displayName: u.display_name, avatar: u.avatar || null, bio: u.bio || '', banner: u.banner || null, publicKey: u.public_key, createdAt: u.created_at, online: sockets.has(u.id) && u.status_mode !== 'invisible', mode: u.status_mode, status: statusOf(u), isAdmin: u.is_admin, verified: safety.verifiedOn(u), badges: await safety.badgesOf(q, u.id), isOwner: u.username === ADMIN_USERNAME, blocked: !!blocked.rows[0], stats, activity: u.share_activity && activityNow.get(u.id) ? { title: activityNow.get(u.id).title, path: activityNow.get(u.id).path } : null, extra: await extrasApi.profileExtra(u.id), streak: await extrasApi.streakOf(u.id) });
 }));
 
 app.post('/api/blocks/:username', auth, byUser('block', 20, 3_600_000), wrap(async (req, res) => {
@@ -358,7 +359,7 @@ async function loadConversations(userId, onlyId) {
   const me = (await q('select * from users where id=$1', [userId])).rows[0];
   const hasBeta = features.betaOn(me);                       // the Beta lounge only shows while beta is on
   const convs = await q(
-    `select c.id,c.type,c.name,c.key_version,c.created_at,c.is_public,c.system_kind,c.ttl_seconds,c.slow_seconds,c.description,c.topic,m.role,m.muted,m.muted_until,m.last_read_at,m.joined_at,
+    `select c.id,c.type,c.name,c.key_version,c.created_at,c.is_public,c.system_kind,c.ttl_seconds,c.slow_seconds,c.description,c.topic,c.game_path,c.game_title,m.role,m.muted,m.muted_until,m.last_read_at,m.joined_at,
        (select count(*) from members where conv_id=c.id)::int member_count,
        (select count(*) from messages x where x.conv_id=c.id and x.created_at>m.last_read_at and x.created_at>=m.joined_at and x.sender_id is distinct from $1 and not x.deleted and x.created_at>now()-make_interval(secs=>coalesce(c.ttl_seconds,${TTL_HOURS * 3600})))::int unread,
        (select row_to_json(l) from (select id,sender_id "senderId",ciphertext,iv,key_version "keyVersion",created_at "createdAt",deleted from messages where conv_id=c.id and created_at>=m.joined_at and created_at>now()-make_interval(secs=>coalesce(c.ttl_seconds,${TTL_HOURS * 3600})) order by id desc limit 1) l) last_message,
@@ -379,7 +380,7 @@ async function loadConversations(userId, onlyId) {
   for (const u of ku.rows) keyUsers[u.id] = { username: u.username, publicKey: u.public_key };
   const conversations = convs.rows.map((c) => ({
     id: c.id, type: c.type, name: c.name, memberCount: c.member_count, isPublic: c.is_public, ttlSeconds: c.ttl_seconds || null, slowSeconds: c.slow_seconds || null, mutedUntil: c.muted_until && new Date(c.muted_until) > new Date() ? c.muted_until : null, systemKind: c.system_kind || null, description: c.description || '', topic: c.topic || '', keyVersion: c.key_version, createdAt: c.created_at, role: c.role, muted: c.muted,
-    lastReadAt: c.last_read_at, joinedAt: c.joined_at, unread: c.unread, lastMessage: c.last_message,
+    gamePath: c.game_path || null, gameTitle: c.game_title || null, lastReadAt: c.last_read_at, joinedAt: c.joined_at, unread: c.unread, lastMessage: c.last_message,
     members: mem.rows.filter((m) => m.conv_id === c.id).map((m) => ({ id: m.id, username: m.username, displayName: m.display_name, avatar: m.avatar || null, publicKey: m.public_key, role: m.role, lastReadAt: m.last_read_at, online: !!m.is_bot || (sockets.has(m.id) && m.status_mode !== 'invisible'), isBot: !!m.is_bot, mode: m.status_mode, verified: safety.verifiedOn(m), status: statusOf(m), isAdmin: m.is_admin })),
     keys: keys.rows.filter((k) => k.conv_id === c.id).map((k) => ({ version: k.version, wrappedKey: k.wrapped_key, iv: k.iv, wrappedBy: k.wrapped_by })),
   }));
@@ -751,6 +752,8 @@ gngApi = gngBot.init({ q, sendTo, sendToConv, safety });
 gngApi.mount(app, { auth, byUser, bad, wrap, requireMember, isUuid });
 ownerApi = owner.init({ q, sendTo, sockets, ownerName: ADMIN_USERNAME, getMod: () => modApi, getGng: () => gngApi });
 ownerApi.mount(app, { auth, ownerOnly, byUser, bad, wrap });
+extrasApi = extrasLib.init({ q, secret: () => SERVER_SECRET, games });
+extrasApi.mount(app, { auth, byUser, bad, wrap, requireMember, sendToConv, betaOn: features.betaOn });
 modApi = mod.mount(app, { q, auth, adminOnly, byUser, bad, wrap, sendTo, sendToConv, notify, isUuid, requireMember, sockets, secret: () => SERVER_SECRET, adminName: ADMIN_USERNAME, ensureFor, rl });
 
 // ---------- static client ----------

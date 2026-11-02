@@ -1,5 +1,19 @@
 [
   {
+    "id": "2026-11-01-a",
+    "date": "2026-11-01",
+    "title": "daily word, boards, game rooms and glow-ups",
+    "items": [
+      "word of the day: one word for everyone, 6 tries, streak counter and a daily top 10 (games > daily)",
+      "boards: game wins, word streaks, reactions and meme of the week. play time now stops counting when you go idle or hide the tab, and one session counts at most 3 hours",
+      "game rooms: pin a game to any chat so friends can drop in. chat stays open on a floating bubble inside every game",
+      "memes: two new templates, two buttons and change my mind. react to a meme in a public room to vote for meme of the week",
+      "profile glow-up (beta): accent color, avatar frame, favorite game, bio song or link and top 3 friends. everyone can see them",
+      "new game: Do NOT Take This Cat Home, with credits to Pixeliminal and the port by genizy (star icon in the player)",
+      "gng no longer errors out when the ai is slow, he retries and shrugs it off instead"
+    ]
+  },
+  {
     "id": "2026-10-29-b",
     "date": "2026-10-29",
     "title": "memes and play together anywhere",
