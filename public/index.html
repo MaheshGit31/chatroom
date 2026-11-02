@@ -203,6 +203,7 @@ input:focus-visible,textarea:focus-visible{outline:none}
 .gcard:nth-child(3n+1):hover{transform:translateY(-5px) rotate(-1deg)}.gcard:nth-child(3n+2):hover{transform:translateY(-5px) rotate(.8deg)}.gcard:nth-child(3n):hover{transform:translateY(-5px) rotate(-.4deg)}
 .gcard:hover{box-shadow:var(--shadow)}
 .gtile{height:100px;display:flex;align-items:center;justify-content:center;position:relative;color:rgba(255,248,238,.92);font-family:var(--display);font-size:42px;font-weight:600;font-style:italic;text-transform:lowercase;overflow:hidden}
+.gimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .3s;z-index:1;background:inherit}.gimg.ok{opacity:1}.gimg.ico{object-fit:contain;padding:14px;box-sizing:border-box}
 .gtile::after{content:"";position:absolute;width:90px;height:90px;border-radius:50%;right:-26px;bottom:-40px;background:rgba(255,255,255,.1)}
 .live-tag{position:absolute;top:8px;right:8px;font:700 11px var(--body);background:var(--good);color:#12200c;padding:2px 9px;border-radius:8px;font-style:normal;text-transform:none;z-index:1;animation:pulse 2s infinite}
 .ginfo{padding:10px 12px 12px}.gname{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -2018,6 +2019,12 @@ function buildGames(m) {
     loadActivity(content); actTimer = setInterval(() => loadActivity(content), 15000);
   }
 }
+function gameImg(id) {
+  const img = el('img', { class: 'gimg', loading: 'lazy', alt: '', decoding: 'async', referrerPolicy: 'no-referrer', src: API + '/gt/' + id.split('/').map(encodeURIComponent).join('/') });
+  img.addEventListener('load', () => { if (img.naturalWidth && img.naturalWidth < 200) img.classList.add('ico'); img.classList.add('ok'); });
+  img.addEventListener('error', () => img.remove());
+  return img;
+}
 function renderGameGrid() {
   const { chips, grid, more } = gridRef; if (!grid || !grid.isConnected) return;
   const catName = (c) => (c.length === 1 ? c.toUpperCase() : c);
@@ -2026,7 +2033,7 @@ function renderGameGrid() {
   if (!G.items.length) { grid.replaceChildren(el('div', { class: 'empty-s wide' }, G.loading ? mugIcon() : G.indexed ? 'nothing matches' : 'list is still loading', !G.loading && !G.indexed ? el('button', { class: 'btn small', onclick: () => loadGames(true) }, 'retry') : null)); more.replaceChildren(); return; }
   grid.classList.toggle('stagger', G.items.length <= 60);
   grid.replaceChildren(...G.items.map((g, i) => el('div', { class: 'gcard', style: `--i:${Math.min(i, 14)}`, onclick: () => openGame(g.id, g.title) },
-    el('div', { class: 'gtile', style: `background:${tone(g.title)}` }, el('span', null, g.title.slice(0, 2)), counts[g.id] ? el('span', { class: 'live-tag' }, counts[g.id] + ' playing') : null),
+    el('div', { class: 'gtile', style: `background:${tone(g.title)}` }, el('span', null, g.title.slice(0, 2)), gameImg(g.id), counts[g.id] ? el('span', { class: 'live-tag' }, counts[g.id] + ' playing') : null),
     el('div', { class: 'ginfo' }, el('div', { class: 'gname', title: g.title }, g.title), el('div', { class: 'muted small' }, catName(g.cat).toLowerCase())))));
   more.replaceChildren(...(G.items.length < G.total ? [el('button', { class: 'btn', onclick: () => loadGames(false) }, `more (${G.total - G.items.length})`)] : []));
 }
