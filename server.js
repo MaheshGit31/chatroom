@@ -60,7 +60,7 @@ app.use((req, res, next) => {
 });
 const smallJson = express.json({ limit: '64kb' });
 app.use((req, res, next) => (req.path === '/api/verify' ? next() : smallJson(req, res, next)));   // only the id photo upload may be bigger                    // ciphertext is small, big bodies are rejected
-app.use('/api', rl('api-ip', 300, 60_000));                  // global per-ip cap
+app.use('/api', rl('api-ip', 1500, 60_000));                  // global per-ip cap
 
 // ---------- realtime hub ----------
 const sockets = new Map();                                   // userId -> Set<ws>
@@ -153,7 +153,7 @@ app.post('/api/auth/salt', rl('salt', 30, 60_000), wrap(async (req, res) => {
   res.json({ kdfSalt: salt });
 }));
 
-app.post('/api/auth/register', rl('register', 5, 3_600_000), wrap(async (req, res) => {
+app.post('/api/auth/register', rl('register', 30, 3_600_000), wrap(async (req, res) => {
   const b = req.body;
   if (ownerApi.locked('signups') && String(b.username || '').toLowerCase() !== ADMIN_USERNAME) return bad(res, 'new accounts are paused for a bit, try again later', 503);
   const username = String(b.username || '').toLowerCase();
@@ -800,7 +800,7 @@ const clientIp = (req) => { const x = (req.headers['x-forwarded-for'] || '').spl
 server.on('upgrade', (req, socket, head) => {
   if (!req.url.startsWith('/ws')) return socket.destroy();
   const ip = clientIp(req);
-  if ((ipConns.get(ip) || 0) >= 20) { socket.write('HTTP/1.1 429 Too Many Requests\r\n\r\n'); return socket.destroy(); } // connection cap per ip
+  if ((ipConns.get(ip) || 0) >= 150) { socket.write('HTTP/1.1 429 Too Many Requests\r\n\r\n'); return socket.destroy(); } // connection cap per ip
   wss.handleUpgrade(req, socket, head, (ws) => { ws.ip = ip; wss.emit('connection', ws, req); });
 });
 
