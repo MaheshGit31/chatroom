@@ -844,6 +844,12 @@ function buildGames(m) {
     loadActivity(content); actTimer = setInterval(() => loadActivity(content), 15000);
   }
 }
+function gameImg(id) {
+  const img = el('img', { class: 'gimg', loading: 'lazy', alt: '', decoding: 'async', referrerPolicy: 'no-referrer', src: API + '/gt/' + id.split('/').map(encodeURIComponent).join('/') });
+  img.addEventListener('load', () => { if (img.naturalWidth && img.naturalWidth < 200) img.classList.add('ico'); img.classList.add('ok'); });
+  img.addEventListener('error', () => img.remove());
+  return img;
+}
 function renderGameGrid() {
   const { chips, grid, more } = gridRef; if (!grid || !grid.isConnected) return;
   const catName = (c) => (c.length === 1 ? c.toUpperCase() : c);
@@ -852,7 +858,7 @@ function renderGameGrid() {
   if (!G.items.length) { grid.replaceChildren(el('div', { class: 'empty-s wide' }, G.loading ? mugIcon() : G.indexed ? 'nothing matches' : 'list is still loading', !G.loading && !G.indexed ? el('button', { class: 'btn small', onclick: () => loadGames(true) }, 'retry') : null)); more.replaceChildren(); return; }
   grid.classList.toggle('stagger', G.items.length <= 60);
   grid.replaceChildren(...G.items.map((g, i) => el('div', { class: 'gcard', style: `--i:${Math.min(i, 14)}`, onclick: () => openGame(g.id, g.title) },
-    el('div', { class: 'gtile', style: `background:${tone(g.title)}` }, el('span', null, g.title.slice(0, 2)), counts[g.id] ? el('span', { class: 'live-tag' }, counts[g.id] + ' playing') : null),
+    el('div', { class: 'gtile', style: `background:${tone(g.title)}` }, el('span', null, g.title.slice(0, 2)), gameImg(g.id), counts[g.id] ? el('span', { class: 'live-tag' }, counts[g.id] + ' playing') : null),
     el('div', { class: 'ginfo' }, el('div', { class: 'gname', title: g.title }, g.title), el('div', { class: 'muted small' }, catName(g.cat).toLowerCase())))));
   more.replaceChildren(...(G.items.length < G.total ? [el('button', { class: 'btn', onclick: () => loadGames(false) }, `more (${G.total - G.items.length})`)] : []));
 }
