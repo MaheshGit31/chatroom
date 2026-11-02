@@ -20,6 +20,7 @@ const owner = require('./lib/owner');                        // owner-only: upda
 const mod = require('./lib/mod');                            // group mods, slow mode, commands, audit log, appeals, stats, dnd, view-once, reminders, image blobs
 const audit = require('./lib/audit');                        // audit log + daily counters
 const extrasLib = require('./lib/extras');
+const botsLib = require('./lib/bots');
 const features = require('./lib/features');                  // reactions, pins, reports, public groups, referrals, gifs, themes
 const PORT = process.env.PORT || 3000;
 const ADMIN_USERNAME = (process.env.ADMIN_USERNAME || 'bart').toLowerCase();   // this username becomes the owner/admin
@@ -44,7 +45,7 @@ const scrypt = (pw, salt) => new Promise((ok, no) => crypto.scrypt(pw, salt, 32,
 let SERVER_SECRET = '';                                      // loaded from db, used for fake salts
 let pushReady = false;
 let ownerApi = { locked: () => false, welcome: async () => {}, load: async () => {} };   // filled below
-let extrasApi, gngApi, modApi = { setBanned: async () => ({ error: 'starting', status: 503 }) };   // filled when the mod module mounts
+let botsApi = { dmAllowed: async () => false, groupAllowed: async () => false, onMessage: async () => {} }, extrasApi, gngApi, modApi = { setBanned: async () => ({ error: 'starting', status: 503 }) };   // filled when the mod module mounts
 
 // ---------- cors + headers (token auth, so no cookies, so * is safe) ----------
 app.use((req, res, next) => {
@@ -393,7 +394,7 @@ app.get('/api/conversations', auth, wrap(async (req, res) => res.json(await load
 app.post('/api/conversations/dm', auth, byUser('conv-create', 15, 3_600_000), wrap(async (req, res) => {
   const t = await q('select id,is_bot from users where username=$1', [String(req.body.username || '').toLowerCase()]);
   if (!t.rows[0]) return bad(res, 'user not found', 404);
-  if (t.rows[0].is_bot) return bad(res, 'gng lives in public rooms, ping him in Everyone with @gng');
+  if (t.rows[0].is_bot && !(await botsApi.dmAllowed(t.rows[0].id))) return bad(res, 'that bot does not take dms, find it in a public room');
   const other = t.rows[0].id;
   if (other === req.user.id) return bad(res, 'cannot dm yourself');
   if (await isBlockedEitherWay(req.user.id, other)) return bad(res, 'blocked', 403);
@@ -433,6 +434,7 @@ app.post('/api/conversations/group', auth, byUser('conv-create', 15, 3_600_000),
   }
   const found = await q('select id from users where id=any($1)', [[...ids]]);
   if (found.rows.length !== ids.size) return bad(res, 'unknown user in list');
+  for (const bid of (await q('select id from users where id=any($1) and is_bot', [[...ids]])).rows) if (!(await botsApi.groupAllowed(bid.id))) return bad(res, 'a bot in that list is not allowed in groups', 403);
   for (const id of ids) if (await isBlockedEitherWay(req.user.id, id)) return bad(res, 'one of those users cannot be added', 403);
   const client = await pool.connect();
   let convId;
@@ -488,7 +490,9 @@ app.post('/api/conversations/:id/members', auth, byUser('member-add', 30, 3_600_
   if (!isUuid(userId) || !isB64(wrappedKey, 400) || !isB64(iv, 40)) return bad(res, 'bad request');
   const cnt = await q('select count(*)::int c from members where conv_id=$1', [req.params.id]);
   if (cnt.rows[0].c >= 50) return bad(res, 'group is full');
-  if (!(await q('select 1 from users where id=$1', [userId])).rows[0]) return bad(res, 'user not found', 404);
+  const addee = (await q('select is_bot from users where id=$1', [userId])).rows[0];
+  if (!addee) return bad(res, 'user not found', 404);
+  if (addee.is_bot && !(await botsApi.groupAllowed(userId))) return bad(res, 'that bot is not allowed in groups', 403);
   if (await isBlockedEitherWay(req.user.id, userId)) return bad(res, 'cannot add that user', 403);
   const ins = await q('insert into members(conv_id,user_id) values($1,$2) on conflict do nothing returning user_id', [req.params.id, userId]);
   if (!ins.rows[0]) return bad(res, 'already a member', 409);
@@ -604,6 +608,7 @@ app.post('/api/conversations/:id/messages', auth, wrap(async (req, res, next) =>
   mod.afterSend({ q, sendTo, notify, pushTo, limiter, sockets, isBlockedEitherWay }, { user: req.user, conv: m, convId: req.params.id, message, mentions: req.body.mentions }).catch(() => {});   // @mentions
   q('update users set msg_count=msg_count+1 where id=$1', [uid]).then(() => safety.badgeCheck(q, uid)).catch(() => {});
   const mems = await q('select user_id,muted from members where conv_id=$1', [req.params.id]);
+  botsApi.onMessage({ conv: { id: req.params.id, type: m.type, is_public: m.is_public, system_kind: m.system_kind, key_version: m.key_version, name: m.name }, sender: req.user, message, payload: pubPayload }).catch(() => {});
   if (pubPayload && gngApi) gngApi.onMessage({ convId: req.params.id, sender: req.user, message, payload: pubPayload, mentions: Array.isArray(req.body.mentions) ? req.body.mentions : [] }).catch(() => {});   // gng reads public rooms
   for (const mm of mems.rows) {
     sendTo(mm.user_id, { t: 'msg', convId: req.params.id, message, cid: req.body.cid || null, muted: mm.muted });
@@ -773,6 +778,8 @@ gngApi = gngBot.init({ q, sendTo, sendToConv, safety });
 gngApi.mount(app, { auth, byUser, bad, wrap, requireMember, isUuid });
 ownerApi = owner.init({ q, sendTo, sockets, ownerName: ADMIN_USERNAME, getMod: () => modApi, getGng: () => gngApi });
 ownerApi.mount(app, { auth, ownerOnly, byUser, bad, wrap });
+botsApi = botsLib.init({ q, sendTo, secret: () => SERVER_SECRET, ownerName: ADMIN_USERNAME });
+botsApi.mount(app, { auth, byUser, bad, wrap, isUuid, ownerOnly, requireMember, sendToConv });
 extrasApi = extrasLib.init({ q, secret: () => SERVER_SECRET, games });
 extrasApi.mount(app, { auth, byUser, bad, wrap, requireMember, sendToConv, betaOn: features.betaOn });
 modApi = mod.mount(app, { q, auth, adminOnly, byUser, bad, wrap, sendTo, sendToConv, notify, isUuid, requireMember, sockets, secret: () => SERVER_SECRET, adminName: ADMIN_USERNAME, ensureFor, rl });

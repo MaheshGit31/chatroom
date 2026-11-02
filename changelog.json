@@ -1,5 +1,17 @@
 [
   {
+    "id": "2026-11-02-b",
+    "date": "2026-11-02",
+    "title": "make your own bots",
+    "items": [
+      "bots: build one with blocks, javascript or ai (powered by the hack club ai, with your own personality and context). find it in settings > my bots",
+      "bots run in a locked sandbox and every new bot is checked by the owner before it goes live",
+      "use any bot anywhere with /bot name your message. it only sees what you type after the name",
+      "bots can also live in public groups, take dms, or be added to private groups by an admin (with a warning, since they can read that chat)",
+      "browse all approved bots in settings > browse bots"
+    ]
+  },
+  {
     "id": "2026-11-02-a",
     "date": "2026-11-02",
     "title": "game photos and cat game fix",
