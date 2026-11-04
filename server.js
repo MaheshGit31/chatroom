@@ -774,7 +774,7 @@ app.get('/api/activity/mine', auth, wrap(async (req, res) => {
 
 const ensureFor = (u) => safety.ensureSystem(q, u);
 features.mount(app, { q, pool, auth, byUser, bad, wrap, sendTo, sendToConv, notify, isUuid, loadConversations, adminOnly, ensureFor, botsOnJoin: (id, u) => botsApi.onJoin(id, u).catch(() => {}) });
-safety.mount(app, { q, auth, adminOnly, byUser, bad, wrap, sendTo, notify, sockets, isUuid, ensureFor, onVerified: (u) => { features.creditReferral({ q, sendTo, notify, ensureFor }, u); ownerApi.welcome(u); } });   // a referral pays out when the friend gets verified
+safety.mount(app, { q, auth, adminOnly, byUser, bad, wrap, sendTo, notify, sockets, isUuid, ensureFor, onVerified: async (u) => { await features.creditReferral({ q, sendTo, notify, ensureFor }, u); await ownerApi.welcome(u); } });   // a referral pays out when the friend gets verified
 beta.mount(app, { q, pool, auth, adminOnly, byUser, bad, wrap, sendTo, sendToConv, notify, isUuid, loadConversations, requireMember, isBlockedEitherWay, ensureFor });
 gngApi = gngBot.init({ q, sendTo, sendToConv, safety });
 gngApi.mount(app, { auth, byUser, bad, wrap, requireMember, isUuid });
