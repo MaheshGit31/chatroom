@@ -45,7 +45,7 @@ const scrypt = (pw, salt) => new Promise((ok, no) => crypto.scrypt(pw, salt, 32,
 let SERVER_SECRET = '';                                      // loaded from db, used for fake salts
 let pushReady = false;
 let ownerApi = { locked: () => false, welcome: async () => {}, load: async () => {} };   // filled below
-let botsApi = { dmAllowed: async () => false, groupAllowed: async () => false, onMessage: async () => {} }, extrasApi, gngApi, modApi = { setBanned: async () => ({ error: 'starting', status: 503 }) };   // filled when the mod module mounts
+let botsApi = { dmAllowed: async () => false, groupAllowed: async () => false, onMessage: async () => {}, onJoin: async () => {} }, extrasApi, gngApi, modApi = { setBanned: async () => ({ error: 'starting', status: 503 }) };   // filled when the mod module mounts
 
 // ---------- cors + headers (token auth, so no cookies, so * is safe) ----------
 app.use((req, res, next) => {
@@ -500,6 +500,7 @@ app.post('/api/conversations/:id/members', auth, byUser('member-add', 30, 3_600_
   sendTo(userId, { t: 'conv_added', ...(await loadConversations(userId, req.params.id)) });
   notify(userId, 'group_added', { convId: req.params.id, name: m.name, by: req.user.username }).catch(() => {});
   await sendToConv(req.params.id, { t: 'conv_update', convId: req.params.id, refresh: true }, userId);
+  q('select id,username,display_name,is_bot from users where id=$1', [userId]).then((r) => botsApi.onJoin(req.params.id, r.rows[0])).catch(() => {});
   res.json({ ok: true });
 }));
 
@@ -511,7 +512,7 @@ app.delete('/api/conversations/:id/members/:userId', auth, byUser('member-del', 
   const target = req.params.userId;
   if (!isUuid(target)) return bad(res, 'bad user');
   if (target !== req.user.id && !mod.isStaff(req.user, m.role)) return bad(res, 'mods only', 403);
-  const cur = await q('select user_id,role,joined_at from members where conv_id=$1 order by joined_at', [req.params.id]);
+  const cur = await q('select mm.user_id,mm.role,mm.joined_at,u.is_bot from members mm join users u on u.id=mm.user_id where mm.conv_id=$1 order by mm.joined_at', [req.params.id]);
   const tRow = cur.rows.find((x) => x.user_id === target);
   if (!tRow) return bad(res, 'not in group', 404);
   let kicked = null;
@@ -521,11 +522,12 @@ app.delete('/api/conversations/:id/members/:userId', auth, byUser('member-del', 
   }
   const logKick = () => { if (kicked) audit.log(q, req.user, 'kick', { id: target, username: kicked.username }, { convId: req.params.id, convName: m.name }); };
   const remaining = cur.rows.filter((x) => x.user_id !== target);
-  if (!remaining.length) { await q('delete from conversations where id=$1', [req.params.id]); return res.json({ ok: true, deleted: true }); }
+  const humans = remaining.filter((x) => !x.is_bot);
+  if (!humans.length) { await q('delete from conversations where id=$1', [req.params.id]); return res.json({ ok: true, deleted: true }); }
   if (m.is_public) {                                         // public groups share one open key, so no rotation, just remove (and ban if kicked)
     await q('delete from members where conv_id=$1 and user_id=$2', [req.params.id, target]);
     if (target !== req.user.id) await q('insert into conv_bans(conv_id,user_id) values($1,$2) on conflict do nothing', [req.params.id, target]);
-    if (!remaining.some((x) => x.role === 'admin')) await q(`update members set role='admin' where conv_id=$1 and user_id=$2`, [req.params.id, remaining[0].user_id]);
+    if (!humans.some((x) => x.role === 'admin')) await q(`update members set role='admin' where conv_id=$1 and user_id=$2`, [req.params.id, humans[0].user_id]);
     sendTo(target, { t: 'conv_removed', convId: req.params.id });
     await sendToConv(req.params.id, { t: 'conv_update', convId: req.params.id, refresh: true });
     logKick();
@@ -541,7 +543,7 @@ app.delete('/api/conversations/:id/members/:userId', auth, byUser('member-del', 
     await client.query('delete from members where conv_id=$1 and user_id=$2', [req.params.id, target]);
     await client.query('update conversations set key_version=$2 where id=$1', [req.params.id, nv]);
     for (const k of keys) await client.query('insert into group_keys(conv_id,user_id,version,wrapped_key,iv,wrapped_by) values($1,$2,$3,$4,$5,$6)', [req.params.id, k.userId, nv, k.wrappedKey, k.iv, req.user.id]);
-    if (!remaining.some((x) => x.role === 'admin')) await client.query(`update members set role='admin' where conv_id=$1 and user_id=$2`, [req.params.id, remaining[0].user_id]);
+    if (!humans.some((x) => x.role === 'admin')) await client.query(`update members set role='admin' where conv_id=$1 and user_id=$2`, [req.params.id, humans[0].user_id]);
     await client.query('commit');
   } catch (e) { await client.query('rollback'); throw e; } finally { client.release(); }
   sendTo(target, { t: 'conv_removed', convId: req.params.id });
@@ -771,14 +773,14 @@ app.get('/api/activity/mine', auth, wrap(async (req, res) => {
 }));
 
 const ensureFor = (u) => safety.ensureSystem(q, u);
-features.mount(app, { q, pool, auth, byUser, bad, wrap, sendTo, sendToConv, notify, isUuid, loadConversations, adminOnly, ensureFor });
+features.mount(app, { q, pool, auth, byUser, bad, wrap, sendTo, sendToConv, notify, isUuid, loadConversations, adminOnly, ensureFor, botsOnJoin: (id, u) => botsApi.onJoin(id, u).catch(() => {}) });
 safety.mount(app, { q, auth, adminOnly, byUser, bad, wrap, sendTo, notify, sockets, isUuid, ensureFor, onVerified: (u) => { features.creditReferral({ q, sendTo, notify, ensureFor }, u); ownerApi.welcome(u); } });   // a referral pays out when the friend gets verified
 beta.mount(app, { q, pool, auth, adminOnly, byUser, bad, wrap, sendTo, sendToConv, notify, isUuid, loadConversations, requireMember, isBlockedEitherWay, ensureFor });
 gngApi = gngBot.init({ q, sendTo, sendToConv, safety });
 gngApi.mount(app, { auth, byUser, bad, wrap, requireMember, isUuid });
 ownerApi = owner.init({ q, sendTo, sockets, ownerName: ADMIN_USERNAME, getMod: () => modApi, getGng: () => gngApi });
 ownerApi.mount(app, { auth, ownerOnly, byUser, bad, wrap });
-botsApi = botsLib.init({ q, sendTo, secret: () => SERVER_SECRET, ownerName: ADMIN_USERNAME });
+botsApi = botsLib.init({ q, sendTo, secret: () => SERVER_SECRET, ownerName: ADMIN_USERNAME, sendToConv, loadConversations, isBlockedEitherWay, notify });
 botsApi.mount(app, { auth, byUser, bad, wrap, isUuid, ownerOnly, requireMember, sendToConv });
 extrasApi = extrasLib.init({ q, secret: () => SERVER_SECRET, games });
 extrasApi.mount(app, { auth, byUser, bad, wrap, requireMember, sendToConv, betaOn: features.betaOn });

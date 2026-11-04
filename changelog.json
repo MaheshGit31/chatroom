@@ -1,5 +1,18 @@
 [
   {
+    "id": "2026-11-04-a",
+    "date": "2026-11-04",
+    "title": "bots get powers",
+    "items": [
+      "bots can now have powers: react to messages, quote replies, post polls, dm people, greet new members, post on a timer",
+      "moderator bots: delete, pin and mute messages, set slow mode, remove people, change the description and make mods. a bot only gets these where the group host gives it the mod or host role",
+      "group hosts can add bots to their group themselves: group info > add a bot, pick the bot and its role. change a bot's role or remove it any time",
+      "every bot action shows up in the mod log, and bots can never act on someone who outranks them",
+      "bot builder: new block triggers (joins, timer, link, caps, any of these words), new actions, a docs panel for javascript bots and a test box that shows what the bot would do",
+      "bots show their powers in the directory and the owner sees them before approving"
+    ]
+  },
+  {
     "id": "2026-11-02-b",
     "date": "2026-11-02",
     "title": "make your own bots",
