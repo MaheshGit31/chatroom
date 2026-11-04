@@ -574,7 +574,7 @@ async function groupModal(c) {
           await loadConvs(); toast(`${p.displayName} is in`, 'success'); draw();
         } catch (e) { toast(e.message, 'error'); }
       }, new Set(c.members.map((x) => x.id)));
-      addBox.append(el('h4', null, 'add someone'), s.node, el('button', { class: 'btn small', style: 'margin-top:8px', onclick: () => X.groupBotPicker(c, draw) }, ic('sparkle', 14), 'add a bot'));
+      addBox.append(el('h4', null, 'add someone'), s.node);
     }
     body.replaceChildren(
       c.isPublic ? el('div', { class: 'row gap-s', style: 'margin-bottom:8px' }, el('span', { class: 'tag' }, 'public'), el('span', { class: 'tag' }, c.topic || 'other')) : null,
@@ -589,6 +589,7 @@ async function groupModal(c) {
         ...X.memberTools(c, u, draw),
         u.id !== S.me.id && myRank(c) >= 1 && myRank(c) > rankR(u.isAdmin, u.role) ? el('button', { class: 'icon-btn', title: 'remove', onclick: async () => { if (await confirmModal(`remove ${u.displayName}?`, c.isPublic ? 'they cannot rejoin.' : 'the group key changes, so they cannot read anything new.', 'remove')) { await removeMember(c, u.id); draw(); } } }, ic('x', 16)) : null))),
       addBox,
+      X.botsSection(c, draw),
       X.staffSection(c, draw),
       el('div', { class: 'row between', style: 'margin-top:14px' },
         c.isPublic && !isAdmin() ? el('button', { class: 'btn ghost', onclick: () => { m.close(); X.reportModal({ kind: 'group', convId: c.id, title: c.name }); } }, ic('flag', 16), 'report') : el('span'),
