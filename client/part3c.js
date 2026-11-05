@@ -31,12 +31,7 @@ function plusMenu(anchor, c, input, sub) {
   const item = (icon, label, fn, free) => el('button', { class: 'plusitem', onclick: () => { closePlus(); fn(); } }, ic(icon, 18), el('span', { class: 'grow' }, label), on || free ? null : el('span', { class: 'tag gold' }, 'beta'));
   const noImg = !!c.systemKind;
   const games = [['grid', 'tic-tac-toe', 'ttt'], ['users', 'rock paper scissors', 'rps'], ['grid', 'connect 4', 'c4'], ['book', 'word duel', 'wd'], ['trophy', 'trivia duel', 'tr']];
-  if (sub === 'big') plus = el('div', { class: 'plusmenu' },
-    el('button', { class: 'plusitem', onclick: () => plusMenu(anchor, c, input, 'main') }, ic('back', 18), el('span', { class: 'grow' }, 'big games')),
-    item('globe', 'hangout world', () => window.__ext.worldModal(c), true),
-    item('star', 'coin rush', () => window.__ext.worldModal(c), true),
-    item('trophy', 'big trivia', () => window.__ext.worldModal(c, true), true));
-  else if (sub === '2p') plus = el('div', { class: 'plusmenu' },
+  if (sub === '2p') plus = el('div', { class: 'plusmenu' },
     el('button', { class: 'plusitem', onclick: () => plusMenu(anchor, c, input, 'main') }, ic('back', 18), el('span', { class: 'grow' }, '2 player games')),
     ...games.map(([i, l, k]) => item(i, l, () => needBeta('mini games') && startGame(c, k))));
   else plus = el('div', { class: 'plusmenu' },
@@ -46,7 +41,7 @@ function plusMenu(anchor, c, input, sub) {
     item('sticker', 'sticker', () => needBeta('stickers') && stickerPicker(c)),
     item('poll', 'poll', () => needBeta('polls') && pollModal(c)),
     item('calendar', 'schedule a message', () => needBeta('scheduled messages') && scheduleModal(c, input)),
-    c.isPublic ? el('button', { class: 'plusitem', onclick: () => plusMenu(anchor, c, input, 'big') }, ic('globe', 18), el('span', { class: 'grow' }, 'big games'), el('span', { class: 'muted' }, '›')) : null,
+    c.isPublic ? item('globe', 'block world', () => window.__ext.startMC(), true) : null,
     c.type === 'dm' ? el('button', { class: 'plusitem', onclick: () => plusMenu(anchor, c, input, '2p') }, ic('gamepad', 18), el('span', { class: 'grow' }, '2 player games'), el('span', { class: 'muted' }, '›')) : null,
     c.type === 'group' && !c.systemKind ? item('palette', 'whiteboards', () => window.__ext.boardsModal(c), true) : null,
     item('bell', 'my reminders', () => window.__ext.remindersModal()),
