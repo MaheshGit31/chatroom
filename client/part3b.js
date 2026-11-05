@@ -240,7 +240,7 @@ function reportModal(o) {
     if (!reason) return toast('pick a reason', 'error');
     send.disabled = true;
     try {
-      await api('POST', '/api/reports', { kind: o.kind, reason, note: note.value, msgId: o.msgId, convId: o.convId, username: o.username, snapshot: o.snapshot || '' }, { quiet: true });
+      await api('POST', '/api/reports', { kind: o.kind, reason, note: note.value, msgId: o.msgId, boardId: o.boardId, convId: o.convId, username: o.username, snapshot: o.snapshot || '' }, { quiet: true });
       m.close(); toast('report sent, thanks', 'success');
     } catch (e) { toast(e.message, 'error'); send.disabled = false; }
   } }, ic('flag', 16), 'send report');
@@ -267,6 +267,7 @@ async function adminReports(box, refreshStats) {
         r.note ? el('div', { class: 'muted small', style: 'margin-top:4px' }, r.note) : null),
       el('div', { class: 'acts' },
         r.kind === 'message' && /^\[image\]/.test(r.snapshot || '') ? el('button', { class: 'icon-btn', title: 'view picture', onclick: () => window.__ext.reportImage(r.id) }, ic('image', 18)) : null,
+        r.kind === 'board' ? el('button', { class: 'icon-btn', title: 'view board', onclick: () => { const id = ((r.snapshot || '').match(/\[board:([0-9a-f-]{36})\]/) || [])[1]; id ? window.__ext.boardModal(id, true) : toast('board id missing', 'error'); } }, ic('palette', 18)) : null,
         r.kind === 'message' && r.isPublic && r.msgId ? el('button', { class: 'icon-btn', title: 'delete message', onclick: async () => { if (await confirmModal('delete this message?', 'it is wiped for everyone in the room.', 'delete')) act(async () => { await api('POST', `/api/admin/reports/${r.id}/delete-message`); await api('POST', `/api/admin/reports/${r.id}`, { status: 'resolved' }); }, 'message deleted'); } }, ic('trash', 18)) : null,
         r.kind === 'group' && r.convId ? el('button', { class: 'icon-btn', title: 'remove group', onclick: async () => { if (await confirmModal('remove this group?', 'everyone is kicked out and it is deleted.', 'remove')) act(async () => { await api('DELETE', `/api/admin/groups/${r.convId}`); await api('POST', `/api/admin/reports/${r.id}`, { status: 'resolved' }); }, 'group removed'); } }, ic('trash', 18)) : null,
         r.targetId && r.kind !== 'group' && !r.targetBanned ? el('button', { class: 'icon-btn', title: 'suspend ' + (r.target || ''), onclick: async () => { if (await confirmModal(`suspend ${r.targetName || r.target}?`, 'they get signed out until restored.', 'suspend')) act(async () => { await api('POST', `/api/admin/users/${r.targetId}/ban`, { banned: true }); await api('POST', `/api/admin/reports/${r.id}`, { status: 'resolved' }); }, 'suspended'); } }, ic('ban', 18)) : null,

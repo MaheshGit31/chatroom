@@ -446,6 +446,8 @@ const sendWS = (o) => { if (S.ws && S.ws.readyState === 1) S.ws.send(JSON.string
 
 async function onWS(m) {
   const ui = window.__ui;
+  if (typeof m.t === 'string' && (m.t.startsWith('board_') || m.t === 'night_new')) { const h = window.__ext && window.__ext.onBoard; if (h) h(m); return; }
+  if (typeof m.t === 'string' && m.t.startsWith('world_')) { const h = window.__ext && window.__ext.onWorld; if (h) h(m); return; }
   switch (m.t) {
     case 'ready':
       S.wsOk = true; wsBackoff = 1000;
@@ -571,7 +573,7 @@ async function onWS(m) {
     case 'notif': {
       S.notifs.unshift(m.notif); S.notifUnread++;
       ui.renderRail();
-      const txt = m.notif.type === 'group_added' ? `${m.notif.data.by} added you to ${m.notif.data.name}` : m.notif.type === 'dm_new' ? `${m.notif.data.from} started a chat with you` : m.notif.type === 'sched_failed' ? 'a scheduled message could not be sent' : m.notif.type === 'referral' ? `${m.notif.data.name} joined, +${m.notif.data.minutes} min beta` : m.notif.type === 'report' ? 'new report to review' : m.notif.type === 'mention' ? `${m.notif.data.byName || m.notif.data.by} mentioned you${m.notif.data.convName ? ' in ' + m.notif.data.convName : ''}` : m.notif.type === 'reminder' ? 'reminder: ' + (m.notif.data.note || 'a message you saved') : m.notif.type === 'warn' ? `warning from ${m.notif.data.by}: ${m.notif.data.text}` : m.notif.type === 'appeal' ? `${m.notif.data.by} sent an appeal` : m.notif.type === 'verified' ? 'you are verified' : m.notif.type === 'verify_rejected' ? 'verification was not approved' + (m.notif.data.note ? ': ' + m.notif.data.note : '') : 'new notification';
+      const txt = m.notif.type === 'group_added' ? `${m.notif.data.by} added you to ${m.notif.data.name}` : m.notif.type === 'dm_new' ? `${m.notif.data.from} started a chat with you` : m.notif.type === 'sched_failed' ? 'a scheduled message could not be sent' : m.notif.type === 'referral' ? `${m.notif.data.name} joined, +${m.notif.data.minutes} min beta` : m.notif.type === 'report' ? 'new report to review' : m.notif.type === 'game_night' ? `game night starting: ${m.notif.data.title}${m.notif.data.convName ? ' in ' + m.notif.data.convName : ''}` : m.notif.type === 'mention' ? `${m.notif.data.byName || m.notif.data.by} mentioned you${m.notif.data.convName ? ' in ' + m.notif.data.convName : ''}` : m.notif.type === 'reminder' ? 'reminder: ' + (m.notif.data.note || 'a message you saved') : m.notif.type === 'warn' ? `warning from ${m.notif.data.by}: ${m.notif.data.text}` : m.notif.type === 'appeal' ? `${m.notif.data.by} sent an appeal` : m.notif.type === 'verified' ? 'you are verified' : m.notif.type === 'verify_rejected' ? 'verification was not approved' + (m.notif.data.note ? ': ' + m.notif.data.note : '') : 'new notification';
       const quiet = window.__ext && window.__ext.dndActive && window.__ext.dndActive() && m.notif.type !== 'warn';
       if (!quiet) { toast(txt, 'info', () => { if (m.notif.data.convId) { ui.openConv(m.notif.data.convId); if (m.notif.data.msgId && window.__ext) setTimeout(() => window.__ext.jumpTo(convOf(m.notif.data.convId), m.notif.data.msgId), 600); } }); beep(); }
       break;

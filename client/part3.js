@@ -593,6 +593,8 @@ async function groupModal(c) {
         u.id !== S.me.id && myRank(c) >= 1 && myRank(c) > rankR(u.isAdmin, u.role) ? el('button', { class: 'icon-btn', title: 'remove', onclick: async () => { if (await confirmModal(`remove ${u.displayName}?`, c.isPublic ? 'they cannot rejoin.' : 'the group key changes, so they cannot read anything new.', 'remove')) { await removeMember(c, u.id); draw(); } } }, ic('x', 16)) : null))),
       addBox,
       X.botsSection(c, draw),
+      X.boardsRow(c),
+      X.nightsSection(c, draw),
       X.rolesSection(c, draw),
       X.rulesSection(c, draw),
       X.staffSection(c, draw),
@@ -755,7 +757,7 @@ function pickGameModal(c) {
 // ---------- alerts ----------
 function buildAlerts(m) {
   const list = S.notifs.length ? S.notifs.map((n) => {
-    const txt = n.type === 'group_added' ? `${n.data.by} added you to ${n.data.name}` : n.type === 'dm_new' ? `${n.data.from} started a chat` : n.type === 'sched_failed' ? 'a scheduled message could not be sent' : n.type === 'referral' ? `${n.data.name} joined, +${n.data.minutes} min beta` : n.type === 'report' ? 'new report to review' : n.type === 'verified' ? 'you are verified' : n.type === 'verify_rejected' ? 'verification not approved' + (n.data.note ? ': ' + n.data.note : '') : 'new alert';
+    const txt = n.type === 'group_added' ? `${n.data.by} added you to ${n.data.name}` : n.type === 'dm_new' ? `${n.data.from} started a chat` : n.type === 'sched_failed' ? 'a scheduled message could not be sent' : n.type === 'referral' ? `${n.data.name} joined, +${n.data.minutes} min beta` : n.type === 'report' ? 'new report to review' : n.type === 'game_night' ? `game night starting: ${n.data.title}` : n.type === 'verified' ? 'you are verified' : n.type === 'verify_rejected' ? 'verification not approved' + (n.data.note ? ': ' + n.data.note : '') : 'new alert';
     return el('div', { class: 'urow click' + (n.read ? '' : ' unread'), onclick: () => n.data.convId && convOf(n.data.convId) && openConv(n.data.convId) }, el('div', { class: 'gshare-ic sm', style: `background:${tone(txt)}` }, ic(n.type === 'group_added' ? 'users' : n.type === 'referral' ? 'gift' : n.type === 'report' ? 'flag' : 'chat', 16)), el('div', { class: 'grow' }, el('div', null, txt), el('div', { class: 'muted small' }, ago(n.createdAt))));
   }) : [el('div', { class: 'empty-s' }, mugIcon())];
   m.append(el('div', { class: 'page' }, el('div', { class: 'page-head' }, el('h2', null, 'alerts'), S.notifs.length ? el('button', { class: 'btn small', onclick: async () => { await api('POST', '/api/notifications/read').catch(() => {}); S.notifs.forEach((n) => (n.read = true)); S.notifUnread = 0; renderAll(); builtMain = ''; renderMain(); } }, 'mark read') : null), el('div', { class: 'ulist stagger' }, list.map((x, i) => { x.style.setProperty('--i', Math.min(i, 10)); return x; }))));
