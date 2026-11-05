@@ -1,5 +1,22 @@
 [
   {
+    "id": "2026-11-04-b",
+    "date": "2026-11-04",
+    "title": "roles, rules, pictures and typo fixes",
+    "items": [
+      "group roles: hosts make named colored roles (group info > roles), give them to people, and they show next to the name in chat",
+      "rules gate: hosts write group rules and turn the gate on, so new members have to accept them before they can post",
+      "pictures in public groups: verified beta members can send them, anyone can report one, and hosts, mods and admins can remove it",
+      "paste a picture anywhere in a chat with ctrl+v to send it (5 MB max)",
+      "autocorrect fixes common typos as you type, backspace right after undoes it, and you can turn it off in settings",
+      "smart fix (sparkle button) asks an ai to clean up a draft, only when you tap it, with a warning first",
+      "2 player games now live in the + menu under one dropdown",
+      "ctrl+k searches all your chats at once",
+      "bot store: rate bots with stars and sort by top rated",
+      "set a game status like roblox that shows as playing on your profile"
+    ]
+  },
+  {
     "id": "2026-11-04-a",
     "date": "2026-11-04",
     "title": "bots get powers",

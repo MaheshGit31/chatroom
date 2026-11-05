@@ -89,10 +89,10 @@ async function peersOf(userId) {
   return r.rows.map((x) => x.user_id);
 }
 async function presenceOf(userId) {
-  const u = await q('select share_activity,status_text,status_icon,status_mode from users where id=$1', [userId]);
+  const u = await q('select share_activity,status_text,status_icon,status_mode,game_status,game_status_expires from users where id=$1', [userId]);
   const row = u.rows[0] || {};
   const a = row.share_activity && row.status_mode !== 'invisible' ? activityNow.get(userId) : null;
-  return { userId, online: sockets.has(userId) && row.status_mode !== 'invisible', mode: row.status_mode || 'online', status: statusOf(row), activity: a ? { title: a.title, path: a.path, since: a.since } : null };
+  return { userId, online: sockets.has(userId) && row.status_mode !== 'invisible', mode: row.status_mode || 'online', status: statusOf(row), activity: a ? { title: a.title, path: a.path, since: a.since } : (row.share_activity && row.status_mode !== 'invisible' && row.game_status && (!row.game_status_expires || new Date(row.game_status_expires) > new Date()) ? { title: row.game_status, custom: true } : null) };
 }
 async function broadcastPresence(userId) {
   const evt = { t: 'presence', ...(await presenceOf(userId)) };
@@ -143,7 +143,7 @@ async function makeSession(userId, ua) {
   return token;
 }
 const statusOf = (u) => (u.status_text || u.status_icon ? { text: u.status_text || '', icon: u.status_icon || '' } : null);
-const publicUser = (u) => ({ id: u.id, username: u.username, displayName: u.display_name, shareActivity: u.share_activity, isAdmin: !!u.is_admin, isOwner: u.username === ADMIN_USERNAME, mode: u.status_mode || 'online', status: statusOf(u), statusExpires: u.status_expires || null, beta: features.betaOn(u), betaUntil: u.beta_until || null, theme: u.theme || null, avatar: u.avatar || null, bio: u.bio || '', banner: u.banner || null, folders: Array.isArray(u.folders) ? u.folders : [], dndUntil: u.dnd_until || null, quiet: u.quiet || null, wallpapers: u.wallpapers || {}, mutedUntil: u.muted_until && new Date(u.muted_until) > new Date() ? u.muted_until : null, verified: safety.verifiedOn(u), msgCount: u.msg_count || 0, freeMessages: safety.FREE_MSGS });
+const publicUser = (u) => ({ gameStatus: u.game_status && (!u.game_status_expires || new Date(u.game_status_expires) > new Date()) ? u.game_status : '', id: u.id, username: u.username, displayName: u.display_name, shareActivity: u.share_activity, isAdmin: !!u.is_admin, isOwner: u.username === ADMIN_USERNAME, mode: u.status_mode || 'online', status: statusOf(u), statusExpires: u.status_expires || null, beta: features.betaOn(u), betaUntil: u.beta_until || null, theme: u.theme || null, avatar: u.avatar || null, bio: u.bio || '', banner: u.banner || null, folders: Array.isArray(u.folders) ? u.folders : [], dndUntil: u.dnd_until || null, quiet: u.quiet || null, wallpapers: u.wallpapers || {}, mutedUntil: u.muted_until && new Date(u.muted_until) > new Date() ? u.muted_until : null, verified: safety.verifiedOn(u), msgCount: u.msg_count || 0, freeMessages: safety.FREE_MSGS });
 
 const SECS = "least(10800, case when p.ended_at is null then floor(extract(epoch from (now()-p.started_at)))::int else p.seconds end)"; // running sessions count live
 const USERNAME = /^[a-z0-9_]{3,20}$/;
@@ -244,6 +244,15 @@ app.put('/api/me/status', auth, byUser('status', 20, 60_000), wrap(async (req, r
   const mins = Math.min(Math.max(parseInt(b.expiresMinutes, 10) || 0, 0), 60 * 24 * 7);
   const r = await q(`update users set status_text=$2,status_icon=$3,status_mode=$4,status_expires=${mins ? "now()+make_interval(mins=>$5)" : 'null'} where id=$1 returning *`,
     mins ? [req.user.id, text || null, icon || null, mode, mins] : [req.user.id, text || null, icon || null, mode]);
+  broadcastPresence(req.user.id).catch(() => {});
+  res.json({ user: publicUser(r.rows[0]) });
+}));
+
+app.put('/api/me/game-status', auth, byUser('game-status', 20, 60_000), wrap(async (req, res) => {
+  const text = String((req.body && req.body.text) || '').trim().replace(/\s+/g, ' ').slice(0, 40);
+  if (text && safety.F.check(text)) return bad(res, 'keep it clean');
+  const mins = Math.min(Math.max(parseInt(req.body && req.body.expiresMinutes, 10) || 0, 0), 60 * 24 * 7);
+  const r = await q(`update users set game_status=$2,game_status_expires=${mins && text ? "now()+make_interval(mins=>$3)" : 'null'} where id=$1 returning *`, mins && text ? [req.user.id, text || null, mins] : [req.user.id, text || null]);
   broadcastPresence(req.user.id).catch(() => {});
   res.json({ user: publicUser(r.rows[0]) });
 }));
@@ -361,7 +370,7 @@ async function loadConversations(userId, onlyId) {
   const me = (await q('select * from users where id=$1', [userId])).rows[0];
   const hasBeta = features.betaOn(me);                       // the Beta lounge only shows while beta is on
   const convs = await q(
-    `select c.id,c.type,c.name,c.key_version,c.created_at,c.is_public,c.system_kind,c.ttl_seconds,c.slow_seconds,c.description,c.topic,c.game_path,c.game_title,m.role,m.muted,m.muted_until,m.last_read_at,m.joined_at,
+    `select c.id,c.type,c.name,c.key_version,c.created_at,c.is_public,c.system_kind,c.ttl_seconds,c.slow_seconds,c.description,c.topic,c.game_path,c.game_title,c.rules,c.rules_on,c.rules_ver,m.rules_ver_ok,m.role,m.muted,m.muted_until,m.last_read_at,m.joined_at,
        (select count(*) from members where conv_id=c.id)::int member_count,
        (select count(*) from messages x where x.conv_id=c.id and x.created_at>m.last_read_at and x.created_at>=m.joined_at and x.sender_id is distinct from $1 and not x.deleted and x.created_at>now()-make_interval(secs=>coalesce(c.ttl_seconds,${TTL_HOURS * 3600})))::int unread,
        (select row_to_json(l) from (select id,sender_id "senderId",ciphertext,iv,key_version "keyVersion",created_at "createdAt",deleted from messages where conv_id=c.id and created_at>=m.joined_at and created_at>now()-make_interval(secs=>coalesce(c.ttl_seconds,${TTL_HOURS * 3600})) order by id desc limit 1) l) last_message,
@@ -375,6 +384,8 @@ async function loadConversations(userId, onlyId) {
   const mem = await q(
     `select cm.conv_id,cm.role,cm.last_read_at,u.id,u.username,u.display_name,u.public_key,u.status_text,u.status_icon,u.status_mode,u.is_admin,u.verified,u.avatar,u.is_bot from members cm join users u on u.id=cm.user_id join conversations cc on cc.id=cm.conv_id
      where cm.conv_id=any($1) and (cc.system_kind is null or u.id=$2 or u.is_admin or exists(select 1 from messages mm where mm.conv_id=cm.conv_id and mm.sender_id=u.id)) order by cm.joined_at`, [ids, userId]); // the big built-in rooms only list people who have spoken, plus admins
+  const roleRows = (await q('select id,conv_id,name,color from group_roles where conv_id=any($1) order by created_at', [ids])).rows;
+  const roleLinks = roleRows.length ? (await q('select conv_id,user_id,role_id from member_roles where conv_id=any($1)', [ids])).rows : [];
   const keys = await q('select conv_id,version,wrapped_key,iv,wrapped_by from group_keys where user_id=$1 and conv_id=any($2)', [userId, ids]);
   const wrappers = [...new Set(keys.rows.map((k) => k.wrapped_by).filter(Boolean))];
   const ku = wrappers.length ? await q('select id,username,public_key from users where id=any($1)', [wrappers]) : { rows: [] };
@@ -382,8 +393,9 @@ async function loadConversations(userId, onlyId) {
   for (const u of ku.rows) keyUsers[u.id] = { username: u.username, publicKey: u.public_key };
   const conversations = convs.rows.map((c) => ({
     id: c.id, type: c.type, name: c.name, memberCount: c.member_count, isPublic: c.is_public, ttlSeconds: c.ttl_seconds || null, slowSeconds: c.slow_seconds || null, mutedUntil: c.muted_until && new Date(c.muted_until) > new Date() ? c.muted_until : null, systemKind: c.system_kind || null, description: c.description || '', topic: c.topic || '', keyVersion: c.key_version, createdAt: c.created_at, role: c.role, muted: c.muted,
+    rules: c.rules || '', rulesOn: !!c.rules_on, rulesVer: c.rules_ver || 1, rulesOk: (c.rules_ver_ok || 0) >= (c.rules_ver || 1), roles: roleRows.filter((r) => r.conv_id === c.id).map((r) => ({ id: r.id, name: r.name, color: r.color })),
     gamePath: c.game_path || null, gameTitle: c.game_title || null, lastReadAt: c.last_read_at, joinedAt: c.joined_at, unread: c.unread, lastMessage: c.last_message,
-    members: mem.rows.filter((m) => m.conv_id === c.id).map((m) => ({ id: m.id, username: m.username, displayName: m.display_name, avatar: m.avatar || null, publicKey: m.public_key, role: m.role, lastReadAt: m.last_read_at, online: !!m.is_bot || (sockets.has(m.id) && m.status_mode !== 'invisible'), isBot: !!m.is_bot, mode: m.status_mode, verified: safety.verifiedOn(m), status: statusOf(m), isAdmin: m.is_admin })),
+    members: mem.rows.filter((m) => m.conv_id === c.id).map((m) => ({ id: m.id, username: m.username, displayName: m.display_name, avatar: m.avatar || null, publicKey: m.public_key, role: m.role, lastReadAt: m.last_read_at, online: !!m.is_bot || (sockets.has(m.id) && m.status_mode !== 'invisible'), isBot: !!m.is_bot, roleIds: roleLinks.filter((l) => l.conv_id === m.conv_id && l.user_id === m.id).map((l) => l.role_id), mode: m.status_mode, verified: safety.verifiedOn(m), status: statusOf(m), isAdmin: m.is_admin })),
     keys: keys.rows.filter((k) => k.conv_id === c.id).map((k) => ({ version: k.version, wrappedKey: k.wrapped_key, iv: k.iv, wrappedBy: k.wrapped_by })),
   }));
   return { conversations, keyUsers };
@@ -587,7 +599,8 @@ app.post('/api/conversations/:id/messages', auth, wrap(async (req, res, next) =>
   const once = req.body.once === true;
   if (once && m.type !== 'dm') return bad(res, 'view once only works in direct messages');
   const blobId = isUuid(req.body.blob) ? req.body.blob : null;
-  if (blobId && (m.is_public || m.system_kind)) return bad(res, 'images are not allowed in public rooms');
+  if (blobId && m.system_kind) return bad(res, 'images are not allowed in the built-in rooms');
+  if (blobId && m.is_public && !safety.verifiedOn(req.user) && !req.user.is_admin) return bad(res, 'verify your account to send pictures in public groups', 403);
   if (!isB64(ciphertext, 56000) || !isB64(iv, 40)) return bad(res, 'bad message');   // 56k chars leaves room for a 10s voice note
   if (keyVersion !== m.key_version) return res.status(409).json({ error: 'key_version_stale', current: m.key_version });
   let adminDm = false;                                       // chatting with an admin is always free, so people can ask for help or for a manual verify
@@ -784,6 +797,7 @@ botsApi = botsLib.init({ q, sendTo, secret: () => SERVER_SECRET, ownerName: ADMI
 botsApi.mount(app, { auth, byUser, bad, wrap, isUuid, ownerOnly, requireMember, sendToConv });
 extrasApi = extrasLib.init({ q, secret: () => SERVER_SECRET, games });
 extrasApi.mount(app, { auth, byUser, bad, wrap, requireMember, sendToConv, betaOn: features.betaOn });
+require('./lib/roles').mount(app, { q, auth, byUser, bad, wrap, isUuid, requireMember, sendToConv, filter: safety.F });
 modApi = mod.mount(app, { q, auth, adminOnly, byUser, bad, wrap, sendTo, sendToConv, notify, isUuid, requireMember, sockets, secret: () => SERVER_SECRET, adminName: ADMIN_USERNAME, ensureFor, rl });
 
 // ---------- static client ----------
