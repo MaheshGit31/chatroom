@@ -447,7 +447,6 @@ const sendWS = (o) => { if (S.ws && S.ws.readyState === 1) S.ws.send(JSON.string
 async function onWS(m) {
   const ui = window.__ui;
   if (typeof m.t === 'string' && (m.t.startsWith('board_') || m.t === 'night_new')) { const h = window.__ext && window.__ext.onBoard; if (h) h(m); return; }
-  if (typeof m.t === 'string' && m.t.startsWith('mc_')) { const h = window.__ext && window.__ext.onMC; if (h) h(m); return; }
   switch (m.t) {
     case 'ready':
       S.wsOk = true; wsBackoff = 1000;
