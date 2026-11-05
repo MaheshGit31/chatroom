@@ -556,6 +556,7 @@ button.oncecard{cursor:pointer}.oncecard.gone{opacity:.6;cursor:default}.oncetex
 .coopctl{display:flex;gap:8px;align-items:center;padding:8px 12px;background:var(--panel);color:var(--text)}
 .coopvideo{flex:1;min-height:0;width:100%;object-fit:contain;background:#000;cursor:crosshair}
 .coopstatus{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;display:flex;flex-direction:column;align-items:center;gap:10px}
+.rolechips{display:inline-flex;gap:4px;margin-left:6px;vertical-align:middle}.rolechip{display:inline-block;font-size:11px;font-weight:700;line-height:1;padding:3px 7px;border-radius:99px;color:var(--rc);background:color-mix(in srgb,var(--rc) 16%,transparent);border:1px solid color-mix(in srgb,var(--rc) 40%,transparent)}.swatch{width:26px;height:26px;border-radius:50%;border:2px solid transparent}.swatch.on{border-color:var(--text)}.rulesbar{padding:14px;margin:8px;border-radius:14px;background:var(--panel2);display:flex;flex-direction:column;gap:10px}.rulestext{white-space:pre-wrap;font-size:14px;max-height:30vh;overflow:auto}
 </style>
 </head>
 <body>
@@ -1526,13 +1527,16 @@ function buildChat(m, c) {
     sending = false; tickCooldown(); input.focus();
   }
   const emojiBtn = el('button', { class: 'icon-btn', title: 'emoji', onclick: () => X.emojiPicker(emojiBtn, (ch) => { const a = input.selectionStart ?? input.value.length; input.setRangeText(ch, a, input.selectionEnd ?? a, 'end'); input.dispatchEvent(new Event('input')); input.focus(); }) }, ic('smile', 20));
-  m.append(el('div', { class: 'chat' }, head, pinbar, msgs, typing, selbar,
-    el('div', { class: 'composer-wrap' }, cool, freebar, modbar, replybar, sugg,
-      el('div', { class: 'composer' },
+  X.attachAutocorrect(input);
+  const composerEl = el('div', { class: 'composer' },
         el('button', { class: 'icon-btn', title: 'more: voice, stickers, polls, schedule, games', onclick: (e) => X.plusMenu(e.currentTarget, c, input) }, ic('plus', 20)),
         el('button', { class: 'icon-btn', title: 'share a game', onclick: () => pickGameModal(c) }, ic('gamepad', 20)),
         el('button', { class: 'icon-btn gifbtn', title: 'gif', onclick: () => X.gifModal(c) }, ic('image', 20)),
-        emojiBtn, input, sendBtn))));
+        el('button', { class: 'icon-btn', title: 'smart fix (ai)', onclick: () => X.smartFix(input) }, ic('sparkle', 20)),
+        emojiBtn, input, sendBtn);
+  const rulesbar = X.rulesBar(c, composerEl);
+  m.append(el('div', { class: 'chat' }, head, pinbar, msgs, typing, selbar,
+    el('div', { class: 'composer-wrap' }, cool, freebar, modbar, replybar, sugg, rulesbar, composerEl)));
   c._shown = null;                                           // first paint of a chat should not animate every old message
   sel = null;                                                // leave select mode when switching chats
   chatRef = { head, pinbar, msgs, typing, input, sendBtn, cool, selbar, freebar, modbar, replybar, convId: c.id };
@@ -1636,7 +1640,7 @@ function msgTools(c, m, mine) {
   if (mine && p.t === 'text' && C.betaActive()) kids.push(b('edit', 'edit', () => X.editMessage(c, m)));
   if (p.t === 'text') kids.push(b('copy', 'copy', () => { navigator.clipboard && navigator.clipboard.writeText(p.text).then(() => toast('copied', 'success')).catch(() => {}); }));
   if (canDelete(c, m)) kids.push(b('checksquare', 'select', () => startSelect(c, m.id)));
-  if (!mine && p.t !== 'once') kids.push(b('flag', 'report', () => X.reportModal({ kind: 'message', msgId: m.id, convId: c.id, title: 'this message', snapshot: p.t === 'text' ? p.text : p.t === 'gif' ? '[gif] ' + p.url : '[' + p.t + ']' })));
+  if (!mine && p.t !== 'once') kids.push(b('flag', 'report', () => X.reportModal({ kind: 'message', msgId: m.id, convId: c.id, title: 'this message', snapshot: p.t === 'text' ? p.text : p.t === 'image' ? '[image] ' + (p.caption || '') : p.t === 'gif' ? '[gif] ' + p.url : '[' + p.t + ']' })));
   if (canDelete(c, m)) kids.push(b('trash', 'delete', () => deleteWithUndo(c, [m.id])));
   return el('div', { class: 'mtools' }, kids);
 }
@@ -1674,7 +1678,7 @@ function renderMessages(c, stick) {
       el('div', { class: 'bubwrap' },
         el('div', { class: 'bubble' + (tome ? ' tome' : '') + (p.t === 'image' ? ' imgb' : '') + (p.t === 'gif' ? ' gifb' : '') + (p.t === 'sticker' ? ' stickb' : '') + (m.pinned ? ' pinned' : ''), onclick: (e) => { if (sel && selectable) return toggleSel(c, m.id); if (matchMedia('(hover: none)').matches && !e.target.closest('a,button')) { const was = e.currentTarget.classList.contains('tools-on'); box.querySelectorAll('.tools-on').forEach((n) => n.classList.remove('tools-on')); if (!was) e.currentTarget.classList.add('tools-on'); } } },
           !m.deleted && !sel ? msgTools(c, m, mine) : null,
-          first && !mine && c.type === 'group' ? el('div', { class: 'mname click', onclick: () => sender && openProfile(sender.username) }, sender ? sender.displayName : 'former member', vb(sender)) : null,
+          first && !mine && c.type === 'group' ? el('div', { class: 'mname click', onclick: () => sender && openProfile(sender.username) }, sender ? sender.displayName : 'former member', vb(sender), sender ? X.roleChips(c, sender.id) : null) : null,
           p.fwd ? el('div', { class: 'fwdtag' }, ic('forward', 12), 'forwarded' + (p.fwd.name ? ' from ' + p.fwd.name : '')) : null,
           p.reply ? X.quoteEl(c, p.reply) : null,
           body,
@@ -1776,6 +1780,8 @@ async function groupModal(c) {
         u.id !== S.me.id && myRank(c) >= 1 && myRank(c) > rankR(u.isAdmin, u.role) ? el('button', { class: 'icon-btn', title: 'remove', onclick: async () => { if (await confirmModal(`remove ${u.displayName}?`, c.isPublic ? 'they cannot rejoin.' : 'the group key changes, so they cannot read anything new.', 'remove')) { await removeMember(c, u.id); draw(); } } }, ic('x', 16)) : null))),
       addBox,
       X.botsSection(c, draw),
+      X.rolesSection(c, draw),
+      X.rulesSection(c, draw),
       X.staffSection(c, draw),
       el('div', { class: 'row between', style: 'margin-top:14px' },
         c.isPublic && !isAdmin() ? el('button', { class: 'btn ghost', onclick: () => { m.close(); X.reportModal({ kind: 'group', convId: c.id, title: c.name }); } }, ic('flag', 16), 'report') : el('span'),
@@ -1865,6 +1871,7 @@ function settingsModal() {
     el('button', { class: 'btn wide', style: 'margin-top:8px', onclick: () => { m.close(); X.wallpaperModal(null); } }, ic('image', 16), 'chat wallpaper', el('span', { class: 'tag gold' }, 'beta')),
     el('h4', null, 'ping me'),
     toggle('show what i am playing', S.me.shareActivity, async (v) => { try { const d = await api('PATCH', '/api/me', { shareActivity: v }); S.me.shareActivity = d.user.shareActivity; } catch (e) { toast(e.message, 'error'); return false; } }),
+    toggle('autocorrect', S.prefs.autocorrect !== false, (v) => { S.prefs.autocorrect = v; savePrefs(); }),
     toggle('sound', S.prefs.sound, (v) => { S.prefs.sound = v; savePrefs(); if (v) beep(); }),
     toggle('desktop popups', S.prefs.desktop && 'Notification' in window && Notification.permission === 'granted', async (v) => {
       if (!v) { S.prefs.desktop = false; savePrefs(); return; }
@@ -1883,6 +1890,7 @@ function statusModal() {
   const cur = S.me.status || { text: '', icon: '' };
   let icon = cur.icon || '', mode = S.me.mode || 'online', mins = 0;
   const text = el('input', { placeholder: 'what are you up to', maxLength: 48, value: cur.text || '' });
+  const game = el('input', { placeholder: 'playing... (roblox, minecraft, anything)', maxLength: 40, value: S.me.gameStatus || '' });
   const grid = el('div', { class: 'status-grid' });
   const modes = el('div', { class: 'mode-row' });
   const exp = el('div', { class: 'cats', style: 'margin:0' });
@@ -1893,11 +1901,14 @@ function statusModal() {
   const save = async (clear) => {
     try {
       const d = await api('PUT', '/api/me/status', clear ? { mode: 'online' } : { text: text.value, icon, mode, expiresMinutes: mins });
-      Object.assign(S.me, d.user); renderAll(); m.close(); toast(clear ? 'status cleared' : 'status set', 'success');
+      Object.assign(S.me, d.user);
+      const g = clear ? '' : game.value.trim();
+      if (g !== (S.me.gameStatus || '')) { const d2 = await api('PUT', '/api/me/game-status', { text: g, expiresMinutes: mins }); Object.assign(S.me, d2.user); }
+      renderAll(); m.close(); toast(clear ? 'status cleared' : 'status set', 'success');
     } catch (e) { toast(e.message, 'error'); }
   };
-  const m = modal('status', el('div', null, drawModes() || modes, text, presets, grid, el('h4', null, ic('timer', 14), 'clear after'), exp,
-    el('div', { class: 'row gap end', style: 'margin-top:18px' }, (cur.text || cur.icon || mode !== 'online') ? el('button', { class: 'btn ghost', onclick: () => save(true) }, 'clear') : null, el('button', { class: 'btn primary', onclick: () => save(false) }, 'save'))));
+  const m = modal('status', el('div', null, drawModes() || modes, text, el('div', { class: 'row gap-s', style: 'align-items:center;margin-top:8px' }, ic('gamepad', 18), game), presets, grid, el('h4', null, ic('timer', 14), 'clear after'), exp,
+    el('div', { class: 'row gap end', style: 'margin-top:18px' }, (cur.text || cur.icon || S.me.gameStatus || mode !== 'online') ? el('button', { class: 'btn ghost', onclick: () => save(true) }, 'clear') : null, el('button', { class: 'btn primary', onclick: () => save(false) }, 'save'))));
   drawGrid(); drawModes(); drawExp(); text.focus();
 }
 const urlB64ToU8 = (s) => unb64(s);
@@ -2425,6 +2436,8 @@ async function adminReports(box, refreshStats) {
         r.snapshot ? el('div', { class: 'quote' }, r.snapshot) : null,
         r.note ? el('div', { class: 'muted small', style: 'margin-top:4px' }, r.note) : null),
       el('div', { class: 'acts' },
+        r.kind === 'message' && /^\[image\]/.test(r.snapshot || '') ? el('button', { class: 'icon-btn', title: 'view picture', onclick: () => window.__ext.reportImage(r.id) }, ic('image', 18)) : null,
+        r.kind === 'message' && r.isPublic && r.msgId ? el('button', { class: 'icon-btn', title: 'delete message', onclick: async () => { if (await confirmModal('delete this message?', 'it is wiped for everyone in the room.', 'delete')) act(async () => { await api('POST', `/api/admin/reports/${r.id}/delete-message`); await api('POST', `/api/admin/reports/${r.id}`, { status: 'resolved' }); }, 'message deleted'); } }, ic('trash', 18)) : null,
         r.kind === 'group' && r.convId ? el('button', { class: 'icon-btn', title: 'remove group', onclick: async () => { if (await confirmModal('remove this group?', 'everyone is kicked out and it is deleted.', 'remove')) act(async () => { await api('DELETE', `/api/admin/groups/${r.convId}`); await api('POST', `/api/admin/reports/${r.id}`, { status: 'resolved' }); }, 'group removed'); } }, ic('trash', 18)) : null,
         r.targetId && r.kind !== 'group' && !r.targetBanned ? el('button', { class: 'icon-btn', title: 'suspend ' + (r.target || ''), onclick: async () => { if (await confirmModal(`suspend ${r.targetName || r.target}?`, 'they get signed out until restored.', 'suspend')) act(async () => { await api('POST', `/api/admin/users/${r.targetId}/ban`, { banned: true }); await api('POST', `/api/admin/reports/${r.id}`, { status: 'resolved' }); }, 'suspended'); } }, ic('ban', 18)) : null,
         el('button', { class: 'icon-btn', title: 'resolve', onclick: () => act(() => api('POST', `/api/admin/reports/${r.id}`, { status: 'resolved' }), 'resolved') }, ic('check', 18)),
@@ -2740,24 +2753,24 @@ const curConv = () => convOf(S.active);
 let plus = null;
 const closePlus = () => { if (plus) { plus.remove(); plus = null; } };
 document.addEventListener('mousedown', (e) => { if (plus && !plus.contains(e.target) && !e.target.closest('[data-plus]')) closePlus(); });
-function plusMenu(anchor, c, input) {
-  const had = !!plus; closePlus(); if (had) return;
+function plusMenu(anchor, c, input, sub) {
+  const had = !!plus; closePlus(); if (had && !sub) return;
   anchor.dataset.plus = 1;
   const on = C.betaActive();
   const item = (icon, label, fn, free) => el('button', { class: 'plusitem', onclick: () => { closePlus(); fn(); } }, ic(icon, 18), el('span', { class: 'grow' }, label), on || free ? null : el('span', { class: 'tag gold' }, 'beta'));
-  const noImg = c.isPublic || c.systemKind;
-  plus = el('div', { class: 'plusmenu' },
+  const noImg = !!c.systemKind;
+  const games = [['grid', 'tic-tac-toe', 'ttt'], ['users', 'rock paper scissors', 'rps'], ['grid', 'connect 4', 'c4'], ['book', 'word duel', 'wd'], ['trophy', 'trivia duel', 'tr']];
+  if (sub === '2p') plus = el('div', { class: 'plusmenu' },
+    el('button', { class: 'plusitem', onclick: () => plusMenu(anchor, c, input, 'main') }, ic('back', 18), el('span', { class: 'grow' }, '2 player games')),
+    ...games.map(([i, l, k]) => item(i, l, () => needBeta('mini games') && startGame(c, k))));
+  else plus = el('div', { class: 'plusmenu' },
     noImg ? null : item('image', 'photo', () => window.__ext.pickPhoto(c)),
     c.type === 'dm' ? item('eye', 'view once', () => window.__ext.onceModal(c), true) : null,
     item('mic', 'voice note', () => needBeta('voice notes') && voiceModal(c)),
     item('sticker', 'sticker', () => needBeta('stickers') && stickerPicker(c)),
     item('poll', 'poll', () => needBeta('polls') && pollModal(c)),
     item('calendar', 'schedule a message', () => needBeta('scheduled messages') && scheduleModal(c, input)),
-    c.type === 'dm' ? item('grid', 'tic-tac-toe', () => needBeta('mini games') && startGame(c, 'ttt')) : null,
-    c.type === 'dm' ? item('users', 'rock paper scissors', () => needBeta('mini games') && startGame(c, 'rps')) : null,
-    c.type === 'dm' ? item('grid', 'connect 4', () => needBeta('mini games') && startGame(c, 'c4')) : null,
-    c.type === 'dm' ? item('book', 'word duel', () => needBeta('mini games') && startGame(c, 'wd')) : null,
-    c.type === 'dm' ? item('trophy', 'trivia duel', () => needBeta('mini games') && startGame(c, 'tr')) : null,
+    c.type === 'dm' ? el('button', { class: 'plusitem', onclick: () => plusMenu(anchor, c, input, '2p') }, ic('gamepad', 18), el('span', { class: 'grow' }, '2 player games'), el('span', { class: 'muted' }, '›')) : null,
     item('bell', 'my reminders', () => window.__ext.remindersModal()),
     item('palette', 'chat wallpaper', () => window.__ext.wallpaperModal(c)));
   document.body.append(plus);
@@ -3538,31 +3551,45 @@ async function doForward(src, m, dst, mm) {
 
 // ---------- search inside a chat ----------
 const textOfPayload = (p) => [p.text, p.caption, p.title, p.q, p.name, p.inner && p.inner.caption].filter((x) => typeof x === 'string').join(' ');
-async function searchModal(c, preset) {
+async function searchModal(c, preset, everywhere) {
+  let all = !!everywhere;
   const q = el('input', { placeholder: 'search ' + convTitle(c), value: preset || '' });
+  const scope = el('div', { class: 'seg small' });
+  const drawScope = () => { scope.replaceChildren(...[[false, 'this chat'], [true, 'all my chats']].map(([v, l]) => el('button', { class: all === v ? 'on' : '', onclick: () => { all = v; q.placeholder = all ? 'search all my chats' : 'search ' + convTitle(c); drawScope(); draw(); } }, l))); };
   const status = el('div', { class: 'muted small', style: 'margin:6px 2px' });
   const list = el('div', { class: 'sres' });
-  const mm = modal('search', el('div', null, el('div', { class: 'searchbox' }, ic('search', 16), q), status, list), { wide: true });
+  const mm = modal('search', el('div', null, el('div', { class: 'searchbox' }, ic('search', 16), q), scope, status, list), { wide: true });
   let loaded = false;
   const draw = () => {
     const needle = q.value.trim().toLowerCase();
     if (needle.length < 2) { list.replaceChildren(el('div', { class: 'muted pad' }, 'type 2 or more letters')); return; }
-    const hits = c.msgs.filter((x) => !x.deleted && x._p && textOfPayload(x._p).toLowerCase().includes(needle)).reverse().slice(0, 80);
-    status.textContent = loaded ? `${hits.length}${hits.length === 80 ? '+' : ''} match${hits.length === 1 ? '' : 'es'} in ${c.msgs.length} messages` : 'still loading older messages...';
-    list.replaceChildren(...(hits.length ? hits.map((x) => {
-      const s = memberOf(c, x.senderId);
+    const pool = all ? S.convs.filter((v) => !v.systemKind) : [c];
+    const hits = [];
+    pool.forEach((v) => v.msgs.forEach((x) => { if (!x.deleted && x._p && textOfPayload(x._p).toLowerCase().includes(needle)) hits.push({ v, x }); }));
+    hits.sort((a, b) => new Date(b.x.createdAt) - new Date(a.x.createdAt)); hits.length = Math.min(hits.length, 80);
+    const total = pool.reduce((n, v) => n + v.msgs.length, 0);
+    status.textContent = loaded || all ? `${hits.length}${hits.length === 80 ? '+' : ''} match${hits.length === 1 ? '' : 'es'} in ${total} messages${all ? ' from chats loaded this session' : ''}` : 'still loading older messages...';
+    list.replaceChildren(...(hits.length ? hits.map(({ v, x }) => {
+      const s = memberOf(v, x.senderId);
       const t = textOfPayload(x._p), at = t.toLowerCase().indexOf(needle), a = Math.max(0, at - 30);
-      return el('div', { class: 'urow click', onclick: () => { mm.close(); jumpTo(c, x.id); } }, avatar(s ? s.displayName : x.senderId === S.me.id ? S.me.displayName : '?', 32, '', s && s.avatar),
-        el('div', { class: 'grow' }, el('div', { class: 'small muted' }, (x.senderId === S.me.id ? 'you' : s ? s.displayName : 'someone') + ' · ' + fmtDay(x.createdAt).toLowerCase() + ' ' + fmtTime(x.createdAt)),
+      return el('div', { class: 'urow click', onclick: () => { mm.close(); jumpTo(v, x.id); } }, avatar(s ? s.displayName : x.senderId === S.me.id ? S.me.displayName : '?', 32, '', s && s.avatar),
+        el('div', { class: 'grow' }, el('div', { class: 'small muted' }, (all ? convTitle(v) + ' · ' : '') + (x.senderId === S.me.id ? 'you' : s ? s.displayName : 'someone') + ' · ' + fmtDay(x.createdAt).toLowerCase() + ' ' + fmtTime(x.createdAt)),
           el('div', { class: 'snip' }, (a ? '...' : '') + t.slice(a, at), el('mark', null, t.slice(at, at + needle.length)), t.slice(at + needle.length, at + needle.length + 70))));
     }) : [el('div', { class: 'muted pad' }, 'nothing found')]));
   };
   q.addEventListener('input', C.debounce(draw, 150));
-  draw(); q.focus();
+  drawScope(); draw(); q.focus();
   let pages = 0;                                             // pull in the older history so the search sees it all (messages only live a couple of days anyway)
   while (c.hasMore && pages < 20 && mm.box.isConnected) { try { await C.loadMessages(c, true); } catch { break; } pages++; draw(); }
   loaded = true; draw(); c._shown = null;
 }
+
+document.addEventListener('keydown', (e) => {
+  if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey || e.key.toLowerCase() !== 'k' || !S.me || document.querySelector('.modal')) return;
+  e.preventDefault();
+  const c = convOf(S.active) || S.convs[0];
+  if (c) searchModal(c, '', true);
+});
 
 // ---------- encrypted images + view once ----------
 const IMG_MAX = 5 * 1024 * 1024;
@@ -3617,9 +3644,29 @@ async function sendImage(c, file, opts = {}) {
   if (ok && c._reply) { c._reply = null; drawReply(c); }
   return ok;
 }
+document.addEventListener('paste', (e) => {
+  if (!S.me || document.querySelector('.modal, .lightbox')) return;
+  const c = convOf(S.active); if (!c || S.view !== 'chats') return;
+  const item = [...((e.clipboardData && e.clipboardData.items) || [])].find((i) => i.kind === 'file' && /^image\/(png|jpeg|gif|webp)$/.test(i.type));
+  if (!item) return;
+  const file = item.getAsFile(); if (!file) return;
+  e.preventDefault();
+  if (c.systemKind) return toast('photos are not allowed in the built-in rooms', 'error');
+  if (c.isPublic && !(S.me.verified || S.me.isAdmin)) return toast('verify your account to send pictures in public groups', 'error');
+  if (!betaGate('sending photos')) return;
+  photoModal(c, file);
+});
+async function reportImage(reportId) {
+  try {
+    const p = await api('GET', `/api/admin/reports/${reportId}/image`);
+    const plain = await decryptBlob(p, await fetchBlobBytes(p.blob));
+    lightbox(URL.createObjectURL(new Blob([plain], { type: p.mime })), { note: p.caption || 'reported picture' });
+  } catch (e) { toast(e.message || 'could not open it', 'error'); }
+}
 function pickPhoto(c) {
   if (!betaGate('sending photos')) return;
-  if (c.isPublic || c.systemKind) return toast('photos are not allowed in public rooms', 'error');
+  if (c.systemKind) return toast('photos are not allowed in the built-in rooms', 'error');
+  if (c.isPublic && !(S.me.verified || S.me.isAdmin)) return toast('verify your account to send pictures in public groups', 'error');
   const f = el('input', { type: 'file', accept: 'image/png,image/jpeg,image/gif,image/webp', style: 'display:none' });
   f.addEventListener('change', () => { const file = f.files[0]; f.remove(); if (file) photoModal(c, file); });
   document.body.append(f); f.click();
@@ -3637,6 +3684,7 @@ function photoModal(c, file) {
     catch (e) { err.textContent = e.message; send.disabled = false; send.textContent = 'send'; }
   } }, 'send');
   const mm = modal('send a photo', el('div', null, el('img', { src: url, class: 'photoprev' }), el('div', { class: 'muted small', style: 'margin:6px 0' }, `${fmtSize(file.size)}${file.size > IMG_MAX ? ' - will be shrunk to fit 5 MB' : ''} · encrypted before it leaves your device`),
+    c.isPublic ? el('div', { class: 'muted small' }, 'everyone in this group can see this picture, and it can be reported and removed.') : null,
     cap, c.type === 'dm' ? el('label', { class: 'checkrow' }, once, 'view once (it disappears after they open it)') : null, err, send), { onClose: () => URL.revokeObjectURL(url) });
 }
 function imageBody(c, m, p) {
@@ -3781,7 +3829,7 @@ const wrapBetaChanged = X0.betaChanged;
 
 Object.assign(window.__ext, {
   dndActive, dndModal, sendBlock, drawModbar, slowLabel, setReply, drawReply, quoteEl, jumpTo, mentionIds, mentionsMe, slash, suggest, suggestKey, forwardModal, searchModal,
-  imageBody, onceBody, onceModal, pickPhoto, remindModal, remindersModal, wallpaperModal, applyWallpaper, lightbox, whoisModal, niceSecs, parseSecs, betaGate,
+  imageBody, onceBody, onceModal, pickPhoto, reportImage, remindModal, remindersModal, wallpaperModal, applyWallpaper, lightbox, whoisModal, niceSecs, parseSecs, betaGate,
   betaChanged: () => { if (wrapBetaChanged) wrapBetaChanged(); applyWallpaper(convOf(S.active)); U.renderHeader(); },
 });
 })();
@@ -4631,14 +4679,27 @@ async function myBots() {
   load();
 }
 
-async function directory() {
+const starRow = (b) => {
+  const wrap = el('div', { class: 'row gap-s', style: 'align-items:center;margin-top:4px' });
+  const draw = () => {
+    wrap.replaceChildren(
+      ...[1, 2, 3, 4, 5].map((n) => el('button', { class: 'icon-btn', style: 'padding:2px;color:' + (n <= (b.mine || Math.round(b.rating || 0)) ? 'var(--gold,#e0a526)' : 'var(--muted,#999)'), title: 'rate ' + n, onclick: async () => {
+        try { const r = await api('POST', `/api/bots/${b.id}/rate`, { score: b.mine === n ? 0 : n }); Object.assign(b, r); draw(); } catch (e) { toast(e.message, 'error'); }
+      } }, ic('star', 16))),
+      el('span', { class: 'muted small', style: 'white-space:nowrap' }, b.ratings ? `${b.rating} (${b.ratings})` : 'no ratings'));
+  };
+  draw(); return wrap;
+};
+
+async function directory(sort = 'top') {
   const body = el('div', { class: 'col gap-s' });
   const m = modal('bots', body, { wide: true });
   try {
-    const d = await api('GET', '/api/bots/directory');
+    const d = await api('GET', '/api/bots/directory?sort=' + sort);
     body.replaceChildren(
+      el('div', { class: 'seg small' }, [['top', 'top rated'], ['pop', 'popular'], ['new', 'newest']].map(([k, l]) => el('button', { class: sort === k ? 'on' : '', onclick: () => { m.close(); directory(k); } }, l))),
       el('p', { class: 'muted small', style: 'margin-top:0' }, 'type /bot name your message in any chat to use one. the bot only sees what you type after its name.'),
-      ...(d.bots.length ? d.bots.map((b) => el('div', { class: 'urow' }, avatar(b.name, 36), el('div', { class: 'grow' }, el('div', { class: 'ctitle' }, b.name, el('span', { class: 'muted small' }, '  by ' + (b.owner || 'someone'))), el('div', { class: 'muted small' }, b.description || b.kind), el('div', { class: 'row gap-s wraprow', style: 'margin-top:4px' }, b.allowPublic ? el('span', { class: 'tag' }, 'rooms') : null, b.allowDm ? el('span', { class: 'tag' }, 'dms') : null, b.allowGroups ? el('span', { class: 'tag' }, 'groups') : null, ...powerTags(b.powers))),
+      ...(d.bots.length ? d.bots.map((b) => el('div', { class: 'urow' }, avatar(b.name, 36), el('div', { class: 'grow' }, el('div', { class: 'ctitle' }, b.name, el('span', { class: 'muted small' }, '  by ' + (b.owner || 'someone'))), el('div', { class: 'muted small' }, b.description || b.kind), starRow(b), el('div', { class: 'row gap-s wraprow', style: 'margin-top:4px' }, b.allowPublic ? el('span', { class: 'tag' }, 'rooms') : null, b.allowDm ? el('span', { class: 'tag' }, 'dms') : null, b.allowGroups ? el('span', { class: 'tag' }, 'groups') : null, ...powerTags(b.powers))),
         el('div', { class: 'col gap-s' },
           hostedFor(b).length ? el('button', { class: 'btn small primary', onclick: () => pickGroupFor(b) }, ic('plus', 14), 'add to my group') : null,
           b.allowDm ? el('button', { class: 'btn small', onclick: () => { m.close(); U.startDM(b.name); } }, 'message') : null))) : [el('div', { class: 'muted pad' }, 'no bots yet, be the first')]),
@@ -4760,6 +4821,178 @@ async function ownerBots(box) {
 }
 
 Object.assign(window.__ext, { myBots, botDirectory: directory, groupBotPicker, botsSection, runBotCommand, botBody, ownerBots });
+})();
+
+(() => {
+'use strict';
+const C = window.__core, U = window.__ui, X = window.__ext;
+const { S, el, ic, toast, api, loadConvs } = C;
+const { modal } = U;
+
+const PALETTE = ['#e0674f', '#e0a526', '#6bb26b', '#4f9fd8', '#8b6bd8', '#d86bb0', '#8a8f98', '#c9a227'];
+
+const rolesOf = (c, uid) => {
+  const m = c.members.find((x) => x.id === uid);
+  if (!m || !m.roleIds || !m.roleIds.length) return [];
+  return (c.roles || []).filter((r) => m.roleIds.includes(r.id));
+};
+
+const roleChips = (c, uid) => {
+  const rs = rolesOf(c, uid);
+  if (!rs.length) return null;
+  return el('span', { class: 'rolechips' }, rs.map((r) => el('span', { class: 'rolechip', style: `--rc:${r.color}` }, r.name)));
+};
+
+function rolesSection(c, redraw) {
+  if (c.type !== 'group' || c.systemKind || U.myRank(c) < 2) return null;
+  const name = el('input', { placeholder: 'new role name', maxLength: 20 });
+  let color = PALETTE[0];
+  const swatches = el('div', { class: 'row gap-s wraprow' });
+  const drawSw = () => swatches.replaceChildren(...PALETTE.map((p) => el('button', { class: 'swatch' + (p === color ? ' on' : ''), style: `background:${p}`, onclick: () => { color = p; drawSw(); } })));
+  drawSw();
+  const done = async () => { await loadConvs(); redraw && redraw(); };
+  const list = (c.roles || []).map((r) => el('div', { class: 'urow' },
+    el('span', { class: 'rolechip', style: `--rc:${r.color}` }, r.name),
+    el('div', { class: 'grow' }),
+    el('button', { class: 'btn small', onclick: () => assignModal(c, r, done) }, 'people'),
+    el('button', { class: 'icon-btn', title: 'delete role', onclick: async () => { try { await api('DELETE', `/api/conversations/${c.id}/roles/${r.id}`); await done(); } catch (e) { toast(e.message, 'error'); } } }, ic('trash', 16))));
+  const add = el('button', { class: 'btn primary', onclick: async () => {
+    try { await api('POST', `/api/conversations/${c.id}/roles`, { name: name.value, color }); name.value = ''; await done(); } catch (e) { toast(e.message, 'error'); }
+  } }, ic('plus', 16), 'add role');
+  return el('div', { class: 'col gap-s', style: 'margin-top:14px' },
+    el('h4', { style: 'margin:0' }, ic('users', 14), 'roles'),
+    el('div', { class: 'muted small' }, 'named colored tags you give to people. they show next to the name in chat.'),
+    ...list, name, swatches, add);
+}
+
+function assignModal(c, role, after) {
+  const body = el('div', { class: 'col gap-s' });
+  const m = modal('who is ' + role.name, body);
+  m.box.style.zIndex = 420;
+  const draw = () => body.replaceChildren(...c.members.filter((u) => !u.isBot).map((u) => {
+    const has = (u.roleIds || []).includes(role.id);
+    return el('div', { class: 'urow' }, C.avatar(u.displayName, 30, '', u.avatar), el('div', { class: 'grow' }, u.displayName),
+      el('button', { class: 'btn small' + (has ? '' : ' primary'), onclick: async () => {
+        try {
+          await api('PUT', `/api/conversations/${c.id}/roles/${role.id}/members/${u.id}`, { on: !has });
+          u.roleIds = has ? u.roleIds.filter((x) => x !== role.id) : [...(u.roleIds || []), role.id];
+          draw(); after && after();
+        } catch (e) { toast(e.message, 'error'); }
+      } }, has ? 'remove' : 'give'));
+  }));
+  draw();
+}
+
+function rulesSection(c, redraw) {
+  if (c.type !== 'group' || c.systemKind || U.myRank(c) < 2) return null;
+  const ta = el('textarea', { rows: 5, maxLength: 1200, placeholder: 'be kind. no spam. keep it on topic.' });
+  ta.value = c.rules || '';
+  let on = !!c.rulesOn;
+  const tog = el('button', { class: 'btn' + (on ? ' primary' : '') }, on ? 'gate is on' : 'gate is off');
+  tog.onclick = () => { on = !on; tog.className = 'btn' + (on ? ' primary' : ''); tog.textContent = on ? 'gate is on' : 'gate is off'; };
+  const save = el('button', { class: 'btn primary', onclick: async () => {
+    try { await api('PUT', `/api/conversations/${c.id}/rules`, { text: ta.value, on }); await loadConvs(); toast('rules saved', 'success'); redraw && redraw(); } catch (e) { toast(e.message, 'error'); }
+  } }, 'save rules');
+  return el('div', { class: 'col gap-s', style: 'margin-top:14px' },
+    el('h4', { style: 'margin:0' }, ic('shield', 14), 'rules'),
+    el('div', { class: 'muted small' }, 'with the gate on, new members and everyone after you edit the rules have to accept before they can post.'),
+    ta, el('div', { class: 'row gap-s' }, tog, save));
+}
+
+function rulesBar(c, composer) {
+  const bar = el('div', { class: 'rulesbar' });
+  const gated = () => c.type === 'group' && c.rulesOn && !c.rulesOk && U.myRank(c) < 1;
+  const draw = () => {
+    const g = gated();
+    composer.style.display = g ? 'none' : '';
+    bar.style.display = g ? '' : 'none';
+    if (!g) return;
+    bar.replaceChildren(
+      el('div', { class: 'ctitle' }, ic('shield', 16), 'group rules'),
+      el('div', { class: 'rulestext' }, c.rules),
+      el('button', { class: 'btn primary wide', onclick: async () => {
+        try { await api('POST', `/api/conversations/${c.id}/rules/accept`); c.rulesOk = true; draw(); } catch (e) { toast(e.message, 'error'); }
+      } }, ic('check', 16), 'i accept'));
+  };
+  draw();
+  return bar;
+}
+
+Object.assign(window.__ext, { rolesSection, rulesSection, rulesBar, roleChips, rolesOf });
+})();
+
+(() => {
+'use strict';
+const C = window.__core, U = window.__ui, X = window.__ext;
+const { S, el, ic, toast, api } = C;
+const { modal } = U;
+
+const FIX = {"teh":"the","adn":"and","taht":"that","thier":"their","recieve":"receive","recieved":"received","wierd":"weird","freind":"friend","freinds":"friends","becuase":"because","becasue":"because","beacuse":"because","definately":"definitely","defintely":"definitely","seperate":"separate","occured":"occurred","untill":"until","wich":"which","whcih":"which","alot":"a lot","thats":"that's","dont":"don't","doesnt":"doesn't","didnt":"didn't","cant":"can't","wont":"won't","isnt":"isn't","arent":"aren't","wasnt":"wasn't","werent":"weren't","havent":"haven't","hasnt":"hasn't","hadnt":"hadn't","wouldnt":"wouldn't","couldnt":"couldn't","shouldnt":"shouldn't","ive":"i've","youre":"you're","theyre":"they're","its'":"it's","whats":"what's","hows":"how's","wheres":"where's","theres":"there's","heres":"here's","goign":"going","gonig":"going","doign":"doing","haveing":"having","makeing":"making","takeing":"taking","comeing":"coming","writting":"writing","runing":"running","geting":"getting","stoped":"stopped","beleive":"believe","belive":"believe","acheive":"achieve","arguement":"argument","begining":"beginning","calender":"calendar","collegue":"colleague","comming":"coming","completly":"completely","concious":"conscious","embarass":"embarrass","enviroment":"environment","existance":"existence","foriegn":"foreign","goverment":"government","gaurd":"guard","grammer":"grammar","happend":"happened","harrass":"harass","immediatly":"immediately","independant":"independent","interupt":"interrupt","knowlege":"knowledge","libary":"library","lisence":"license","maintainance":"maintenance","millenium":"millennium","mispell":"misspell","neccessary":"necessary","necesary":"necessary","noticable":"noticeable","occassion":"occasion","occurence":"occurrence","persistant":"persistent","posession":"possession","prefered":"preferred","privelege":"privilege","probly":"probably","publically":"publicly","realy":"really","reccomend":"recommend","refered":"referred","relevent":"relevant","religous":"religious","remeber":"remember","rember":"remember","resistence":"resistance","responsability":"responsibility","rythm":"rhythm","sieze":"seize","succesful":"successful","sucess":"success","suprise":"surprise","tommorow":"tomorrow","tomorow":"tomorrow","tounge":"tongue","truely":"truly","tyrany":"tyranny","wether":"whether","whereever":"wherever","yesturday":"yesterday","youself":"yourself","waht":"what","wnat":"want","hte":"the","nad":"and","tht":"that","jsut":"just","abotu":"about","aobut":"about","liek":"like","hapy":"happy","frist":"first","thnk":"think","konw":"know","knwo":"know","shoudl":"should","woudl":"would","coudl":"could","peple":"people","poeple":"people","pepole":"people","togehter":"together","toghether":"together","diffrent":"different","diferent":"different","intresting":"interesting","interresting":"interesting","importent":"important","beautifull":"beautiful","beatiful":"beautiful","excersize":"exercise","excercise":"exercise","favorit":"favorite","favourit":"favourite","freinly":"friendly","geniune":"genuine","hieght":"height","humourous":"humorous","idnetity":"identity","kindergarden":"kindergarten","langauge":"language","mathmatics":"mathematics","mischievious":"mischievous","ocassionally":"occasionally","oppurtunity":"opportunity","paralel":"parallel","pasttime":"pastime","peice":"piece","plesant":"pleasant","pronounciation":"pronunciation","questionaire":"questionnaire","recieving":"receiving","rediculous":"ridiculous","resturant":"restaurant","sargent":"sergeant","scedule":"schedule","shedule":"schedule","sincerly":"sincerely","speach":"speech","strenght":"strength","temperture":"temperature","thourough":"thorough","tought":"thought","vaccum":"vacuum","vegtable":"vegetable","wensday":"wednesday","wendsday":"wednesday","thursay":"thursday","saturady":"saturday","febuary":"february","wierdo":"weirdo","accomodate":"accommodate","adress":"address","agressive":"aggressive","apparant":"apparent","assasin":"assassin","basicly":"basically","buisness":"business","catagory":"category","cemetary":"cemetery","changable":"changeable","cheif":"chief","commited":"committed","compatability":"compatibility","congradulations":"congratulations","dilema":"dilemma","dissapear":"disappear","dissapoint":"disappoint","ecstacy":"ecstasy","embarassed":"embarrassed","exagerate":"exaggerate","existant":"existent","firey":"fiery","flourescent":"fluorescent","fourty":"forty","gratefull":"grateful","guidence":"guidance","heirarchy":"hierarchy","hygeine":"hygiene","ignorence":"ignorance","incidently":"incidentally","jewelery":"jewelry","judgement":"judgment","liason":"liaison","lollypop":"lollipop","manuever":"maneuver","medeval":"medieval","miniscule":"minuscule","neice":"niece","ommit":"omit","pavillion":"pavilion","perseverence":"perseverance","playwrite":"playwright","pursuade":"persuade","reciept":"receipt","reccommend":"recommend","sandwhich":"sandwich","secratary":"secretary","supercede":"supersede","threshhold":"threshold","tomatos":"tomatoes","twelth":"twelfth","unforseen":"unforeseen","wellcome":"welcome","whith":"with","wiht":"with","wih":"with"};
+
+const match = (w) => {
+  const hit = FIX[w.toLowerCase()];
+  if (!hit) return null;
+  if (w === w.toUpperCase() && w.length > 2) return hit.toUpperCase();
+  if (w[0] === w[0].toUpperCase() && w[0] !== w[0].toLowerCase()) return hit[0].toUpperCase() + hit.slice(1);
+  return hit;
+};
+
+function attachAutocorrect(input) {
+  let undo = null;
+  input.addEventListener('keydown', (e) => {
+    if (S.prefs.autocorrect === false) return;
+    if (e.key === 'Backspace' && undo && undo.at === input.selectionStart && input.value === undo.after) {
+      e.preventDefault();
+      input.value = undo.before; input.setSelectionRange(undo.caret, undo.caret); undo = null;
+      input.dispatchEvent(new Event('input'));
+      return;
+    }
+    undo = null;
+    if (e.key !== ' ' && e.key !== 'Enter') return;
+    if (input.selectionStart !== input.selectionEnd) return;
+    const pos = input.selectionStart, before = input.value.slice(0, pos);
+    const m = /([A-Za-z']+)$/.exec(before);
+    if (!m || /^[/@:]/.test(before.slice(0, m.index).slice(-1))) return;
+    const start = m.index;
+    if (start > 0 && /[/@:#]/.test(before[start - 1])) return;
+    const fixed = match(m[1]);
+    if (!fixed) return;
+    const orig = input.value;
+    input.value = orig.slice(0, start) + fixed + orig.slice(pos);
+    const caret = start + fixed.length;
+    input.setSelectionRange(caret, caret);
+    if (e.key === ' ') {
+      e.preventDefault();
+      input.setRangeText(' ', caret, caret, 'end');
+      undo = { before: orig.slice(0, pos) + ' ' + orig.slice(pos), after: input.value, at: input.selectionStart, caret: pos + 1 };
+      input.dispatchEvent(new Event('input'));
+    }
+  });
+}
+
+async function smartFix(input) {
+  const text = input.value.trim();
+  if (text.length < 3) return toast('type something first', 'info');
+  let ok = false;
+  try { ok = S.prefs.smartFixOk === true; } catch {}
+  if (!ok) {
+    ok = await new Promise((done) => {
+      const m = modal('smart fix', el('div', { class: 'col gap-s' },
+        el('p', { style: 'margin:0' }, 'this sends what you typed to an outside ai service so it can fix your spelling and grammar. it is not end to end encrypted.'),
+        el('div', { class: 'form-err' }, 'do not use it on anything private. only the draft is sent, nothing else about you.'),
+        el('div', { class: 'row gap end' }, el('button', { class: 'btn ghost', onclick: () => { m.close(); done(false); } }, 'cancel'), el('button', { class: 'btn primary', onclick: () => { m.close(); done(true); } }, 'fix it'))));
+    });
+    if (!ok) return;
+    S.prefs.smartFixOk = true; try { localStorage.setItem('chatroom.prefs', JSON.stringify(S.prefs)); } catch {}
+  }
+  try {
+    const d = await api('POST', '/api/ai/fix', { text });
+    input.value = d.text; input.dispatchEvent(new Event('input')); input.focus();
+    toast('fixed, check it before sending', 'success');
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+Object.assign(window.__ext, { attachAutocorrect, smartFix });
 })();
 
 /* ===== Chatroom client: mod tools, admin panes (appeals, audit log, stats), appeal screen, and app start ===== */
