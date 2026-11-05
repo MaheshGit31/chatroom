@@ -4,10 +4,9 @@
     "date": "2026-11-04",
     "title": "block world",
     "items": [
-      "block world replaces the hangout world: a real 3d minecraft style world in your browser. open it from + > block world in any public room. one global server, everyone is in the same world",
-      "mine blocks by holding left click, place with right click, wasd to move, space to jump, shift to sprint, e for inventory and crafting, t to chat. verified accounts can build",
-      "survival lite: hearts, fall damage, day and night cycle, and zombies come out at night. craft planks, bricks, glass and lamps",
-      "everything you build is saved forever. the spawn area is protected and admins can undo griefing with /undo username minutes in world chat",
+      "block world is now a real multiplayer blocks server (classicube). open it from + > block world in any public room, you are signed in automatically with your chatroom name",
+      "mine, build and explore a shared 3d world with everyone, with a pixel perfection texture pack",
+      "it replaces the hangout world, coin rush and big trivia",
       "owner now has unlimited public rooms and bots"
     ]
   },
