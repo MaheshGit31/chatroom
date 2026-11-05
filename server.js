@@ -18,8 +18,8 @@ const beta = require('./lib/beta');                          // beta-only extras
 const gngBot = require('./lib/gng');                          // gng, the gen alpha bot that lives in public rooms
 const owner = require('./lib/owner');                        // owner-only: update video, console, lockdown, timed events
 const mod = require('./lib/mod');                            // group mods, slow mode, commands, audit log, appeals, stats, dnd, view-once, reminders, image blobs
-const audit = require('./lib/audit');
-const worldLib = require('./lib/world');                        // audit log + daily counters
+const audit = require('./lib/audit');                        // audit log + daily counters
+const mcLib = require('./lib/mc');
 const extrasLib = require('./lib/extras');
 const botsLib = require('./lib/bots');
 const features = require('./lib/features');                  // reactions, pins, reports, public groups, referrals, gifs, themes
@@ -799,6 +799,8 @@ botsApi.mount(app, { auth, byUser, bad, wrap, isUuid, ownerOnly, requireMember, 
 extrasApi = extrasLib.init({ q, secret: () => SERVER_SECRET, games });
 extrasApi.mount(app, { auth, byUser, bad, wrap, requireMember, sendToConv, betaOn: features.betaOn });
 require('./lib/roles').mount(app, { q, auth, byUser, bad, wrap, isUuid, requireMember, sendToConv, filter: safety.F });
+const mc = mcLib.init({ q, sendTo, F: safety.F, limiter });
+mc.mount(app, { auth, byUser, bad, wrap, adminOnly });
 require('./lib/boards').mount(app, { q, auth, byUser, bad, wrap, isUuid, requireMember, sendToConv, sendTo, notify, isStaff: mod.isStaff, filter: safety.F });
 modApi = mod.mount(app, { q, auth, adminOnly, byUser, bad, wrap, sendTo, sendToConv, notify, isUuid, requireMember, sockets, secret: () => SERVER_SECRET, adminName: ADMIN_USERNAME, ensureFor, rl });
 
@@ -853,7 +855,6 @@ server.on('upgrade', (req, socket, head) => {
   wss.handleUpgrade(req, socket, head, (ws) => { ws.ip = ip; wss.emit('connection', ws, req); });
 });
 
-const world = worldLib.init({ q, sendTo, F: safety.F, limiter });
 wss.on('connection', (ws) => {
   ipConns.set(ws.ip, (ipConns.get(ws.ip) || 0) + 1);
   ws.alive = true;
@@ -863,7 +864,7 @@ wss.on('connection', (ws) => {
   ws.on('message', async (raw, isBinary) => {
     if (isBinary) return relayFrame(ws, raw);                  // play together relay frames have their own byte budget
     if (raw.length > 8192) return;                             // ordinary events are small
-    const moving = raw.length < 120 && ws.userId && raw.toString().startsWith('{"t":"world_move"');
+    const moving = raw.length < 160 && ws.userId && raw.toString().startsWith('{"t":"mc_move"');
     if (moving) { if (!limiter.hit('wsm:' + ws.userId, 20, 1000).ok) return; }
     else if (!limiter.hit('ws:' + ws.ip + ':' + (ws.userId || ''), 40, 10_000).ok) return ws.close(1008, 'too many events'); // flood => disconnect
     let m; try { m = JSON.parse(raw.toString()); } catch { return; }
@@ -894,7 +895,7 @@ wss.on('connection', (ws) => {
         if (m.kind === 'relay') { relayEnd(ws.userId); relayEnd(m.to); relayPairs.set(ws.userId, m.to); relayPairs.set(m.to, ws.userId); }   // both sides may now exchange frames
         else if (m.kind === 'bye' && relayPairs.get(ws.userId) === m.to) relayEnd(ws.userId);
         sendTo(m.to, { t: 'rtc', from: ws.userId, room: m.room, kind: m.kind, data: m.data || null });
-      } else if (typeof m.t === 'string' && m.t.startsWith('world_')) world.handle(ws, m);
+      } else if (typeof m.t === 'string' && m.t.startsWith('mc_')) mc.handle(ws, m);
       else if (m.t === 'ping') ws.send('{"t":"pong"}');
     } catch (e) { console.error('ws error', e.message); }
   });
@@ -904,7 +905,7 @@ wss.on('connection', (ws) => {
     if (n <= 0) ipConns.delete(ws.ip); else ipConns.set(ws.ip, n);
     if (!ws.userId) return;
     const set = sockets.get(ws.userId);
-    if (set) { set.delete(ws); if (!set.size) { sockets.delete(ws.userId); world.leave(ws.userId); relayEnd(ws.userId); endPlay(ws.userId).catch(() => {}); broadcastPresence(ws.userId).catch(() => {}); } }
+    if (set) { set.delete(ws); if (!set.size) { sockets.delete(ws.userId); mc.leave(ws.userId); relayEnd(ws.userId); endPlay(ws.userId).catch(() => {}); broadcastPresence(ws.userId).catch(() => {}); } }
   });
 });
 setInterval(() => { for (const ws of wss.clients) { if (!ws.alive) { ws.terminate(); continue; } ws.alive = false; ws.ping(); } }, 30_000).unref(); // drop dead sockets
@@ -921,6 +922,7 @@ async function getSetting(key, make) {
 (async () => {
   if (!process.env.DATABASE_URL) { console.error('DATABASE_URL is missing'); process.exit(1); }
   await init();
+  await mc.load();
   await safety.initSystem(q);                                // Everyone + Beta lounge
   await ownerApi.load();                                     // update video, lockdown switches, timed events
   SERVER_SECRET = await getSetting('server_secret', () => crypto.randomBytes(32).toString('hex'));

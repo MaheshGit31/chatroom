@@ -1,12 +1,21 @@
 [
   {
+    "id": "2026-11-04-d",
+    "date": "2026-11-04",
+    "title": "block world",
+    "items": [
+      "block world replaces the hangout world: a real 3d minecraft style world in your browser. open it from + > block world in any public room. one global server, everyone is in the same world",
+      "mine blocks by holding left click, place with right click, wasd to move, space to jump, shift to sprint, e for inventory and crafting, t to chat. verified accounts can build",
+      "survival lite: hearts, fall damage, day and night cycle, and zombies come out at night. craft planks, bricks, glass and lamps",
+      "everything you build is saved forever. the spawn area is protected and admins can undo griefing with /undo username minutes in world chat",
+      "owner now has unlimited public rooms and bots"
+    ]
+  },
+  {
     "id": "2026-11-04-c",
     "date": "2026-11-04",
-    "title": "hangout world, whiteboards and game nights",
+    "title": "whiteboards and game nights",
     "items": [
-      "hangout world: in any public room, + > big games > hangout world. walk around with wasd or by tapping, see everyone else, chat in bubbles and send emotes",
-      "coin rush: coins pop up around the world, grab them, and a 5 minute round crowns the top 3",
-      "big trivia: anyone in the world can start a trivia round that the whole room plays together",
       "shared whiteboards: draw together live in any group (group info > whiteboards, or the + menu). pen, colors, text, undo. you can report a board and mods can clear or delete it",
       "game nights: hosts and mods plan a game night in group info, members tap i am in, and everyone going gets a notification when it starts"
     ]
