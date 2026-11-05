@@ -1,6 +1,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates && rm -rf /var/lib/apt/lists/*
 RUN git clone --depth 1 --branch 1.9.5.3 https://github.com/ClassiCube/MCGalaxy.git /src
+RUN sed -i 's/service.Salt = Server.GenerateSalt();/service.Salt = System.Environment.GetEnvironmentVariable("BW_SALT") ?? Server.GenerateSalt();/' /src/MCGalaxy/Server/Authentication/AuthService.cs && grep -q BW_SALT /src/MCGalaxy/Server/Authentication/AuthService.cs
 WORKDIR /src/CLI
 RUN dotnet build MCGalaxyCLI_dotnet8.csproj -c Release -o /app
 

@@ -17,6 +17,9 @@ FIRST=0
     printf '/newlvl world 256 96 256 forest\n'
     sleep 40
     printf '/main world\n'
+    sleep 5
+    printf '/rank bart owner confirm\n'
+    sleep 3
   fi
   tail -f /dev/null
 } | dotnet /app/MCGalaxyCLI.dll
