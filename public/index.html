@@ -557,6 +557,7 @@ button.oncecard{cursor:pointer}.oncecard.gone{opacity:.6;cursor:default}.oncetex
 .coopvideo{flex:1;min-height:0;width:100%;object-fit:contain;background:#000;cursor:crosshair}
 .coopstatus{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;display:flex;flex-direction:column;align-items:center;gap:10px}
 .rolechips{display:inline-flex;gap:4px;margin-left:6px;vertical-align:middle}.rolechip{display:inline-block;font-size:11px;font-weight:700;line-height:1;padding:3px 7px;border-radius:99px;color:var(--rc);background:color-mix(in srgb,var(--rc) 16%,transparent);border:1px solid color-mix(in srgb,var(--rc) 40%,transparent)}.swatch{width:26px;height:26px;border-radius:50%;border:2px solid transparent}.swatch.on{border-color:var(--text)}.rulesbar{padding:14px;margin:8px;border-radius:14px;background:var(--panel2);display:flex;flex-direction:column;gap:10px}.rulestext{white-space:pre-wrap;font-size:14px;max-height:30vh;overflow:auto}
+.worldwrap{position:relative}.worldcv{width:100%;aspect-ratio:5/3;border-radius:14px;display:block;touch-action:none;background:#86b36a}.worldtrivia{position:absolute;inset:auto 12px 12px 12px;background:var(--panel);border-radius:14px;padding:12px;display:none;flex-direction:column;gap:8px;max-height:70%;overflow:auto}.worldboard{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 </style>
 </head>
 <body>
@@ -1049,6 +1050,8 @@ const sendWS = (o) => { if (S.ws && S.ws.readyState === 1) S.ws.send(JSON.string
 
 async function onWS(m) {
   const ui = window.__ui;
+  if (typeof m.t === 'string' && (m.t.startsWith('board_') || m.t === 'night_new')) { const h = window.__ext && window.__ext.onBoard; if (h) h(m); return; }
+  if (typeof m.t === 'string' && m.t.startsWith('world_')) { const h = window.__ext && window.__ext.onWorld; if (h) h(m); return; }
   switch (m.t) {
     case 'ready':
       S.wsOk = true; wsBackoff = 1000;
@@ -1174,7 +1177,7 @@ async function onWS(m) {
     case 'notif': {
       S.notifs.unshift(m.notif); S.notifUnread++;
       ui.renderRail();
-      const txt = m.notif.type === 'group_added' ? `${m.notif.data.by} added you to ${m.notif.data.name}` : m.notif.type === 'dm_new' ? `${m.notif.data.from} started a chat with you` : m.notif.type === 'sched_failed' ? 'a scheduled message could not be sent' : m.notif.type === 'referral' ? `${m.notif.data.name} joined, +${m.notif.data.minutes} min beta` : m.notif.type === 'report' ? 'new report to review' : m.notif.type === 'mention' ? `${m.notif.data.byName || m.notif.data.by} mentioned you${m.notif.data.convName ? ' in ' + m.notif.data.convName : ''}` : m.notif.type === 'reminder' ? 'reminder: ' + (m.notif.data.note || 'a message you saved') : m.notif.type === 'warn' ? `warning from ${m.notif.data.by}: ${m.notif.data.text}` : m.notif.type === 'appeal' ? `${m.notif.data.by} sent an appeal` : m.notif.type === 'verified' ? 'you are verified' : m.notif.type === 'verify_rejected' ? 'verification was not approved' + (m.notif.data.note ? ': ' + m.notif.data.note : '') : 'new notification';
+      const txt = m.notif.type === 'group_added' ? `${m.notif.data.by} added you to ${m.notif.data.name}` : m.notif.type === 'dm_new' ? `${m.notif.data.from} started a chat with you` : m.notif.type === 'sched_failed' ? 'a scheduled message could not be sent' : m.notif.type === 'referral' ? `${m.notif.data.name} joined, +${m.notif.data.minutes} min beta` : m.notif.type === 'report' ? 'new report to review' : m.notif.type === 'game_night' ? `game night starting: ${m.notif.data.title}${m.notif.data.convName ? ' in ' + m.notif.data.convName : ''}` : m.notif.type === 'mention' ? `${m.notif.data.byName || m.notif.data.by} mentioned you${m.notif.data.convName ? ' in ' + m.notif.data.convName : ''}` : m.notif.type === 'reminder' ? 'reminder: ' + (m.notif.data.note || 'a message you saved') : m.notif.type === 'warn' ? `warning from ${m.notif.data.by}: ${m.notif.data.text}` : m.notif.type === 'appeal' ? `${m.notif.data.by} sent an appeal` : m.notif.type === 'verified' ? 'you are verified' : m.notif.type === 'verify_rejected' ? 'verification was not approved' + (m.notif.data.note ? ': ' + m.notif.data.note : '') : 'new notification';
       const quiet = window.__ext && window.__ext.dndActive && window.__ext.dndActive() && m.notif.type !== 'warn';
       if (!quiet) { toast(txt, 'info', () => { if (m.notif.data.convId) { ui.openConv(m.notif.data.convId); if (m.notif.data.msgId && window.__ext) setTimeout(() => window.__ext.jumpTo(convOf(m.notif.data.convId), m.notif.data.msgId), 600); } }); beep(); }
       break;
@@ -1780,6 +1783,8 @@ async function groupModal(c) {
         u.id !== S.me.id && myRank(c) >= 1 && myRank(c) > rankR(u.isAdmin, u.role) ? el('button', { class: 'icon-btn', title: 'remove', onclick: async () => { if (await confirmModal(`remove ${u.displayName}?`, c.isPublic ? 'they cannot rejoin.' : 'the group key changes, so they cannot read anything new.', 'remove')) { await removeMember(c, u.id); draw(); } } }, ic('x', 16)) : null))),
       addBox,
       X.botsSection(c, draw),
+      X.boardsRow(c),
+      X.nightsSection(c, draw),
       X.rolesSection(c, draw),
       X.rulesSection(c, draw),
       X.staffSection(c, draw),
@@ -1942,7 +1947,7 @@ function pickGameModal(c) {
 // ---------- alerts ----------
 function buildAlerts(m) {
   const list = S.notifs.length ? S.notifs.map((n) => {
-    const txt = n.type === 'group_added' ? `${n.data.by} added you to ${n.data.name}` : n.type === 'dm_new' ? `${n.data.from} started a chat` : n.type === 'sched_failed' ? 'a scheduled message could not be sent' : n.type === 'referral' ? `${n.data.name} joined, +${n.data.minutes} min beta` : n.type === 'report' ? 'new report to review' : n.type === 'verified' ? 'you are verified' : n.type === 'verify_rejected' ? 'verification not approved' + (n.data.note ? ': ' + n.data.note : '') : 'new alert';
+    const txt = n.type === 'group_added' ? `${n.data.by} added you to ${n.data.name}` : n.type === 'dm_new' ? `${n.data.from} started a chat` : n.type === 'sched_failed' ? 'a scheduled message could not be sent' : n.type === 'referral' ? `${n.data.name} joined, +${n.data.minutes} min beta` : n.type === 'report' ? 'new report to review' : n.type === 'game_night' ? `game night starting: ${n.data.title}` : n.type === 'verified' ? 'you are verified' : n.type === 'verify_rejected' ? 'verification not approved' + (n.data.note ? ': ' + n.data.note : '') : 'new alert';
     return el('div', { class: 'urow click' + (n.read ? '' : ' unread'), onclick: () => n.data.convId && convOf(n.data.convId) && openConv(n.data.convId) }, el('div', { class: 'gshare-ic sm', style: `background:${tone(txt)}` }, ic(n.type === 'group_added' ? 'users' : n.type === 'referral' ? 'gift' : n.type === 'report' ? 'flag' : 'chat', 16)), el('div', { class: 'grow' }, el('div', null, txt), el('div', { class: 'muted small' }, ago(n.createdAt))));
   }) : [el('div', { class: 'empty-s' }, mugIcon())];
   m.append(el('div', { class: 'page' }, el('div', { class: 'page-head' }, el('h2', null, 'alerts'), S.notifs.length ? el('button', { class: 'btn small', onclick: async () => { await api('POST', '/api/notifications/read').catch(() => {}); S.notifs.forEach((n) => (n.read = true)); S.notifUnread = 0; renderAll(); builtMain = ''; renderMain(); } }, 'mark read') : null), el('div', { class: 'ulist stagger' }, list.map((x, i) => { x.style.setProperty('--i', Math.min(i, 10)); return x; }))));
@@ -2410,7 +2415,7 @@ function reportModal(o) {
     if (!reason) return toast('pick a reason', 'error');
     send.disabled = true;
     try {
-      await api('POST', '/api/reports', { kind: o.kind, reason, note: note.value, msgId: o.msgId, convId: o.convId, username: o.username, snapshot: o.snapshot || '' }, { quiet: true });
+      await api('POST', '/api/reports', { kind: o.kind, reason, note: note.value, msgId: o.msgId, boardId: o.boardId, convId: o.convId, username: o.username, snapshot: o.snapshot || '' }, { quiet: true });
       m.close(); toast('report sent, thanks', 'success');
     } catch (e) { toast(e.message, 'error'); send.disabled = false; }
   } }, ic('flag', 16), 'send report');
@@ -2437,6 +2442,7 @@ async function adminReports(box, refreshStats) {
         r.note ? el('div', { class: 'muted small', style: 'margin-top:4px' }, r.note) : null),
       el('div', { class: 'acts' },
         r.kind === 'message' && /^\[image\]/.test(r.snapshot || '') ? el('button', { class: 'icon-btn', title: 'view picture', onclick: () => window.__ext.reportImage(r.id) }, ic('image', 18)) : null,
+        r.kind === 'board' ? el('button', { class: 'icon-btn', title: 'view board', onclick: () => { const id = ((r.snapshot || '').match(/\[board:([0-9a-f-]{36})\]/) || [])[1]; id ? window.__ext.boardModal(id, true) : toast('board id missing', 'error'); } }, ic('palette', 18)) : null,
         r.kind === 'message' && r.isPublic && r.msgId ? el('button', { class: 'icon-btn', title: 'delete message', onclick: async () => { if (await confirmModal('delete this message?', 'it is wiped for everyone in the room.', 'delete')) act(async () => { await api('POST', `/api/admin/reports/${r.id}/delete-message`); await api('POST', `/api/admin/reports/${r.id}`, { status: 'resolved' }); }, 'message deleted'); } }, ic('trash', 18)) : null,
         r.kind === 'group' && r.convId ? el('button', { class: 'icon-btn', title: 'remove group', onclick: async () => { if (await confirmModal('remove this group?', 'everyone is kicked out and it is deleted.', 'remove')) act(async () => { await api('DELETE', `/api/admin/groups/${r.convId}`); await api('POST', `/api/admin/reports/${r.id}`, { status: 'resolved' }); }, 'group removed'); } }, ic('trash', 18)) : null,
         r.targetId && r.kind !== 'group' && !r.targetBanned ? el('button', { class: 'icon-btn', title: 'suspend ' + (r.target || ''), onclick: async () => { if (await confirmModal(`suspend ${r.targetName || r.target}?`, 'they get signed out until restored.', 'suspend')) act(async () => { await api('POST', `/api/admin/users/${r.targetId}/ban`, { banned: true }); await api('POST', `/api/admin/reports/${r.id}`, { status: 'resolved' }); }, 'suspended'); } }, ic('ban', 18)) : null,
@@ -2760,7 +2766,12 @@ function plusMenu(anchor, c, input, sub) {
   const item = (icon, label, fn, free) => el('button', { class: 'plusitem', onclick: () => { closePlus(); fn(); } }, ic(icon, 18), el('span', { class: 'grow' }, label), on || free ? null : el('span', { class: 'tag gold' }, 'beta'));
   const noImg = !!c.systemKind;
   const games = [['grid', 'tic-tac-toe', 'ttt'], ['users', 'rock paper scissors', 'rps'], ['grid', 'connect 4', 'c4'], ['book', 'word duel', 'wd'], ['trophy', 'trivia duel', 'tr']];
-  if (sub === '2p') plus = el('div', { class: 'plusmenu' },
+  if (sub === 'big') plus = el('div', { class: 'plusmenu' },
+    el('button', { class: 'plusitem', onclick: () => plusMenu(anchor, c, input, 'main') }, ic('back', 18), el('span', { class: 'grow' }, 'big games')),
+    item('globe', 'hangout world', () => window.__ext.worldModal(c), true),
+    item('star', 'coin rush', () => window.__ext.worldModal(c), true),
+    item('trophy', 'big trivia', () => window.__ext.worldModal(c, true), true));
+  else if (sub === '2p') plus = el('div', { class: 'plusmenu' },
     el('button', { class: 'plusitem', onclick: () => plusMenu(anchor, c, input, 'main') }, ic('back', 18), el('span', { class: 'grow' }, '2 player games')),
     ...games.map(([i, l, k]) => item(i, l, () => needBeta('mini games') && startGame(c, k))));
   else plus = el('div', { class: 'plusmenu' },
@@ -2770,7 +2781,9 @@ function plusMenu(anchor, c, input, sub) {
     item('sticker', 'sticker', () => needBeta('stickers') && stickerPicker(c)),
     item('poll', 'poll', () => needBeta('polls') && pollModal(c)),
     item('calendar', 'schedule a message', () => needBeta('scheduled messages') && scheduleModal(c, input)),
+    c.isPublic ? el('button', { class: 'plusitem', onclick: () => plusMenu(anchor, c, input, 'big') }, ic('globe', 18), el('span', { class: 'grow' }, 'big games'), el('span', { class: 'muted' }, '›')) : null,
     c.type === 'dm' ? el('button', { class: 'plusitem', onclick: () => plusMenu(anchor, c, input, '2p') }, ic('gamepad', 18), el('span', { class: 'grow' }, '2 player games'), el('span', { class: 'muted' }, '›')) : null,
+    c.type === 'group' && !c.systemKind ? item('palette', 'whiteboards', () => window.__ext.boardsModal(c), true) : null,
     item('bell', 'my reminders', () => window.__ext.remindersModal()),
     item('palette', 'chat wallpaper', () => window.__ext.wallpaperModal(c)));
   document.body.append(plus);
@@ -4993,6 +5006,316 @@ async function smartFix(input) {
 }
 
 Object.assign(window.__ext, { attachAutocorrect, smartFix });
+})();
+
+(() => {
+'use strict';
+const C = window.__core, U = window.__ui, X = window.__ext;
+const { S, el, ic, toast, sendWS } = C;
+const { modal } = U;
+
+const W = 1000, H = 600, SPEED = 260;
+const EMOTES = { wave: 'wave', heart: 'heart', laugh: 'haha', fire: 'fire', gg: 'gg', sad: 'sad' };
+const hueOf = (s) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360; return h; };
+const TREES = [[90, 90], [880, 80], [120, 500], [900, 510], [500, 60], [60, 300], [940, 300]];
+const POND = { x: 520, y: 330, rx: 110, ry: 60 };
+
+let live = null;
+
+function worldModal(c, focusTrivia) {
+  if (live) return;
+  const canvas = el('canvas', { width: W, height: H, class: 'worldcv' });
+  const g = canvas.getContext('2d');
+  const players = new Map(), coins = new Map();
+  const st = { me: S.me.id, roundEnds: 0, trivia: null, keys: new Set(), target: null, last: performance.now(), lastSent: 0, name: c.name, raf: 0, over: null };
+  const board = el('div', { class: 'worldboard' });
+  const timer = el('span', { class: 'muted small' });
+  const triviaBox = el('div', { class: 'worldtrivia' });
+  const input = el('input', { placeholder: 'say something (enter)', maxLength: 80 });
+  const emoteRow = el('div', { class: 'row gap-s wraprow' }, Object.entries(EMOTES).map(([k, l]) => el('button', { class: 'btn small', onclick: () => sendWS({ t: 'world_emote', e: k }) }, l)));
+  const trBtn = el('button', { class: 'btn small primary', onclick: () => sendWS({ t: 'world_trivia_start' }) }, ic('trophy', 14), 'big trivia');
+  const body = el('div', { class: 'col gap-s' },
+    el('div', { class: 'row between', style: 'align-items:center' }, el('span', { class: 'muted small' }, 'walk with wasd, arrows or tap. grab coins. everyone in this room can be here.'), timer),
+    el('div', { class: 'worldwrap' }, canvas, triviaBox),
+    board,
+    el('div', { class: 'row gap-s' }, input, trBtn),
+    emoteRow);
+  const m = modal('hangout · ' + c.name, body, { wide: true, onClose: stop });
+  m.box.style.width = 'min(94vw, 860px)'; m.box.style.maxWidth = 'min(94vw, 860px)';
+
+  function stop() {
+    cancelAnimationFrame(st.raf);
+    document.removeEventListener('keydown', kd); document.removeEventListener('keyup', ku);
+    sendWS({ t: 'world_leave' });
+    X.onWorld = null; live = null;
+  }
+  live = { stop };
+
+  const pl = (id) => players.get(id);
+  const addPlayer = (p) => players.set(p.id, { id: p.id, name: p.name, x: p.x, y: p.y, tx: p.x, ty: p.y, say: '', sayUntil: 0, emo: '', emoUntil: 0, score: p.score || 0 });
+
+  X.onWorld = (e) => {
+    switch (e.t) {
+      case 'world_state':
+        players.clear(); coins.clear();
+        e.players.forEach(addPlayer); e.coins.forEach((k) => coins.set(k.id, k));
+        st.roundEnds = e.roundEnds; st.trivia = e.trivia; drawTrivia(); drawBoard(); break;
+      case 'world_join': addPlayer(e); drawBoard(); break;
+      case 'world_leave': players.delete(e.id); drawBoard(); break;
+      case 'world_pos': e.p.forEach(([id, x, y]) => { const p = pl(id); if (p && id !== st.me) { p.tx = x; p.ty = y; } }); break;
+      case 'world_say': { const p = pl(e.id); if (p) { p.say = e.text; p.sayUntil = performance.now() + 5000; } break; }
+      case 'world_emote': { const p = pl(e.id); if (p) { p.emo = EMOTES[e.e]; p.emoUntil = performance.now() + 2500; } break; }
+      case 'world_coin_new': coins.set(e.id, e); break;
+      case 'world_coin': { coins.delete(e.id); const p = pl(e.by); if (p) p.score = e.score; drawBoard(); break; }
+      case 'world_round': { players.forEach((p) => { p.score = 0; }); st.roundEnds = e.next; st.over = { top: e.top, until: performance.now() + 7000 }; drawBoard(); break; }
+      case 'world_trivia': st.trivia = e.phase === 'end' ? { phase: 'end', top: e.top, until: performance.now() + 9000 } : e; drawTrivia(); break;
+      case 'world_answered': st.answered = e.i; drawTrivia(); break;
+      case 'world_error': toast(e.message, 'error'); break;
+    }
+  };
+
+  function drawBoard() {
+    const top = [...players.values()].sort((a, b) => b.score - a.score).slice(0, 5);
+    board.replaceChildren(el('span', { class: 'muted small' }, players.size + ' here'), ...top.map((p, i) => el('span', { class: 'tag' + (p.id === st.me ? ' gold' : '') }, `${i + 1}. ${p.name} ${p.score}`)));
+  }
+
+  function drawTrivia() {
+    const t = st.trivia;
+    if (!t) { triviaBox.style.display = 'none'; return; }
+    triviaBox.style.display = 'flex';
+    if (t.phase === 'end') {
+      triviaBox.replaceChildren(el('div', { class: 'ctitle' }, ic('trophy', 16), 'big trivia results'), ...t.top.map((r, i) => el('div', null, `${i + 1}. ${r.name} - ${r.score}`)), !t.top.length ? el('div', { class: 'muted' }, 'nobody scored') : null);
+      setTimeout(() => { if (st.trivia && st.trivia.phase === 'end') { st.trivia = null; drawTrivia(); } }, 9000);
+      return;
+    }
+    const mine = st.answered === t.i;
+    triviaBox.replaceChildren(
+      el('div', { class: 'muted small' }, `question ${t.i + 1} of ${t.total}`),
+      el('div', { class: 'ctitle' }, t.q),
+      ...t.o.map((o, i) => el('button', { class: 'btn' + (t.phase === 'reveal' && t.a === i ? ' primary' : ''), disabled: t.phase !== 'q' || mine, onclick: () => { st.answered = t.i; sendWS({ t: 'world_answer', i: t.i, a: i }); drawTrivia(); } }, o)),
+      t.phase === 'reveal' ? el('div', { class: 'muted small' }, 'top: ' + (t.top || []).map((r) => `${r.name} ${r.score}`).join(', ')) : mine ? el('div', { class: 'muted small' }, 'locked in') : null);
+  }
+
+  const kd = (e) => {
+    if (e.target === input) { if (e.key === 'Enter' && input.value.trim()) { sendWS({ t: 'world_say', text: input.value }); input.value = ''; } e.stopPropagation(); return; }
+    const k = e.key.toLowerCase();
+    if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) { st.keys.add(k); st.target = null; e.preventDefault(); }
+  };
+  const ku = (e) => st.keys.delete(e.key.toLowerCase());
+  document.addEventListener('keydown', kd, true); document.addEventListener('keyup', ku);
+
+  canvas.addEventListener('pointerdown', (e) => {
+    const r = canvas.getBoundingClientRect();
+    st.target = { x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * H / r.height };
+  });
+
+  function step(now) {
+    const dt = Math.min(0.05, (now - st.last) / 1000); st.last = now;
+    const me = pl(st.me);
+    if (me) {
+      let dx = 0, dy = 0;
+      if (st.keys.has('a') || st.keys.has('arrowleft')) dx -= 1;
+      if (st.keys.has('d') || st.keys.has('arrowright')) dx += 1;
+      if (st.keys.has('w') || st.keys.has('arrowup')) dy -= 1;
+      if (st.keys.has('s') || st.keys.has('arrowdown')) dy += 1;
+      if (!dx && !dy && st.target) {
+        const vx = st.target.x - me.x, vy = st.target.y - me.y, d = Math.hypot(vx, vy);
+        if (d < 6) st.target = null; else { dx = vx / d; dy = vy / d; }
+      }
+      if (dx || dy) {
+        const l = Math.hypot(dx, dy) || 1;
+        me.x = Math.min(W - 12, Math.max(12, me.x + dx / l * SPEED * dt)); me.y = Math.min(H - 12, Math.max(12, me.y + dy / l * SPEED * dt));
+        if (now - st.lastSent > 70) { st.lastSent = now; sendWS({ t: 'world_move', x: Math.round(me.x), y: Math.round(me.y) }); }
+        coins.forEach((k) => { if (Math.hypot(k.x - me.x, k.y - me.y) < 34 && !k.asked) { k.asked = true; sendWS({ t: 'world_coin', id: k.id }); } });
+      }
+    }
+    players.forEach((p) => { if (p.id !== st.me) { p.x += (p.tx - p.x) * Math.min(1, dt * 12); p.y += (p.ty - p.y) * Math.min(1, dt * 12); } });
+    draw(now);
+    const left = Math.max(0, Math.round((st.roundEnds - Date.now()) / 1000));
+    timer.textContent = st.roundEnds ? `coin round ends in ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}` : '';
+    st.raf = requestAnimationFrame(step);
+  }
+
+  function draw(now) {
+    g.fillStyle = '#86b36a'; g.fillRect(0, 0, W, H);
+    g.fillStyle = 'rgba(255,255,255,.07)';
+    for (let i = 0; i < 40; i++) g.fillRect((i * 173) % W, (i * 97) % H, 60, 10);
+    g.fillStyle = '#5aa0c8'; g.beginPath(); g.ellipse(POND.x, POND.y, POND.rx, POND.ry, 0, 0, 7); g.fill();
+    g.strokeStyle = 'rgba(255,255,255,.5)'; g.lineWidth = 3; g.stroke();
+    TREES.forEach(([x, y]) => { g.fillStyle = '#6b4a2f'; g.fillRect(x - 5, y, 10, 26); g.fillStyle = '#3f7a3a'; g.beginPath(); g.arc(x, y, 30, 0, 7); g.fill(); });
+    coins.forEach((k) => { g.fillStyle = '#f2c230'; g.beginPath(); g.arc(k.x, k.y, 10, 0, 7); g.fill(); g.strokeStyle = '#b8891a'; g.lineWidth = 2; g.stroke(); });
+    [...players.values()].sort((a, b) => a.y - b.y).forEach((p) => {
+      g.fillStyle = 'rgba(0,0,0,.2)'; g.beginPath(); g.ellipse(p.x, p.y + 15, 14, 5, 0, 0, 7); g.fill();
+      g.fillStyle = `hsl(${hueOf(p.name)} 60% 55%)`; g.beginPath(); g.arc(p.x, p.y, 16, 0, 7); g.fill();
+      g.lineWidth = p.id === st.me ? 3 : 1.5; g.strokeStyle = p.id === st.me ? '#fff' : 'rgba(0,0,0,.4)'; g.stroke();
+      g.fillStyle = '#fff'; g.font = 'bold 15px sans-serif'; g.textAlign = 'center'; g.fillText((p.name[0] || '?').toUpperCase(), p.x, p.y + 5);
+      g.font = '12px sans-serif'; g.fillStyle = '#10200f'; g.fillText(p.name.slice(0, 14), p.x, p.y + 32);
+      if (p.sayUntil > now && p.say) bubble(p.x, p.y - 28, p.say);
+      if (p.emoUntil > now && p.emo) { g.font = 'bold 14px sans-serif'; g.fillStyle = '#fff'; g.strokeStyle = '#000'; g.lineWidth = 3; g.strokeText(p.emo, p.x, p.y - 24 - (1 - (p.emoUntil - now) / 2500) * 20); g.fillText(p.emo, p.x, p.y - 24 - (1 - (p.emoUntil - now) / 2500) * 20); }
+    });
+    if (st.over && st.over.until > now) {
+      g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(W / 2 - 200, 20, 400, 40 + st.over.top.length * 26);
+      g.fillStyle = '#fff'; g.font = 'bold 18px sans-serif'; g.textAlign = 'center'; g.fillText('coin round over', W / 2, 48);
+      st.over.top.forEach((r, i) => g.fillText(`${i + 1}. ${r.name} - ${r.score}`, W / 2, 76 + i * 26));
+    }
+  }
+  function bubble(x, y, text) {
+    g.font = '13px sans-serif'; const w = Math.min(220, g.measureText(text).width + 16);
+    g.fillStyle = '#fff'; g.strokeStyle = 'rgba(0,0,0,.3)'; g.lineWidth = 1;
+    g.beginPath(); g.roundRect(x - w / 2, y - 26, w, 24, 8); g.fill(); g.stroke();
+    g.fillStyle = '#222'; g.textAlign = 'center'; g.fillText(text.length > 30 ? text.slice(0, 29) + '…' : text, x, y - 9);
+  }
+
+  sendWS({ t: 'world_join', convId: c.id });
+  if (focusTrivia) setTimeout(() => sendWS({ t: 'world_trivia_start' }), 900);
+  st.raf = requestAnimationFrame(step);
+}
+
+Object.assign(window.__ext, { worldModal, onWorld: null });
+})();
+
+(() => {
+'use strict';
+const C = window.__core, U = window.__ui, X = window.__ext;
+const { S, el, ic, toast, api, convOf } = C;
+const { modal, confirmModal } = U;
+
+const BW = 1000, BH = 700;
+const COLORS = ['#222222', '#e0674f', '#e0a526', '#6bb26b', '#4f9fd8', '#8b6bd8', '#d86bb0', '#ffffff'];
+const SIZES = [3, 8, 18];
+
+let open = null;
+
+function drawStroke(g, d) {
+  if (d.k === 'text') { g.fillStyle = d.c; g.font = `bold ${d.w}px sans-serif`; g.textBaseline = 'top'; g.fillText(d.t, d.x, d.y); return; }
+  g.strokeStyle = d.c; g.fillStyle = d.c; g.lineWidth = d.w; g.lineCap = 'round'; g.lineJoin = 'round';
+  if (d.p.length === 1) { g.beginPath(); g.arc(d.p[0][0], d.p[0][1], d.w / 2, 0, 7); g.fill(); return; }
+  g.beginPath(); g.moveTo(d.p[0][0], d.p[0][1]);
+  for (let i = 1; i < d.p.length; i++) g.lineTo(d.p[i][0], d.p[i][1]);
+  g.stroke();
+}
+
+async function boardModal(boardId, admin) {
+  if (open) return;
+  let data;
+  try { data = await api('GET', admin ? `/api/admin/whiteboards/${boardId}` : `/api/whiteboards/${boardId}`); } catch (e) { return toast(e.message, 'error'); }
+  const board = data.board;
+  const strokes = data.strokes.slice();
+  const canvas = el('canvas', { width: BW, height: BH, class: 'boardcv' });
+  const g = canvas.getContext('2d');
+  const st = { color: COLORS[0], size: SIZES[0], tool: 'pen', cur: null };
+  const redraw = () => { g.fillStyle = '#ffffff'; g.fillRect(0, 0, BW, BH); strokes.forEach((s) => drawStroke(g, s.d)); if (st.cur) drawStroke(g, st.cur); };
+  const tools = el('div', { class: 'row gap-s wraprow', style: 'align-items:center' });
+  const drawTools = () => tools.replaceChildren(
+    ...COLORS.map((c) => el('button', { class: 'swatch' + (st.color === c && st.tool !== 'text' ? ' on' : ''), style: `background:${c};border-color:${st.color === c ? 'var(--text)' : 'var(--line)'}`, onclick: () => { st.color = c; if (st.tool === 'text') st.tool = 'pen'; drawTools(); } })),
+    ...SIZES.map((n) => el('button', { class: 'btn small' + (st.size === n ? ' primary' : ''), onclick: () => { st.size = n; drawTools(); } }, n === 3 ? 'thin' : n === 8 ? 'med' : 'thick')),
+    el('button', { class: 'btn small' + (st.tool === 'text' ? ' primary' : ''), onclick: () => { st.tool = st.tool === 'text' ? 'pen' : 'text'; drawTools(); } }, 'text'),
+    el('button', { class: 'btn small', onclick: undo }, ic('back', 14), 'undo'));
+  const pos = (e) => { const r = canvas.getBoundingClientRect(); return [Math.round((e.clientX - r.left) * BW / r.width), Math.round((e.clientY - r.top) * BH / r.height)]; };
+  const send = async (d) => {
+    try { const r = await api('POST', `/api/whiteboards/${board.id}/strokes`, d); if (!strokes.some((s) => s.id === r.id)) { strokes.push({ id: r.id, u: S.me.id, d: serverShape(d) }); redraw(); } } catch (e) { toast(e.message, 'error'); redraw(); }
+  };
+  const serverShape = (d) => (d.k === 'text' ? { ...d, w: Math.min(40, Math.max(10, d.w * 4)) } : d);
+
+  canvas.addEventListener('pointerdown', (e) => {
+    if (admin) return;
+    const [x, y] = pos(e);
+    if (st.tool === 'text') {
+      askText().then((t) => { if (t) send({ k: 'text', c: st.color, w: Math.max(3, Math.round(st.size / 3)), t, x, y }); });
+      return;
+    }
+    canvas.setPointerCapture(e.pointerId);
+    st.cur = { k: 'pen', c: st.color, w: st.size, p: [[x, y]] }; redraw();
+  });
+  canvas.addEventListener('pointermove', (e) => { if (!st.cur) return; const [x, y] = pos(e); const l = st.cur.p[st.cur.p.length - 1]; if (Math.hypot(x - l[0], y - l[1]) < 3) return; if (st.cur.p.length < 400) st.cur.p.push([x, y]); redraw(); });
+  const end = () => { if (!st.cur) return; const d = st.cur; st.cur = null; send(d); };
+  canvas.addEventListener('pointerup', end); canvas.addEventListener('pointercancel', end);
+
+  function askText() {
+    return new Promise((done) => {
+      const inp = el('input', { placeholder: 'type your text', maxLength: 40 });
+      let fin = false;
+      const finish = (v) => { if (fin) return; fin = true; mm.close(); done(v); };
+      const mm = modal('add text', el('div', { class: 'col gap-s' }, inp, el('button', { class: 'btn primary', onclick: () => finish(inp.value.trim()) }, 'place it')), { onClose: () => finish('') });
+      mm.box.style.zIndex = 430; inp.focus();
+      inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') finish(inp.value.trim()); });
+    });
+  }
+
+  async function undo() {
+    const mine = [...strokes].reverse().find((s) => s.u === S.me.id);
+    if (!mine) return;
+    try { await api('DELETE', `/api/whiteboards/${board.id}/strokes/${mine.id}`); } catch (e) { toast(e.message, 'error'); }
+  }
+
+  X.onBoard = (e) => {
+    if (e.boardId !== board.id) return;
+    if (e.t === 'board_stroke') { if (!strokes.some((s) => s.id === e.id)) { strokes.push({ id: e.id, u: e.u, d: e.d }); redraw(); } }
+    else if (e.t === 'board_unstroke') { const i = strokes.findIndex((s) => s.id === e.id); if (i >= 0) { strokes.splice(i, 1); redraw(); } }
+    else if (e.t === 'board_clear') { strokes.length = 0; redraw(); }
+    else if (e.t === 'board_del') { toast('this board was deleted', 'info'); m.close(); }
+  };
+
+  const actions = el('div', { class: 'row gap-s wraprow' },
+    !admin ? el('button', { class: 'btn small ghost', onclick: () => { m.close(); X.reportModal({ kind: 'board', boardId: board.id, convId: board.convId, title: 'this whiteboard' }); } }, ic('flag', 14), 'report') : null,
+    board.mine || board.staff ? el('button', { class: 'btn small', onclick: async () => { if (await confirmModal('clear the board?', 'everything on it is wiped for everyone.', 'clear')) { try { await api('POST', admin ? `/api/admin/whiteboards/${board.id}/clear` : `/api/whiteboards/${board.id}/clear`); } catch (e) { toast(e.message, 'error'); } } } }, 'clear') : null);
+  const body = el('div', { class: 'col gap-s' },
+    el('div', { class: 'muted small' }, admin ? 'reported board (view only)' : 'everyone in the group can draw here. pick a color, draw, or tap text to place words.'),
+    admin ? null : tools, canvas, actions);
+  const m = modal(board.title, body, { wide: true, onClose: () => { open = null; X.onBoard = null; } });
+  m.box.style.width = 'min(96vw, 900px)'; m.box.style.maxWidth = 'min(96vw, 900px)';
+  open = true; drawTools(); redraw();
+}
+
+async function boardsModal(c) {
+  const body = el('div', { class: 'col gap-s' });
+  const m = modal('whiteboards · ' + c.name, body);
+  const draw = async () => {
+    try {
+      const d = await api('GET', `/api/conversations/${c.id}/whiteboards`);
+      const title = el('input', { placeholder: 'new board name', maxLength: 40 });
+      body.replaceChildren(
+        el('p', { class: 'muted small', style: 'margin:0' }, 'shared drawing boards. anyone in the group can draw on them, and anything inappropriate can be reported.'),
+        ...(d.boards.length ? d.boards.map((b) => el('div', { class: 'urow click', onclick: () => { m.close(); boardModal(b.id); } }, el('div', { class: 'gshare-ic sm' }, ic('palette', 18)), el('div', { class: 'grow' }, el('div', { class: 'ctitle' }, b.title), el('div', { class: 'muted small' }, `by ${b.creator} · ${b.strokes} strokes`)))) : [el('div', { class: 'muted pad' }, 'no boards yet')]),
+        d.boards.length < d.max ? el('div', { class: 'row gap-s' }, title, el('button', { class: 'btn primary', onclick: async () => {
+          try { const r = await api('POST', `/api/conversations/${c.id}/whiteboards`, { title: title.value }); m.close(); boardModal(r.board.id); } catch (e) { toast(e.message, 'error'); }
+        } }, ic('plus', 16), 'new')) : el('div', { class: 'muted small' }, `max ${d.max} boards, delete one to make room`));
+    } catch (e) { body.replaceChildren(el('div', { class: 'form-err' }, e.message)); }
+  };
+  draw();
+}
+
+function nightsSection(c, redraw) {
+  if (c.type !== 'group' || c.systemKind) return null;
+  const box = el('div', { class: 'col gap-s', style: 'margin-top:14px' });
+  const staff = U.myRank(c) >= 1;
+  const load = async () => {
+    try {
+      const d = await api('GET', `/api/conversations/${c.id}/nights`, null, { quiet: true });
+      const title = el('input', { placeholder: 'game night name', maxLength: 50 });
+      const when = el('input', { type: 'datetime-local' });
+      const game = el('input', { placeholder: 'game (optional)', maxLength: 80 });
+      box.replaceChildren(
+        el('h4', { style: 'margin:0' }, ic('gamepad', 14), 'game nights'),
+        ...(d.nights.length ? d.nights.map((n) => el('div', { class: 'urow' }, el('div', { class: 'grow' }, el('div', { class: 'ctitle' }, n.title), el('div', { class: 'muted small' }, new Date(n.startsAt).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit', month: 'short', day: 'numeric' }) + (n.gameTitle ? ' · ' + n.gameTitle : '') + ` · ${n.going} going`)),
+          el('button', { class: 'btn small' + (n.mine ? '' : ' primary'), onclick: async () => { try { await api('POST', `/api/nights/${n.id}/rsvp`, { going: !n.mine }); load(); } catch (e) { toast(e.message, 'error'); } } }, n.mine ? 'going' : 'i am in'),
+          staff || n.mineCreated ? el('button', { class: 'icon-btn', title: 'cancel', onclick: async () => { try { await api('DELETE', `/api/nights/${n.id}`); load(); } catch (e) { toast(e.message, 'error'); } } }, ic('trash', 16)) : null)) : [el('div', { class: 'muted small' }, 'nothing planned yet')]),
+        staff ? el('div', { class: 'col gap-s' }, title, game, when, el('button', { class: 'btn', onclick: async () => {
+          if (!when.value) return toast('pick a time', 'error');
+          try { await api('POST', `/api/conversations/${c.id}/nights`, { title: title.value, gameTitle: game.value || null, startsAt: new Date(when.value).toISOString() }); load(); } catch (e) { toast(e.message, 'error'); }
+        } }, ic('plus', 16), 'plan a game night')) : null);
+    } catch (e) { box.replaceChildren(el('div', { class: 'muted small' }, e.message)); }
+  };
+  load();
+  return box;
+}
+
+function boardsRow(c) {
+  if (c.type !== 'group' || c.systemKind) return null;
+  return el('button', { class: 'btn', style: 'margin-top:14px', onclick: () => boardsModal(c) }, ic('palette', 16), 'whiteboards');
+}
+
+Object.assign(window.__ext, { boardsModal, boardModal, nightsSection, boardsRow, onBoard: null });
 })();
 
 /* ===== Chatroom client: mod tools, admin panes (appeals, audit log, stats), appeal screen, and app start ===== */
