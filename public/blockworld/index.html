@@ -1,0 +1,28 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Block World</title>
+<style>html,body{margin:0;height:100%;background:#000;overflow:hidden}#canvas{display:block;border:0;padding:0;background:#000;width:100vw;height:100vh}#logmsg{position:fixed;left:12px;top:10px;color:#fff;font:14px system-ui,sans-serif}</style></head>
+<body>
+<canvas id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
+<span id="logmsg">starting...</span>
+<script>
+(function () {
+  var h = new URLSearchParams(location.hash.slice(1));
+  var u = h.get('u'), p = h.get('p'), host = h.get('h'), port = h.get('port') || '443';
+  history.replaceState(null, '', location.pathname);
+  var log = document.getElementById('logmsg');
+  if (!u || !p || !host) { log.textContent = 'open the block world from the + menu in a public room'; return; }
+  window.Module = {
+    arguments: [u, p, host, port],
+    print: function (t) { console.log(t); },
+    printErr: function (t) { console.error(t); },
+    canvas: document.getElementById('canvas'),
+    setStatus: function (t) { log.textContent = t || ''; },
+    totalDependencies: 0,
+    monitorRunDependencies: function (left) { this.totalDependencies = Math.max(this.totalDependencies, left); Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies - left) + '/' + this.totalDependencies + ')' : ''); }
+  };
+  Module.setStatus('Downloading...');
+  var s = document.createElement('script'); s.async = true; s.src = 'ClassiCube.js'; document.body.appendChild(s);
+})();
+</script>
+</body></html>
