@@ -9,6 +9,19 @@ done
 [ -f /data/MCGalaxy.db ] || touch /data/MCGalaxy.db
 ln -sf /data/MCGalaxy.db /app/MCGalaxy.db
 [ -f /data/properties/server.properties ] || cp /defaults/server.properties /data/properties/server.properties
+rm -f /data/properties/authservices.properties
+setprop() {
+  if grep -q "^$1 *=" /data/properties/server.properties; then
+    sed -i "s|^$1 *=.*|$1 = $2|" /data/properties/server.properties
+  else
+    echo "$1 = $2" >> /data/properties/server.properties
+  fi
+}
+setprop HeartbeatURL http://127.0.0.1:9/heartbeat
+setprop public false
+setprop verify-names true
+setprop verify-lan-ips true
+setprop default-texture-url https://chat.suttondudes.lol/mc/pixelperfection.zip
 FIRST=0
 [ -f /data/levels/world.lvl ] || FIRST=1
 {

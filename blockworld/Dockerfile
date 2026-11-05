@@ -6,7 +6,7 @@ WORKDIR /src/CLI
 RUN dotnet build MCGalaxyCLI_dotnet8.csproj -c Release -o /app
 
 FROM mcr.microsoft.com/dotnet/runtime:8.0
-RUN apt-get update && apt-get install -y --no-install-recommends libgdiplus && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends libgdiplus libsqlite3-0 && ln -s $(ls /usr/lib/*/libsqlite3.so.0 | head -1) /usr/lib/libsqlite3.so && rm -rf /var/lib/apt/lists/*
 COPY --from=build /app /app
 COPY server.properties /defaults/server.properties
 COPY start.sh /start.sh
