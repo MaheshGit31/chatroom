@@ -340,31 +340,45 @@ async function doForward(src, m, dst, mm) {
 
 // ---------- search inside a chat ----------
 const textOfPayload = (p) => [p.text, p.caption, p.title, p.q, p.name, p.inner && p.inner.caption].filter((x) => typeof x === 'string').join(' ');
-async function searchModal(c, preset) {
+async function searchModal(c, preset, everywhere) {
+  let all = !!everywhere;
   const q = el('input', { placeholder: 'search ' + convTitle(c), value: preset || '' });
+  const scope = el('div', { class: 'seg small' });
+  const drawScope = () => { scope.replaceChildren(...[[false, 'this chat'], [true, 'all my chats']].map(([v, l]) => el('button', { class: all === v ? 'on' : '', onclick: () => { all = v; q.placeholder = all ? 'search all my chats' : 'search ' + convTitle(c); drawScope(); draw(); } }, l))); };
   const status = el('div', { class: 'muted small', style: 'margin:6px 2px' });
   const list = el('div', { class: 'sres' });
-  const mm = modal('search', el('div', null, el('div', { class: 'searchbox' }, ic('search', 16), q), status, list), { wide: true });
+  const mm = modal('search', el('div', null, el('div', { class: 'searchbox' }, ic('search', 16), q), scope, status, list), { wide: true });
   let loaded = false;
   const draw = () => {
     const needle = q.value.trim().toLowerCase();
     if (needle.length < 2) { list.replaceChildren(el('div', { class: 'muted pad' }, 'type 2 or more letters')); return; }
-    const hits = c.msgs.filter((x) => !x.deleted && x._p && textOfPayload(x._p).toLowerCase().includes(needle)).reverse().slice(0, 80);
-    status.textContent = loaded ? `${hits.length}${hits.length === 80 ? '+' : ''} match${hits.length === 1 ? '' : 'es'} in ${c.msgs.length} messages` : 'still loading older messages...';
-    list.replaceChildren(...(hits.length ? hits.map((x) => {
-      const s = memberOf(c, x.senderId);
+    const pool = all ? S.convs.filter((v) => !v.systemKind) : [c];
+    const hits = [];
+    pool.forEach((v) => v.msgs.forEach((x) => { if (!x.deleted && x._p && textOfPayload(x._p).toLowerCase().includes(needle)) hits.push({ v, x }); }));
+    hits.sort((a, b) => new Date(b.x.createdAt) - new Date(a.x.createdAt)); hits.length = Math.min(hits.length, 80);
+    const total = pool.reduce((n, v) => n + v.msgs.length, 0);
+    status.textContent = loaded || all ? `${hits.length}${hits.length === 80 ? '+' : ''} match${hits.length === 1 ? '' : 'es'} in ${total} messages${all ? ' from chats loaded this session' : ''}` : 'still loading older messages...';
+    list.replaceChildren(...(hits.length ? hits.map(({ v, x }) => {
+      const s = memberOf(v, x.senderId);
       const t = textOfPayload(x._p), at = t.toLowerCase().indexOf(needle), a = Math.max(0, at - 30);
-      return el('div', { class: 'urow click', onclick: () => { mm.close(); jumpTo(c, x.id); } }, avatar(s ? s.displayName : x.senderId === S.me.id ? S.me.displayName : '?', 32, '', s && s.avatar),
-        el('div', { class: 'grow' }, el('div', { class: 'small muted' }, (x.senderId === S.me.id ? 'you' : s ? s.displayName : 'someone') + ' · ' + fmtDay(x.createdAt).toLowerCase() + ' ' + fmtTime(x.createdAt)),
+      return el('div', { class: 'urow click', onclick: () => { mm.close(); jumpTo(v, x.id); } }, avatar(s ? s.displayName : x.senderId === S.me.id ? S.me.displayName : '?', 32, '', s && s.avatar),
+        el('div', { class: 'grow' }, el('div', { class: 'small muted' }, (all ? convTitle(v) + ' · ' : '') + (x.senderId === S.me.id ? 'you' : s ? s.displayName : 'someone') + ' · ' + fmtDay(x.createdAt).toLowerCase() + ' ' + fmtTime(x.createdAt)),
           el('div', { class: 'snip' }, (a ? '...' : '') + t.slice(a, at), el('mark', null, t.slice(at, at + needle.length)), t.slice(at + needle.length, at + needle.length + 70))));
     }) : [el('div', { class: 'muted pad' }, 'nothing found')]));
   };
   q.addEventListener('input', C.debounce(draw, 150));
-  draw(); q.focus();
+  drawScope(); draw(); q.focus();
   let pages = 0;                                             // pull in the older history so the search sees it all (messages only live a couple of days anyway)
   while (c.hasMore && pages < 20 && mm.box.isConnected) { try { await C.loadMessages(c, true); } catch { break; } pages++; draw(); }
   loaded = true; draw(); c._shown = null;
 }
+
+document.addEventListener('keydown', (e) => {
+  if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey || e.key.toLowerCase() !== 'k' || !S.me || document.querySelector('.modal')) return;
+  e.preventDefault();
+  const c = convOf(S.active) || S.convs[0];
+  if (c) searchModal(c, '', true);
+});
 
 // ---------- encrypted images + view once ----------
 const IMG_MAX = 5 * 1024 * 1024;
@@ -419,9 +433,29 @@ async function sendImage(c, file, opts = {}) {
   if (ok && c._reply) { c._reply = null; drawReply(c); }
   return ok;
 }
+document.addEventListener('paste', (e) => {
+  if (!S.me || document.querySelector('.modal, .lightbox')) return;
+  const c = convOf(S.active); if (!c || S.view !== 'chats') return;
+  const item = [...((e.clipboardData && e.clipboardData.items) || [])].find((i) => i.kind === 'file' && /^image\/(png|jpeg|gif|webp)$/.test(i.type));
+  if (!item) return;
+  const file = item.getAsFile(); if (!file) return;
+  e.preventDefault();
+  if (c.systemKind) return toast('photos are not allowed in the built-in rooms', 'error');
+  if (c.isPublic && !(S.me.verified || S.me.isAdmin)) return toast('verify your account to send pictures in public groups', 'error');
+  if (!betaGate('sending photos')) return;
+  photoModal(c, file);
+});
+async function reportImage(reportId) {
+  try {
+    const p = await api('GET', `/api/admin/reports/${reportId}/image`);
+    const plain = await decryptBlob(p, await fetchBlobBytes(p.blob));
+    lightbox(URL.createObjectURL(new Blob([plain], { type: p.mime })), { note: p.caption || 'reported picture' });
+  } catch (e) { toast(e.message || 'could not open it', 'error'); }
+}
 function pickPhoto(c) {
   if (!betaGate('sending photos')) return;
-  if (c.isPublic || c.systemKind) return toast('photos are not allowed in public rooms', 'error');
+  if (c.systemKind) return toast('photos are not allowed in the built-in rooms', 'error');
+  if (c.isPublic && !(S.me.verified || S.me.isAdmin)) return toast('verify your account to send pictures in public groups', 'error');
   const f = el('input', { type: 'file', accept: 'image/png,image/jpeg,image/gif,image/webp', style: 'display:none' });
   f.addEventListener('change', () => { const file = f.files[0]; f.remove(); if (file) photoModal(c, file); });
   document.body.append(f); f.click();
@@ -439,6 +473,7 @@ function photoModal(c, file) {
     catch (e) { err.textContent = e.message; send.disabled = false; send.textContent = 'send'; }
   } }, 'send');
   const mm = modal('send a photo', el('div', null, el('img', { src: url, class: 'photoprev' }), el('div', { class: 'muted small', style: 'margin:6px 0' }, `${fmtSize(file.size)}${file.size > IMG_MAX ? ' - will be shrunk to fit 5 MB' : ''} · encrypted before it leaves your device`),
+    c.isPublic ? el('div', { class: 'muted small' }, 'everyone in this group can see this picture, and it can be reported and removed.') : null,
     cap, c.type === 'dm' ? el('label', { class: 'checkrow' }, once, 'view once (it disappears after they open it)') : null, err, send), { onClose: () => URL.revokeObjectURL(url) });
 }
 function imageBody(c, m, p) {
@@ -583,7 +618,7 @@ const wrapBetaChanged = X0.betaChanged;
 
 Object.assign(window.__ext, {
   dndActive, dndModal, sendBlock, drawModbar, slowLabel, setReply, drawReply, quoteEl, jumpTo, mentionIds, mentionsMe, slash, suggest, suggestKey, forwardModal, searchModal,
-  imageBody, onceBody, onceModal, pickPhoto, remindModal, remindersModal, wallpaperModal, applyWallpaper, lightbox, whoisModal, niceSecs, parseSecs, betaGate,
+  imageBody, onceBody, onceModal, pickPhoto, reportImage, remindModal, remindersModal, wallpaperModal, applyWallpaper, lightbox, whoisModal, niceSecs, parseSecs, betaGate,
   betaChanged: () => { if (wrapBetaChanged) wrapBetaChanged(); applyWallpaper(convOf(S.active)); U.renderHeader(); },
 });
 })();

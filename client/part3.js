@@ -340,13 +340,16 @@ function buildChat(m, c) {
     sending = false; tickCooldown(); input.focus();
   }
   const emojiBtn = el('button', { class: 'icon-btn', title: 'emoji', onclick: () => X.emojiPicker(emojiBtn, (ch) => { const a = input.selectionStart ?? input.value.length; input.setRangeText(ch, a, input.selectionEnd ?? a, 'end'); input.dispatchEvent(new Event('input')); input.focus(); }) }, ic('smile', 20));
-  m.append(el('div', { class: 'chat' }, head, pinbar, msgs, typing, selbar,
-    el('div', { class: 'composer-wrap' }, cool, freebar, modbar, replybar, sugg,
-      el('div', { class: 'composer' },
+  X.attachAutocorrect(input);
+  const composerEl = el('div', { class: 'composer' },
         el('button', { class: 'icon-btn', title: 'more: voice, stickers, polls, schedule, games', onclick: (e) => X.plusMenu(e.currentTarget, c, input) }, ic('plus', 20)),
         el('button', { class: 'icon-btn', title: 'share a game', onclick: () => pickGameModal(c) }, ic('gamepad', 20)),
         el('button', { class: 'icon-btn gifbtn', title: 'gif', onclick: () => X.gifModal(c) }, ic('image', 20)),
-        emojiBtn, input, sendBtn))));
+        el('button', { class: 'icon-btn', title: 'smart fix (ai)', onclick: () => X.smartFix(input) }, ic('sparkle', 20)),
+        emojiBtn, input, sendBtn);
+  const rulesbar = X.rulesBar(c, composerEl);
+  m.append(el('div', { class: 'chat' }, head, pinbar, msgs, typing, selbar,
+    el('div', { class: 'composer-wrap' }, cool, freebar, modbar, replybar, sugg, rulesbar, composerEl)));
   c._shown = null;                                           // first paint of a chat should not animate every old message
   sel = null;                                                // leave select mode when switching chats
   chatRef = { head, pinbar, msgs, typing, input, sendBtn, cool, selbar, freebar, modbar, replybar, convId: c.id };
@@ -450,7 +453,7 @@ function msgTools(c, m, mine) {
   if (mine && p.t === 'text' && C.betaActive()) kids.push(b('edit', 'edit', () => X.editMessage(c, m)));
   if (p.t === 'text') kids.push(b('copy', 'copy', () => { navigator.clipboard && navigator.clipboard.writeText(p.text).then(() => toast('copied', 'success')).catch(() => {}); }));
   if (canDelete(c, m)) kids.push(b('checksquare', 'select', () => startSelect(c, m.id)));
-  if (!mine && p.t !== 'once') kids.push(b('flag', 'report', () => X.reportModal({ kind: 'message', msgId: m.id, convId: c.id, title: 'this message', snapshot: p.t === 'text' ? p.text : p.t === 'gif' ? '[gif] ' + p.url : '[' + p.t + ']' })));
+  if (!mine && p.t !== 'once') kids.push(b('flag', 'report', () => X.reportModal({ kind: 'message', msgId: m.id, convId: c.id, title: 'this message', snapshot: p.t === 'text' ? p.text : p.t === 'image' ? '[image] ' + (p.caption || '') : p.t === 'gif' ? '[gif] ' + p.url : '[' + p.t + ']' })));
   if (canDelete(c, m)) kids.push(b('trash', 'delete', () => deleteWithUndo(c, [m.id])));
   return el('div', { class: 'mtools' }, kids);
 }
@@ -488,7 +491,7 @@ function renderMessages(c, stick) {
       el('div', { class: 'bubwrap' },
         el('div', { class: 'bubble' + (tome ? ' tome' : '') + (p.t === 'image' ? ' imgb' : '') + (p.t === 'gif' ? ' gifb' : '') + (p.t === 'sticker' ? ' stickb' : '') + (m.pinned ? ' pinned' : ''), onclick: (e) => { if (sel && selectable) return toggleSel(c, m.id); if (matchMedia('(hover: none)').matches && !e.target.closest('a,button')) { const was = e.currentTarget.classList.contains('tools-on'); box.querySelectorAll('.tools-on').forEach((n) => n.classList.remove('tools-on')); if (!was) e.currentTarget.classList.add('tools-on'); } } },
           !m.deleted && !sel ? msgTools(c, m, mine) : null,
-          first && !mine && c.type === 'group' ? el('div', { class: 'mname click', onclick: () => sender && openProfile(sender.username) }, sender ? sender.displayName : 'former member', vb(sender)) : null,
+          first && !mine && c.type === 'group' ? el('div', { class: 'mname click', onclick: () => sender && openProfile(sender.username) }, sender ? sender.displayName : 'former member', vb(sender), sender ? X.roleChips(c, sender.id) : null) : null,
           p.fwd ? el('div', { class: 'fwdtag' }, ic('forward', 12), 'forwarded' + (p.fwd.name ? ' from ' + p.fwd.name : '')) : null,
           p.reply ? X.quoteEl(c, p.reply) : null,
           body,
@@ -590,6 +593,8 @@ async function groupModal(c) {
         u.id !== S.me.id && myRank(c) >= 1 && myRank(c) > rankR(u.isAdmin, u.role) ? el('button', { class: 'icon-btn', title: 'remove', onclick: async () => { if (await confirmModal(`remove ${u.displayName}?`, c.isPublic ? 'they cannot rejoin.' : 'the group key changes, so they cannot read anything new.', 'remove')) { await removeMember(c, u.id); draw(); } } }, ic('x', 16)) : null))),
       addBox,
       X.botsSection(c, draw),
+      X.rolesSection(c, draw),
+      X.rulesSection(c, draw),
       X.staffSection(c, draw),
       el('div', { class: 'row between', style: 'margin-top:14px' },
         c.isPublic && !isAdmin() ? el('button', { class: 'btn ghost', onclick: () => { m.close(); X.reportModal({ kind: 'group', convId: c.id, title: c.name }); } }, ic('flag', 16), 'report') : el('span'),
@@ -679,6 +684,7 @@ function settingsModal() {
     el('button', { class: 'btn wide', style: 'margin-top:8px', onclick: () => { m.close(); X.wallpaperModal(null); } }, ic('image', 16), 'chat wallpaper', el('span', { class: 'tag gold' }, 'beta')),
     el('h4', null, 'ping me'),
     toggle('show what i am playing', S.me.shareActivity, async (v) => { try { const d = await api('PATCH', '/api/me', { shareActivity: v }); S.me.shareActivity = d.user.shareActivity; } catch (e) { toast(e.message, 'error'); return false; } }),
+    toggle('autocorrect', S.prefs.autocorrect !== false, (v) => { S.prefs.autocorrect = v; savePrefs(); }),
     toggle('sound', S.prefs.sound, (v) => { S.prefs.sound = v; savePrefs(); if (v) beep(); }),
     toggle('desktop popups', S.prefs.desktop && 'Notification' in window && Notification.permission === 'granted', async (v) => {
       if (!v) { S.prefs.desktop = false; savePrefs(); return; }
@@ -697,6 +703,7 @@ function statusModal() {
   const cur = S.me.status || { text: '', icon: '' };
   let icon = cur.icon || '', mode = S.me.mode || 'online', mins = 0;
   const text = el('input', { placeholder: 'what are you up to', maxLength: 48, value: cur.text || '' });
+  const game = el('input', { placeholder: 'playing... (roblox, minecraft, anything)', maxLength: 40, value: S.me.gameStatus || '' });
   const grid = el('div', { class: 'status-grid' });
   const modes = el('div', { class: 'mode-row' });
   const exp = el('div', { class: 'cats', style: 'margin:0' });
@@ -707,11 +714,14 @@ function statusModal() {
   const save = async (clear) => {
     try {
       const d = await api('PUT', '/api/me/status', clear ? { mode: 'online' } : { text: text.value, icon, mode, expiresMinutes: mins });
-      Object.assign(S.me, d.user); renderAll(); m.close(); toast(clear ? 'status cleared' : 'status set', 'success');
+      Object.assign(S.me, d.user);
+      const g = clear ? '' : game.value.trim();
+      if (g !== (S.me.gameStatus || '')) { const d2 = await api('PUT', '/api/me/game-status', { text: g, expiresMinutes: mins }); Object.assign(S.me, d2.user); }
+      renderAll(); m.close(); toast(clear ? 'status cleared' : 'status set', 'success');
     } catch (e) { toast(e.message, 'error'); }
   };
-  const m = modal('status', el('div', null, drawModes() || modes, text, presets, grid, el('h4', null, ic('timer', 14), 'clear after'), exp,
-    el('div', { class: 'row gap end', style: 'margin-top:18px' }, (cur.text || cur.icon || mode !== 'online') ? el('button', { class: 'btn ghost', onclick: () => save(true) }, 'clear') : null, el('button', { class: 'btn primary', onclick: () => save(false) }, 'save'))));
+  const m = modal('status', el('div', null, drawModes() || modes, text, el('div', { class: 'row gap-s', style: 'align-items:center;margin-top:8px' }, ic('gamepad', 18), game), presets, grid, el('h4', null, ic('timer', 14), 'clear after'), exp,
+    el('div', { class: 'row gap end', style: 'margin-top:18px' }, (cur.text || cur.icon || S.me.gameStatus || mode !== 'online') ? el('button', { class: 'btn ghost', onclick: () => save(true) }, 'clear') : null, el('button', { class: 'btn primary', onclick: () => save(false) }, 'save'))));
   drawGrid(); drawModes(); drawExp(); text.focus();
 }
 const urlB64ToU8 = (s) => unb64(s);

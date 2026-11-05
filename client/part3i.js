@@ -215,14 +215,27 @@ async function myBots() {
   load();
 }
 
-async function directory() {
+const starRow = (b) => {
+  const wrap = el('div', { class: 'row gap-s', style: 'align-items:center;margin-top:4px' });
+  const draw = () => {
+    wrap.replaceChildren(
+      ...[1, 2, 3, 4, 5].map((n) => el('button', { class: 'icon-btn', style: 'padding:2px;color:' + (n <= (b.mine || Math.round(b.rating || 0)) ? 'var(--gold,#e0a526)' : 'var(--muted,#999)'), title: 'rate ' + n, onclick: async () => {
+        try { const r = await api('POST', `/api/bots/${b.id}/rate`, { score: b.mine === n ? 0 : n }); Object.assign(b, r); draw(); } catch (e) { toast(e.message, 'error'); }
+      } }, ic('star', 16))),
+      el('span', { class: 'muted small', style: 'white-space:nowrap' }, b.ratings ? `${b.rating} (${b.ratings})` : 'no ratings'));
+  };
+  draw(); return wrap;
+};
+
+async function directory(sort = 'top') {
   const body = el('div', { class: 'col gap-s' });
   const m = modal('bots', body, { wide: true });
   try {
-    const d = await api('GET', '/api/bots/directory');
+    const d = await api('GET', '/api/bots/directory?sort=' + sort);
     body.replaceChildren(
+      el('div', { class: 'seg small' }, [['top', 'top rated'], ['pop', 'popular'], ['new', 'newest']].map(([k, l]) => el('button', { class: sort === k ? 'on' : '', onclick: () => { m.close(); directory(k); } }, l))),
       el('p', { class: 'muted small', style: 'margin-top:0' }, 'type /bot name your message in any chat to use one. the bot only sees what you type after its name.'),
-      ...(d.bots.length ? d.bots.map((b) => el('div', { class: 'urow' }, avatar(b.name, 36), el('div', { class: 'grow' }, el('div', { class: 'ctitle' }, b.name, el('span', { class: 'muted small' }, '  by ' + (b.owner || 'someone'))), el('div', { class: 'muted small' }, b.description || b.kind), el('div', { class: 'row gap-s wraprow', style: 'margin-top:4px' }, b.allowPublic ? el('span', { class: 'tag' }, 'rooms') : null, b.allowDm ? el('span', { class: 'tag' }, 'dms') : null, b.allowGroups ? el('span', { class: 'tag' }, 'groups') : null, ...powerTags(b.powers))),
+      ...(d.bots.length ? d.bots.map((b) => el('div', { class: 'urow' }, avatar(b.name, 36), el('div', { class: 'grow' }, el('div', { class: 'ctitle' }, b.name, el('span', { class: 'muted small' }, '  by ' + (b.owner || 'someone'))), el('div', { class: 'muted small' }, b.description || b.kind), starRow(b), el('div', { class: 'row gap-s wraprow', style: 'margin-top:4px' }, b.allowPublic ? el('span', { class: 'tag' }, 'rooms') : null, b.allowDm ? el('span', { class: 'tag' }, 'dms') : null, b.allowGroups ? el('span', { class: 'tag' }, 'groups') : null, ...powerTags(b.powers))),
         el('div', { class: 'col gap-s' },
           hostedFor(b).length ? el('button', { class: 'btn small primary', onclick: () => pickGroupFor(b) }, ic('plus', 14), 'add to my group') : null,
           b.allowDm ? el('button', { class: 'btn small', onclick: () => { m.close(); U.startDM(b.name); } }, 'message') : null))) : [el('div', { class: 'muted pad' }, 'no bots yet, be the first')]),

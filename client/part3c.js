@@ -24,24 +24,24 @@ const curConv = () => convOf(S.active);
 let plus = null;
 const closePlus = () => { if (plus) { plus.remove(); plus = null; } };
 document.addEventListener('mousedown', (e) => { if (plus && !plus.contains(e.target) && !e.target.closest('[data-plus]')) closePlus(); });
-function plusMenu(anchor, c, input) {
-  const had = !!plus; closePlus(); if (had) return;
+function plusMenu(anchor, c, input, sub) {
+  const had = !!plus; closePlus(); if (had && !sub) return;
   anchor.dataset.plus = 1;
   const on = C.betaActive();
   const item = (icon, label, fn, free) => el('button', { class: 'plusitem', onclick: () => { closePlus(); fn(); } }, ic(icon, 18), el('span', { class: 'grow' }, label), on || free ? null : el('span', { class: 'tag gold' }, 'beta'));
-  const noImg = c.isPublic || c.systemKind;
-  plus = el('div', { class: 'plusmenu' },
+  const noImg = !!c.systemKind;
+  const games = [['grid', 'tic-tac-toe', 'ttt'], ['users', 'rock paper scissors', 'rps'], ['grid', 'connect 4', 'c4'], ['book', 'word duel', 'wd'], ['trophy', 'trivia duel', 'tr']];
+  if (sub === '2p') plus = el('div', { class: 'plusmenu' },
+    el('button', { class: 'plusitem', onclick: () => plusMenu(anchor, c, input, 'main') }, ic('back', 18), el('span', { class: 'grow' }, '2 player games')),
+    ...games.map(([i, l, k]) => item(i, l, () => needBeta('mini games') && startGame(c, k))));
+  else plus = el('div', { class: 'plusmenu' },
     noImg ? null : item('image', 'photo', () => window.__ext.pickPhoto(c)),
     c.type === 'dm' ? item('eye', 'view once', () => window.__ext.onceModal(c), true) : null,
     item('mic', 'voice note', () => needBeta('voice notes') && voiceModal(c)),
     item('sticker', 'sticker', () => needBeta('stickers') && stickerPicker(c)),
     item('poll', 'poll', () => needBeta('polls') && pollModal(c)),
     item('calendar', 'schedule a message', () => needBeta('scheduled messages') && scheduleModal(c, input)),
-    c.type === 'dm' ? item('grid', 'tic-tac-toe', () => needBeta('mini games') && startGame(c, 'ttt')) : null,
-    c.type === 'dm' ? item('users', 'rock paper scissors', () => needBeta('mini games') && startGame(c, 'rps')) : null,
-    c.type === 'dm' ? item('grid', 'connect 4', () => needBeta('mini games') && startGame(c, 'c4')) : null,
-    c.type === 'dm' ? item('book', 'word duel', () => needBeta('mini games') && startGame(c, 'wd')) : null,
-    c.type === 'dm' ? item('trophy', 'trivia duel', () => needBeta('mini games') && startGame(c, 'tr')) : null,
+    c.type === 'dm' ? el('button', { class: 'plusitem', onclick: () => plusMenu(anchor, c, input, '2p') }, ic('gamepad', 18), el('span', { class: 'grow' }, '2 player games'), el('span', { class: 'muted' }, '›')) : null,
     item('bell', 'my reminders', () => window.__ext.remindersModal()),
     item('palette', 'chat wallpaper', () => window.__ext.wallpaperModal(c)));
   document.body.append(plus);
