@@ -1,5 +1,17 @@
 [
   {
+    "id": "2026-11-04-c",
+    "date": "2026-11-04",
+    "title": "hangout world, whiteboards and game nights",
+    "items": [
+      "hangout world: in any public room, + > big games > hangout world. walk around with wasd or by tapping, see everyone else, chat in bubbles and send emotes",
+      "coin rush: coins pop up around the world, grab them, and a 5 minute round crowns the top 3",
+      "big trivia: anyone in the world can start a trivia round that the whole room plays together",
+      "shared whiteboards: draw together live in any group (group info > whiteboards, or the + menu). pen, colors, text, undo. you can report a board and mods can clear or delete it",
+      "game nights: hosts and mods plan a game night in group info, members tap i am in, and everyone going gets a notification when it starts"
+    ]
+  },
+  {
     "id": "2026-11-04-b",
     "date": "2026-11-04",
     "title": "roles, rules, pictures and typo fixes",
