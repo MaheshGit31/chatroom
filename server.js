@@ -65,7 +65,7 @@ app.use((req, res, next) => {
   next();
 });
 const smallJson = express.json({ limit: '64kb' });
-app.use((req, res, next) => (req.path === '/api/verify' ? next() : smallJson(req, res, next)));   // only the id photo upload may be bigger                    // ciphertext is small, big bodies are rejected
+app.use((req, res, next) => (req.path === '/api/verify' || req.path === '/api/me/avatar' ? next() : smallJson(req, res, next)));   // only the id photo upload may be bigger                    // ciphertext is small, big bodies are rejected
 app.use('/api', rl('api-ip', 1500, 60_000));                  // global per-ip cap
 
 // ---------- realtime hub ----------
@@ -146,7 +146,7 @@ async function makeSession(userId, ua) {
   return token;
 }
 const statusOf = (u) => (u.status_text || u.status_icon ? { text: u.status_text || '', icon: u.status_icon || '' } : null);
-const publicUser = (u) => ({ gameStatus: u.game_status && (!u.game_status_expires || new Date(u.game_status_expires) > new Date()) ? u.game_status : '', id: u.id, username: u.username, displayName: u.display_name, shareActivity: u.share_activity, isAdmin: !!u.is_admin, isOwner: u.username === ADMIN_USERNAME, mode: u.status_mode || 'online', status: statusOf(u), statusExpires: u.status_expires || null, beta: features.betaOn(u), betaUntil: u.beta_until || null, theme: u.theme || null, avatar: u.avatar || null, bio: u.bio || '', banner: u.banner || null, folders: Array.isArray(u.folders) ? u.folders : [], dndUntil: u.dnd_until || null, quiet: u.quiet || null, wallpapers: u.wallpapers || {}, mutedUntil: u.muted_until && new Date(u.muted_until) > new Date() ? u.muted_until : null, callsOff: !!u.calls_off, callPref: u.call_pref || null, verified: safety.verifiedOn(u), msgCount: u.msg_count || 0, freeMessages: safety.FREE_MSGS });
+const publicUser = (u) => ({ gameStatus: u.game_status && (!u.game_status_expires || new Date(u.game_status_expires) > new Date()) ? u.game_status : '', id: u.id, username: u.username, displayName: u.display_name, shareActivity: u.share_activity, isAdmin: !!u.is_admin, isOwner: u.username === ADMIN_USERNAME, mode: u.status_mode || 'online', status: statusOf(u), statusExpires: u.status_expires || null, beta: features.betaOn(u), betaUntil: u.beta_until || null, theme: u.theme || null, avatar: u.avatar || null, bio: u.bio || '', banner: u.banner || null, folders: Array.isArray(u.folders) ? u.folders : [], dndUntil: u.dnd_until || null, quiet: u.quiet || null, wallpapers: u.wallpapers || {}, mutedUntil: u.muted_until && new Date(u.muted_until) > new Date() ? u.muted_until : null, refBank: u.ref_bank || 0, callsOff: !!u.calls_off, callPref: u.call_pref || null, verified: safety.verifiedOn(u), msgCount: u.msg_count || 0, freeMessages: safety.FREE_MSGS });
 
 const SECS = "least(10800, case when p.ended_at is null then floor(extract(epoch from (now()-p.started_at)))::int else p.seconds end)"; // running sessions count live
 const USERNAME = /^[a-z0-9_]{3,20}$/;
@@ -232,6 +232,7 @@ app.patch('/api/me', auth, byUser('me-patch', 20, 60_000), wrap(async (req, res)
   }
   if (!sets.length) return bad(res, 'nothing to update');
   const r = await q(`update users set ${sets.join(',')} where id=$1 returning *`, vals);
+  if ('avatar' in req.body) q('delete from avatars where user_id=$1', [req.user.id]).catch(() => {});
   broadcastPresence(req.user.id).catch(() => {});
   res.json({ user: publicUser(r.rows[0]) });
 }));
@@ -263,7 +264,38 @@ app.put('/api/me/game-status', auth, byUser('game-status', 20, 60_000), wrap(asy
 // ---------- admin ----------
 const adminOnly = (req, res, next) => (req.user.is_admin ? next() : bad(res, 'forbidden', 403));
 const ownerOnly = (req, res, next) => (req.user.username === ADMIN_USERNAME ? next() : bad(res, 'only the owner can do that', 403));
-const adminRow = (u) => ({ id: u.id, username: u.username, displayName: u.display_name, isAdmin: u.is_admin, isOwner: u.username === ADMIN_USERNAME, banned: u.banned, online: sockets.has(u.id), createdAt: u.created_at, messages: Number(u.msgs || 0), verified: safety.verifiedOn(u), beta: features.betaOn(u), betaUntil: u.beta_until || null, mutedUntil: u.muted_until && new Date(u.muted_until) > new Date() ? u.muted_until : null });
+const adminRow = (u) => ({ id: u.id, username: u.username, displayName: u.display_name, isAdmin: u.is_admin, isOwner: u.username === ADMIN_USERNAME, banned: u.banned, online: sockets.has(u.id), createdAt: u.created_at, messages: Number(u.msgs || 0), verified: safety.verifiedOn(u), beta: features.betaOn(u), betaUntil: u.beta_until || null, avatar: u.avatar || null, mutedUntil: u.muted_until && new Date(u.muted_until) > new Date() ? u.muted_until : null });
+
+const bigJson = express.json({ limit: '420kb' });
+app.post('/api/me/avatar', auth, bigJson, byUser('avatar-up', 8, 3_600_000), wrap(async (req, res) => {
+  if (!safety.verifiedOn(req.user)) return bad(res, 'verify your account to upload a picture', 403);
+  const m = /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/.exec(String((req.body && req.body.image) || ''));
+  if (!m) return bad(res, 'bad picture');
+  const buf = Buffer.from(m[1], 'base64');
+  if (buf.length < 200 || buf.length > 300_000 || buf[0] !== 0xff || buf[1] !== 0xd8 || buf[2] !== 0xff) return bad(res, 'that picture did not work, try another');
+  await q('insert into avatars(user_id,data) values($1,$2) on conflict(user_id) do update set data=$2, updated_at=now()', [req.user.id, buf]);
+  const tag = `u:${req.user.id}:${Date.now()}`;
+  const r = await q('update users set avatar=$2 where id=$1 returning *', [req.user.id, tag]);
+  broadcastPresence(req.user.id).catch(() => {});
+  res.json({ user: publicUser(r.rows[0]) });
+}));
+app.get('/api/avatar/:id', rl('avatar-get', 600, 60_000), wrap(async (req, res) => {
+  if (!isUuid(req.params.id)) return bad(res, 'bad id', 404);
+  const r = await q('select data from avatars where user_id=$1', [req.params.id]);
+  if (!r.rows[0]) return bad(res, 'none', 404);
+  res.set({ 'Content-Type': 'image/jpeg', 'Cache-Control': 'public, max-age=31536000, immutable', 'Cross-Origin-Resource-Policy': 'cross-origin' }).send(r.rows[0].data);
+}));
+app.post('/api/admin/users/:id/avatar-reset', auth, adminOnly, wrap(async (req, res) => {
+  if (!isUuid(req.params.id)) return bad(res, 'bad id');
+  const t = (await q('select id,username from users where id=$1', [req.params.id])).rows[0];
+  if (!t) return bad(res, 'not found', 404);
+  await q('delete from avatars where user_id=$1', [t.id]);
+  await q('update users set avatar=null where id=$1', [t.id]);
+  audit.log(q, req.user, 'avatar_reset', { id: t.id, username: t.username });
+  sendTo(t.id, { t: 'me_update' });
+  broadcastPresence(t.id).catch(() => {});
+  res.json({ ok: true });
+}));
 
 app.get('/api/admin/stats', auth, adminOnly, wrap(async (req, res) => {
   const r = await q(`select (select count(*) from users)::int users, (select count(*) from users where banned)::int banned,
@@ -481,10 +513,10 @@ async function requireMember(req, res) {
 
 app.patch('/api/conversations/:id', auth, byUser('conv-edit', 20, 60_000), wrap(async (req, res) => {
   const m = await requireMember(req, res); if (!m) return;
-  if (m.type !== 'group' || m.role !== 'admin') return bad(res, 'admins only', 403);
+  if (m.type !== 'group' || (m.role !== 'admin' && !req.user.is_admin)) return bad(res, 'admins only', 403);
   const name = String(req.body.name || '').trim().slice(0, 40);
   if (!name) return bad(res, 'bad name');
-  if (m.system_kind) return bad(res, 'the built-in rooms keep their names', 403);
+  if (m.system_kind && !req.user.is_admin) return bad(res, 'the built-in rooms keep their names', 403);
   if (safety.F.check(name)) return bad(res, 'keep the name clean');
   await q('update conversations set name=$2 where id=$1', [req.params.id, name]);
   await sendToConv(req.params.id, { t: 'conv_update', convId: req.params.id, name });
@@ -608,7 +640,7 @@ app.post('/api/conversations/:id/messages', auth, wrap(async (req, res, next) =>
   if (tgt.error) return bad(res, tgt.error);
   if ((tgt.channelId || tgt.threadId) && !m.is_public) return bad(res, 'channels are for public rooms');
   const blobId = isUuid(req.body.blob) ? req.body.blob : null;
-  if (blobId && m.system_kind) return bad(res, 'images are not allowed in the built-in rooms');
+  if (blobId && m.system_kind && !req.user.is_admin) return bad(res, 'images are not allowed in the built-in rooms');
   if (blobId && m.is_public && !safety.verifiedOn(req.user) && !req.user.is_admin) return bad(res, 'verify your account to send pictures in public groups', 403);
   if (!isB64(ciphertext, 56000) || !isB64(iv, 40)) return bad(res, 'bad message');   // 56k chars leaves room for a 10s voice note
   if (keyVersion !== m.key_version) return res.status(409).json({ error: 'key_version_stale', current: m.key_version });
@@ -966,6 +998,21 @@ async function getSetting(key, make) {
   sweepExpired().catch((e) => console.warn('sweep', e.message));
   setInterval(() => sweepExpired().catch((e) => console.warn('sweep', e.message)), 5 * 60_000).unref();
   beta.start({ q, sendTo, notify, pushTo, sockets, isBlockedEitherWay });
+  setInterval(async () => {
+    try {
+      const ids = [...sockets.keys()];
+      if (!ids.length) return;
+      const r = await q('update users set ref_bank=ref_bank-1 where id=any($1) and ref_bank>0 and not (beta_until is not null and beta_until>now()) returning id,ref_bank', [ids]);
+      for (const x of r.rows) if (x.ref_bank === 0) { const u = (await q('select * from users where id=$1', [x.id])).rows[0]; if (u) ensureFor(u).catch(() => {}); sendTo(x.id, { t: 'me_update' }); }
+    } catch (e) { console.warn('refbank', e.message); }
+  }, 60_000).unref();
+  try {
+    const end = Date.parse('2026-11-13T06:00:00Z');
+    if (Date.now() < end && !(await q("select 1 from settings where key='referfest_2026_11'")).rows[0]) {
+      await q("insert into settings(key,value) values('referfest_2026_11','1') on conflict do nothing");
+      await require('./lib/events').start(q, 'refbonus', 60, Math.ceil((end - Date.now()) / 60000), 'referfest');
+    }
+  } catch (e) { console.warn('referfest', e.message); }
   gngApi.start().catch((e) => console.warn('gng start failed', e.message));
   mod.start({ q, notify, pushTo });                          // reminders + housekeeping    // sends scheduled messages and clears short-timer chats
   server.listen(PORT, '0.0.0.0', () => console.log('chatroom listening on', PORT));

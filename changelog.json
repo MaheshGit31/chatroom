@@ -1,5 +1,20 @@
 [
   {
+    "id": "2026-11-06-a",
+    "date": "2026-11-06",
+    "title": "referfest and more",
+    "items": [
+      "referfest this week: every referral is worth 60 minutes of beta instead of 30. it runs until nov 13",
+      "referral time now only counts down while you are online, so it never runs out while you are away",
+      "upload your own profile picture (up to 5 MB) from the profile picture screen. verified accounts only",
+      "verifying your id is now done with your camera: just scan it, no upload needed",
+      "calls now remove people who go inactive after 10 minutes, with a warning at 8, to save bandwidth",
+      "admins get a verify button in dms, and $verify in a dm verifies the person",
+      "removed the ai autocorrect and smart fix",
+      "admins can add bots, configure roles and rules, and send photos in the built-in rooms"
+    ]
+  },
+  {
     "id": "2026-11-05-a",
     "date": "2026-11-05",
     "title": "channels, calls and stages",
