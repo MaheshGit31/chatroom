@@ -21,6 +21,9 @@ const mod = require('./lib/mod');                            // group mods, slow
 const audit = require('./lib/audit');                        // audit log + daily counters
 const extrasLib = require('./lib/extras');
 const botsLib = require('./lib/bots');
+const channelsLib = require('./lib/channels');
+const voice = require('./lib/voice');
+const vouch = require('./lib/vouch');
 const features = require('./lib/features');                  // reactions, pins, reports, public groups, referrals, gifs, themes
 const PORT = process.env.PORT || 3000;
 const ADMIN_USERNAME = (process.env.ADMIN_USERNAME || 'bart').toLowerCase();   // this username becomes the owner/admin
@@ -143,7 +146,7 @@ async function makeSession(userId, ua) {
   return token;
 }
 const statusOf = (u) => (u.status_text || u.status_icon ? { text: u.status_text || '', icon: u.status_icon || '' } : null);
-const publicUser = (u) => ({ gameStatus: u.game_status && (!u.game_status_expires || new Date(u.game_status_expires) > new Date()) ? u.game_status : '', id: u.id, username: u.username, displayName: u.display_name, shareActivity: u.share_activity, isAdmin: !!u.is_admin, isOwner: u.username === ADMIN_USERNAME, mode: u.status_mode || 'online', status: statusOf(u), statusExpires: u.status_expires || null, beta: features.betaOn(u), betaUntil: u.beta_until || null, theme: u.theme || null, avatar: u.avatar || null, bio: u.bio || '', banner: u.banner || null, folders: Array.isArray(u.folders) ? u.folders : [], dndUntil: u.dnd_until || null, quiet: u.quiet || null, wallpapers: u.wallpapers || {}, mutedUntil: u.muted_until && new Date(u.muted_until) > new Date() ? u.muted_until : null, verified: safety.verifiedOn(u), msgCount: u.msg_count || 0, freeMessages: safety.FREE_MSGS });
+const publicUser = (u) => ({ gameStatus: u.game_status && (!u.game_status_expires || new Date(u.game_status_expires) > new Date()) ? u.game_status : '', id: u.id, username: u.username, displayName: u.display_name, shareActivity: u.share_activity, isAdmin: !!u.is_admin, isOwner: u.username === ADMIN_USERNAME, mode: u.status_mode || 'online', status: statusOf(u), statusExpires: u.status_expires || null, beta: features.betaOn(u), betaUntil: u.beta_until || null, theme: u.theme || null, avatar: u.avatar || null, bio: u.bio || '', banner: u.banner || null, folders: Array.isArray(u.folders) ? u.folders : [], dndUntil: u.dnd_until || null, quiet: u.quiet || null, wallpapers: u.wallpapers || {}, mutedUntil: u.muted_until && new Date(u.muted_until) > new Date() ? u.muted_until : null, callsOff: !!u.calls_off, callPref: u.call_pref || null, verified: safety.verifiedOn(u), msgCount: u.msg_count || 0, freeMessages: safety.FREE_MSGS });
 
 const SECS = "least(10800, case when p.ended_at is null then floor(extract(epoch from (now()-p.started_at)))::int else p.seconds end)"; // running sessions count live
 const USERNAME = /^[a-z0-9_]{3,20}$/;
@@ -372,8 +375,8 @@ async function loadConversations(userId, onlyId) {
   const convs = await q(
     `select c.id,c.type,c.name,c.key_version,c.created_at,c.is_public,c.system_kind,c.ttl_seconds,c.slow_seconds,c.description,c.topic,c.game_path,c.game_title,c.rules,c.rules_on,c.rules_ver,m.rules_ver_ok,m.role,m.muted,m.muted_until,m.last_read_at,m.joined_at,
        (select count(*) from members where conv_id=c.id)::int member_count,
-       (select count(*) from messages x where x.conv_id=c.id and x.created_at>m.last_read_at and x.created_at>=m.joined_at and x.sender_id is distinct from $1 and not x.deleted and x.created_at>now()-make_interval(secs=>coalesce(c.ttl_seconds,${TTL_HOURS * 3600})))::int unread,
-       (select row_to_json(l) from (select id,sender_id "senderId",ciphertext,iv,key_version "keyVersion",created_at "createdAt",deleted from messages where conv_id=c.id and created_at>=m.joined_at and created_at>now()-make_interval(secs=>coalesce(c.ttl_seconds,${TTL_HOURS * 3600})) order by id desc limit 1) l) last_message,
+       (select count(*) from messages x where x.conv_id=c.id and x.created_at>m.last_read_at and x.created_at>=m.joined_at and x.sender_id is distinct from $1 and not x.deleted and x.channel_id is null and x.thread_id is null and x.created_at>now()-make_interval(secs=>coalesce(c.ttl_seconds,${TTL_HOURS * 3600})))::int unread,
+       (select row_to_json(l) from (select id,sender_id "senderId",ciphertext,iv,key_version "keyVersion",created_at "createdAt",deleted from messages where conv_id=c.id and channel_id is null and thread_id is null and created_at>=m.joined_at and created_at>now()-make_interval(secs=>coalesce(c.ttl_seconds,${TTL_HOURS * 3600})) order by id desc limit 1) l) last_message,
        (select max(created_at) from messages where conv_id=c.id and created_at>=m.joined_at and created_at>now()-make_interval(secs=>coalesce(c.ttl_seconds,${TTL_HOURS * 3600}))) last_at
      from conversations c join members m on m.conv_id=c.id and m.user_id=$1
      where (c.system_kind is distinct from 'beta' or ${hasBeta ? 'true' : 'false'}) ${onlyId ? 'and c.id=$2' : ''}
@@ -569,12 +572,15 @@ app.get('/api/conversations/:id/messages', auth, byUser('msg-read', 120, 60_000)
   const m = await requireMember(req, res); if (!m) return;
   const limit = Math.min(parseInt(req.query.limit, 10) || 50, 100);
   const before = parseInt(req.query.before, 10) || 9e15;
+  const tgt = await channelsLib.resolveTarget(q, req.params.id, req.query.channel, req.query.thread, isUuid);
+  if (tgt.error) return bad(res, tgt.error, 404);
+  const scope = tgt.threadId ? 'and thread_id=$6' : tgt.channelId ? 'and channel_id=$6' : 'and channel_id is null and thread_id is null and $6::text is null';
   const r = await q(
     `select id,sender_id "senderId",ciphertext,iv,key_version "keyVersion",created_at "createdAt",edited_at "editedAt",deleted,once,
        exists(select 1 from pins p where p.msg_id=messages.id) pinned,
        (select coalesce(jsonb_object_agg(e, ids),'{}'::jsonb) from (select emoji e, jsonb_agg(user_id) ids from reactions r where r.msg_id=messages.id group by emoji) x) reactions
      from messages
-     where conv_id=$1 and id<$2 and created_at>=$3 and created_at>now()-make_interval(secs=>$5) order by id desc limit $4`, [req.params.id, before, m.joined_at, limit, m.ttl_seconds || TTL_HOURS * 3600]);
+     where conv_id=$1 and id<$2 and created_at>=$3 and created_at>now()-make_interval(secs=>$5) ${scope} order by id desc limit $4`, [req.params.id, before, m.joined_at, limit, m.ttl_seconds || TTL_HOURS * 3600, tgt.threadId || tgt.channelId || null]);
   res.json({ messages: r.rows.map((x) => ({ ...x, id: Number(x.id) })).reverse(), hasMore: r.rows.length === limit });
 }));
 
@@ -598,6 +604,9 @@ app.post('/api/conversations/:id/messages', auth, wrap(async (req, res, next) =>
   const { ciphertext, iv, keyVersion } = req.body;
   const once = req.body.once === true;
   if (once && m.type !== 'dm') return bad(res, 'view once only works in direct messages');
+  const tgt = await channelsLib.resolveTarget(q, req.params.id, req.body.channelId, req.body.threadId, isUuid);
+  if (tgt.error) return bad(res, tgt.error);
+  if ((tgt.channelId || tgt.threadId) && !m.is_public) return bad(res, 'channels are for public rooms');
   const blobId = isUuid(req.body.blob) ? req.body.blob : null;
   if (blobId && m.system_kind) return bad(res, 'images are not allowed in the built-in rooms');
   if (blobId && m.is_public && !safety.verifiedOn(req.user) && !req.user.is_admin) return bad(res, 'verify your account to send pictures in public groups', 403);
@@ -616,15 +625,17 @@ app.post('/api/conversations/:id/messages', auth, wrap(async (req, res, next) =>
     const other = (await q('select user_id from members where conv_id=$1 and user_id<>$2', [req.params.id, uid])).rows[0];
     if (other && (await isBlockedEitherWay(uid, other.user_id))) return bad(res, 'blocked', 403);
   }
-  const r = await q('insert into messages(conv_id,sender_id,ciphertext,iv,key_version,once) values($1,$2,$3,$4,$5,$6) returning id,created_at', [req.params.id, uid, ciphertext, iv, keyVersion, once]);
-  const message = { id: Number(r.rows[0].id), senderId: uid, ciphertext, iv, keyVersion, createdAt: r.rows[0].created_at, deleted: false, once };
+  const r = await q('insert into messages(conv_id,sender_id,ciphertext,iv,key_version,once,channel_id,thread_id) values($1,$2,$3,$4,$5,$6,$7,$8) returning id,created_at', [req.params.id, uid, ciphertext, iv, keyVersion, once, tgt.channelId, tgt.threadId]);
+  if (tgt.threadId) q('update threads set last_at=now() where id=$1', [tgt.threadId]).catch(() => {});
+  const message = { id: Number(r.rows[0].id), senderId: uid, ciphertext, iv, keyVersion, createdAt: r.rows[0].created_at, deleted: false, once, channelId: tgt.channelId, threadId: tgt.threadId };
   if (blobId) await q('update blobs set msg_id=$1 where id=$2 and owner=$3 and conv_id=$4 and msg_id is null', [message.id, blobId, uid, req.params.id]);   // the image now belongs to this message
   audit.bump(q, 'messages'); audit.touchDay(q, uid);
   mod.afterSend({ q, sendTo, notify, pushTo, limiter, sockets, isBlockedEitherWay }, { user: req.user, conv: m, convId: req.params.id, message, mentions: req.body.mentions }).catch(() => {});   // @mentions
   q('update users set msg_count=msg_count+1 where id=$1', [uid]).then(() => safety.badgeCheck(q, uid)).catch(() => {});
   const mems = await q('select user_id,muted from members where conv_id=$1', [req.params.id]);
-  botsApi.onMessage({ conv: { id: req.params.id, type: m.type, is_public: m.is_public, system_kind: m.system_kind, key_version: m.key_version, name: m.name }, sender: req.user, message, payload: pubPayload }).catch(() => {});
-  if (pubPayload && gngApi) gngApi.onMessage({ convId: req.params.id, sender: req.user, message, payload: pubPayload, mentions: Array.isArray(req.body.mentions) ? req.body.mentions : [] }).catch(() => {});   // gng reads public rooms
+  const mainFeed = !tgt.channelId && !tgt.threadId;
+  if (mainFeed) botsApi.onMessage({ conv: { id: req.params.id, type: m.type, is_public: m.is_public, system_kind: m.system_kind, key_version: m.key_version, name: m.name }, sender: req.user, message, payload: pubPayload }).catch(() => {});
+  if (mainFeed && pubPayload && gngApi) gngApi.onMessage({ convId: req.params.id, sender: req.user, message, payload: pubPayload, mentions: Array.isArray(req.body.mentions) ? req.body.mentions : [] }).catch(() => {});   // gng reads public rooms
   for (const mm of mems.rows) {
     sendTo(mm.user_id, { t: 'msg', convId: req.params.id, message, cid: req.body.cid || null, muted: mm.muted });
     if (!m.is_public && mm.user_id !== uid && !mm.muted && !sockets.has(mm.user_id)) pushTo(mm.user_id, req.params.id).catch(() => {}); // offline => web push
@@ -798,6 +809,9 @@ botsApi.mount(app, { auth, byUser, bad, wrap, isUuid, ownerOnly, requireMember, 
 extrasApi = extrasLib.init({ q, secret: () => SERVER_SECRET, games });
 extrasApi.mount(app, { auth, byUser, bad, wrap, requireMember, sendToConv, betaOn: features.betaOn });
 require('./lib/roles').mount(app, { q, auth, byUser, bad, wrap, isUuid, requireMember, sendToConv, filter: safety.F });
+voice.init({ q, sendTo, sendToConv, sockets, limiter, notify, isUuid, isBlockedEitherWay });
+channelsLib.mount(app, { q, auth, byUser, bad, wrap, isUuid, sendToConv, isStaff: mod.isStaff, filter: safety.F, voice });
+vouch.mount(app, { q, auth, byUser, bad, wrap, isUuid, sendTo, notify, adminOnly });
 require('./lib/boards').mount(app, { q, auth, byUser, bad, wrap, isUuid, requireMember, sendToConv, sendTo, notify, isStaff: mod.isStaff, filter: safety.F });
 modApi = mod.mount(app, { q, auth, adminOnly, byUser, bad, wrap, sendTo, sendToConv, notify, isUuid, requireMember, sockets, secret: () => SERVER_SECRET, adminName: ADMIN_USERNAME, ensureFor, rl });
 
@@ -870,9 +884,11 @@ wss.on('connection', (ws) => {
   ws.on('pong', () => { ws.alive = true; });
   ws.on('message', async (raw, isBinary) => {
     if (isBinary) return relayFrame(ws, raw);                  // play together relay frames have their own byte budget
-    if (raw.length > 8192) return;                             // ordinary events are small
-    if (!limiter.hit('ws:' + ws.ip + ':' + (ws.userId || ''), 40, 10_000).ok) return ws.close(1008, 'too many events'); // flood => disconnect
+    if (raw.length > 16384) return;
     let m; try { m = JSON.parse(raw.toString()); } catch { return; }
+    const isSig = m && m.t === 'vc_sig';                       // call handshakes come in bursts, so they get their own budget
+    if (raw.length > 8192 && !isSig) return;                   // ordinary events are small
+    if (!limiter.hit((isSig ? 'wsig:' : 'ws:') + ws.ip + ':' + (ws.userId || ''), isSig ? 400 : 40, 10_000).ok) return ws.close(1008, 'too many events'); // flood => disconnect
     try {
       if (!ws.userId) {
         if (m.t !== 'auth' || typeof m.token !== 'string') return ws.close(4001, 'auth required');
@@ -901,6 +917,7 @@ wss.on('connection', (ws) => {
         else if (m.kind === 'bye' && relayPairs.get(ws.userId) === m.to) relayEnd(ws.userId);
         sendTo(m.to, { t: 'rtc', from: ws.userId, room: m.room, kind: m.kind, data: m.data || null });
       }
+      else if (typeof m.t === 'string' && (m.t.startsWith('vc_') || m.t.startsWith('call_'))) await voice.handle(ws, m);
       else if (m.t === 'ping') ws.send('{"t":"pong"}');
     } catch (e) { console.error('ws error', e.message); }
   });
@@ -910,7 +927,7 @@ wss.on('connection', (ws) => {
     if (n <= 0) ipConns.delete(ws.ip); else ipConns.set(ws.ip, n);
     if (!ws.userId) return;
     const set = sockets.get(ws.userId);
-    if (set) { set.delete(ws); if (!set.size) { sockets.delete(ws.userId); relayEnd(ws.userId); endPlay(ws.userId).catch(() => {}); broadcastPresence(ws.userId).catch(() => {}); } }
+    if (set) { set.delete(ws); if (!set.size) { sockets.delete(ws.userId); voice.onSocketsGone(ws.userId); relayEnd(ws.userId); endPlay(ws.userId).catch(() => {}); broadcastPresence(ws.userId).catch(() => {}); } }
   });
 });
 setInterval(() => { for (const ws of wss.clients) { if (!ws.alive) { ws.terminate(); continue; } ws.alive = false; ws.ping(); } }, 30_000).unref(); // drop dead sockets

@@ -1,5 +1,17 @@
 [
   {
+    "id": "2026-11-05-a",
+    "date": "2026-11-05",
+    "title": "channels, calls and stages",
+    "items": [
+      "channels in public rooms: text channels, voice channels, video channels and threads. tap the + in the bar under the room name. start a thread from any message with the thread button",
+      "voice and video calls: tap the phone or camera in any dm to call someone. voice and video channels in public rooms let up to 10 (voice) or 6 (video) people hang out",
+      "stages: mods open a stage where only speakers talk. everyone else listens, raises a hand, and a mod lets them speak",
+      "calls ring with a sound or by flashing your tab title, your pick. change it or turn calls off in settings > calls",
+      "vouching: get 2 verified friends to vouch for you and you are verified, no id needed. verified people can vouch from the verify screen. vouching for someone who gets banned costs you strikes"
+    ]
+  },
+  {
     "id": "2026-11-04-d",
     "date": "2026-11-04",
     "title": "block world",
