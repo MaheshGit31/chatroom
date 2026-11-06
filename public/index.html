@@ -558,6 +558,47 @@ button.oncecard{cursor:pointer}.oncecard.gone{opacity:.6;cursor:default}.oncetex
 .coopstatus{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;display:flex;flex-direction:column;align-items:center;gap:10px}
 .rolechips{display:inline-flex;gap:4px;margin-left:6px;vertical-align:middle}.rolechip{display:inline-block;font-size:11px;font-weight:700;line-height:1;padding:3px 7px;border-radius:99px;color:var(--rc);background:color-mix(in srgb,var(--rc) 16%,transparent);border:1px solid color-mix(in srgb,var(--rc) 40%,transparent)}.swatch{width:26px;height:26px;border-radius:50%;border:2px solid transparent}.swatch.on{border-color:var(--text)}.rulesbar{padding:14px;margin:8px;border-radius:14px;background:var(--panel2);display:flex;flex-direction:column;gap:10px}.rulestext{white-space:pre-wrap;font-size:14px;max-height:30vh;overflow:auto}
 .mcroot{position:fixed;inset:0;z-index:9000;background:#000;user-select:none;-webkit-user-select:none}.mccv,.mclab{position:absolute;inset:0;width:100%;height:100%;display:block}.mclab{pointer-events:none}.mccross{position:absolute;left:50%;top:50%;width:18px;height:18px;margin:-9px;pointer-events:none}.mccross:before,.mccross:after{content:'';position:absolute;background:#fff;mix-blend-mode:difference}.mccross:before{left:8px;top:0;width:2px;height:18px}.mccross:after{top:8px;left:0;height:2px;width:18px}.mcprog{position:absolute;left:50%;top:56%;width:90px;height:6px;margin-left:-45px;background:rgba(0,0,0,.5);border-radius:3px;opacity:0;pointer-events:none}.mcprog.on{opacity:1}.mcprog i{display:block;height:100%;width:0;background:#fff;border-radius:3px}.mchearts{position:absolute;left:50%;bottom:74px;transform:translateX(-50%);display:flex;gap:2px;pointer-events:none}.mcheart{width:16px;height:16px;background:#3a1b1b;clip-path:polygon(50% 100%,0 40%,0 15%,20% 0,50% 20%,80% 0,100% 15%,100% 40%)}.mcheart.full{background:#e23b3b}.mcheart.half{background:linear-gradient(90deg,#e23b3b 50%,#3a1b1b 50%)}.mchotbar{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);display:flex;gap:4px;background:rgba(0,0,0,.45);padding:4px;border-radius:8px;pointer-events:none}.mcslot{position:relative;width:48px;height:48px;border:2px solid rgba(255,255,255,.25);border-radius:6px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.35)}.mcslot.on{border-color:#fff}.mcslot span{position:absolute;right:3px;bottom:1px;font-size:12px;font-weight:700;color:#fff;text-shadow:0 1px 2px #000}.mcslot i{display:none}.mcicon{width:32px;height:32px;image-rendering:pixelated}.mcempty{color:#fff;font-size:13px;padding:14px 12px}.mclog{position:absolute;left:12px;bottom:90px;max-width:min(420px,60vw);color:#fff;font-size:14px;text-shadow:0 1px 2px #000;pointer-events:none;display:flex;flex-direction:column;gap:2px}.mcchat{position:absolute;left:12px;bottom:60px;width:min(420px,60vw);display:none;background:rgba(0,0,0,.6);color:#fff;border:0;border-radius:6px;padding:8px}.mcchat.on{display:block}.mcinfo{position:absolute;left:12px;top:10px;color:#fff;font-size:13px;text-shadow:0 1px 2px #000;pointer-events:none}.mcnote{position:absolute;left:50%;top:30%;transform:translateX(-50%);color:#fff;background:rgba(0,0,0,.6);padding:8px 14px;border-radius:8px;opacity:0;pointer-events:none}.mcnote.on{opacity:1}.mcpause,.mcinv{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--panel);color:var(--text);border-radius:14px;padding:16px;width:min(380px,90vw);display:none;flex-direction:column;gap:10px;max-height:80vh;overflow:auto}.mcpause.on,.mcinv.on{display:flex}.mcgrid{display:flex;flex-wrap:wrap;gap:6px}.mcload{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;background:#111;pointer-events:none}.mcroot.hurt:after{content:'';position:absolute;inset:0;background:rgba(200,0,0,.3);pointer-events:none}
+
+.chanbar{display:none;border-bottom:1px solid var(--line);padding:6px 10px;background:var(--panel)}
+.chanbar.on{display:block}
+.chanbar .chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.chanbar .chip{display:inline-flex;align-items:center;gap:6px;flex:none;border:1px solid var(--line);background:transparent;color:inherit;border-radius:999px;padding:5px 11px;font:inherit;font-size:13px;cursor:pointer;position:relative}
+.chanbar .chip:hover{background:rgba(128,128,128,.12)}
+.chanbar .chip.on{background:var(--accent);color:var(--accent-ink);border-color:transparent;font-weight:600}
+.chanbar .chip.add{padding:5px 9px}
+.chanbar .chip .live,.chanbar .chip .count{font-size:11px;background:rgba(128,128,128,.25);border-radius:999px;padding:0 6px;font-weight:600}
+.chanbar .chip.voice .live,.chanbar .chip.video .live,.chanbar .chip.stage .live{background:var(--good);color:#fff}
+.chanbar .chipx{display:none;margin-left:2px;opacity:.7}
+.chanbar .chip:hover .chipx{display:inline-flex}
+.chanbar .subline{display:flex;align-items:center;gap:8px;padding:6px 2px 0;font-size:13px}
+.calldock{position:fixed;right:16px;bottom:16px;width:min(420px,calc(100vw - 32px));max-height:80vh;overflow:auto;background:var(--panel);color:var(--text);border:1px solid rgba(128,128,128,.3);border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.45);z-index:900;padding:10px;display:flex;flex-direction:column;gap:10px}
+.calldock.small{width:min(300px,calc(100vw - 32px))}
+.callhead{display:flex;align-items:center;gap:8px}
+.callhead .grow{min-width:0}
+.callbar{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.cbtn{width:44px;height:44px;border-radius:50%;border:none;background:rgba(128,128,128,.22);color:inherit;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.cbtn:hover{background:rgba(128,128,128,.38)}
+.cbtn.off{background:#7a2b2b;color:#fff}
+.cbtn.on{background:var(--accent);color:var(--accent-ink)}
+.cbtn.hang{background:var(--bad);color:#fff}
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.tiles.n1{grid-template-columns:1fr}
+.tile{position:relative;aspect-ratio:16/10;border-radius:12px;background:rgba(128,128,128,.18);display:flex;align-items:center;justify-content:center;overflow:hidden;outline:3px solid transparent;transition:outline-color .12s}
+.tile.speaking{outline-color:var(--good)}
+.tile video{width:100%;height:100%;object-fit:cover;display:block}
+.tile.me video{transform:scaleX(-1)}
+.tname{position:absolute;left:6px;bottom:6px;background:rgba(0,0,0,.55);color:#fff;border-radius:8px;padding:2px 8px;font-size:12px;display:flex;align-items:center;gap:4px;max-width:90%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.aud{display:flex;flex-direction:column;gap:6px}
+.arow{display:flex;align-items:center;gap:8px;font-size:13px}
+.arow.speaking{color:var(--good)}
+.arow .hand{color:var(--accent);display:inline-flex}
+.incall{position:fixed;top:14px;left:50%;transform:translateX(-50%);width:min(420px,calc(100vw - 24px));z-index:1000;display:flex;align-items:center;gap:12px;background:var(--panel);color:var(--text);border:1px solid rgba(128,128,128,.35);border-radius:16px;padding:12px 14px;box-shadow:0 12px 40px rgba(0,0,0,.5);animation:ringpulse 1.2s ease-in-out infinite}
+.btn.round{width:44px;height:44px;border-radius:50%;padding:0;display:inline-flex;align-items:center;justify-content:center}
+@keyframes ringpulse{50%{box-shadow:0 0 0 6px rgba(63,166,106,.35)}}
+.vdots{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.vdot{width:22px;height:22px;border-radius:50%;border:2px solid rgba(128,128,128,.4);display:inline-flex;align-items:center;justify-content:center}
+.vdot.on{background:var(--good);border-color:var(--good);color:#fff}
+@media (max-width:640px){.calldock{right:8px;left:8px;bottom:8px;width:auto}.calldock.small{width:auto}}
 </style>
 </head>
 <body>
@@ -662,6 +703,15 @@ const ICONS = {
   bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
   sliders: '<line x1="4" x2="20" y1="7" y2="7"/><line x1="4" x2="20" y1="17" y2="17"/><circle cx="9" cy="7" r="2.5"/><circle cx="15" cy="17" r="2.5"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
+  phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>',
+  phoneoff: '<path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7a2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91"/><path d="m22 2-20 20"/>',
+  video: '<path d="m22 8-6 4 6 4V8z"/><rect x="2" y="6" width="14" height="12" rx="2"/>',
+  videooff: '<path d="M10.66 6H14a2 2 0 0 1 2 2v2.5l5.25-3.5a.5.5 0 0 1 .75.4v9.2a.5.5 0 0 1-.75.4L16 13.5"/><path d="M16 16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2"/><path d="m2 2 20 20"/>',
+  micoff: '<path d="m2 2 20 20"/><path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2M5 10v2a7 7 0 0 0 12 5M15 9.34V5a3 3 0 0 0-5.68-1.33M9 9v3a3 3 0 0 0 5.12 2.12M12 19v3"/>',
+  hash: '<path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"/>',
+  stage: '<path d="M4.9 19.1a10 10 0 0 1 0-14.2M7.8 16.2a6 6 0 0 1 0-8.4M16.2 7.8a6 6 0 0 1 0 8.4M19.1 4.9a10 10 0 0 1 0 14.2"/><circle cx="12" cy="12" r="2"/>',
+  hand: '<path d="M18 11V6a2 2 0 0 0-4 0M14 10V4a2 2 0 0 0-4 0v2M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>',
+  thread: '<path d="M7 8h10M7 12h6"/><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
   users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
   user: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
   userplus: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>',
@@ -980,7 +1030,8 @@ async function loadConvs() {
 }
 async function loadMessages(c, older) {
   const before = older && c.msgs.length ? c.msgs[0].id : '';
-  const d = await api('GET', `/api/conversations/${c.id}/messages?limit=50${before ? '&before=' + before : ''}`);
+  const sub = c._sub ? (c._sub.kind === 'thread' ? '&thread=' : '&channel=') + c._sub.id : '';
+  const d = await api('GET', `/api/conversations/${c.id}/messages?limit=50${before ? '&before=' + before : ''}${sub}`);
   await Promise.all(d.messages.map((m) => decryptMsg(c, m)));
   c.msgs = older ? d.messages.concat(c.msgs) : d.messages;
   c.hasMore = d.hasMore; c.loaded = true;
@@ -991,7 +1042,7 @@ function addMessage(c, msg, payload) {
   if (payload) msg._p = payload;
   c.msgs.push(msg);
   c.msgs.sort((a, b) => a.id - b.id);
-  c.lastMessage = msg;
+  if (!msg.channelId && !msg.threadId) c.lastMessage = msg;
   return true;
 }
 function startCooldown(sec, msg) {
@@ -1000,13 +1051,14 @@ function startCooldown(sec, msg) {
   window.__ui.tickCooldown();
 }
 async function sendPayload(c, payload, retried, extra) {
+  if (c._sub) extra = { ...(extra || {}), ...(c._sub.kind === 'thread' ? { threadId: c._sub.id } : { channelId: c._sub.id }) };
   if (S.cooldownUntil > Date.now()) { toast('you are on cooldown, wait a moment', 'error'); return false; }
   try {
     const e = await encryptPayload(c, payload);
     const r = await api('POST', `/api/conversations/${c.id}/messages`, { ...e, ...(extra || {}), cid: rid() }, { quiet: true });
     S.me.msgCount = (S.me.msgCount || 0) + 1; window.__ext && window.__ext.renderTop();
     if (c.slowSeconds && !(S.me.isAdmin || c.role === 'admin' || c.role === 'mod')) c.slowUntil = Date.now() + c.slowSeconds * 1000;   // slow mode: next message after the wait
-    if (addMessage(c, r.message, payload)) { c._preview = previewText(payload, true); sortConvs(); }
+    if (addMessage(c, r.message, payload) && !c._sub) { c._preview = previewText(payload, true); sortConvs(); }
     window.__ui.renderSide(); window.__ui.renderMessages(c, true);
     return true;
   } catch (err) {
@@ -1050,10 +1102,13 @@ const sendWS = (o) => { if (S.ws && S.ws.readyState === 1) S.ws.send(JSON.string
 
 async function onWS(m) {
   const ui = window.__ui;
+  if (typeof m.t === 'string' && (m.t.startsWith('vc_') || m.t.startsWith('call_'))) { const h = window.__ext && window.__ext.onCall; if (h) h(m); return; }
+  if (typeof m.t === 'string' && (m.t.startsWith('channel_') || m.t.startsWith('thread_'))) { const h = window.__ext && window.__ext.onChan; if (h) h(m); return; }
   if (typeof m.t === 'string' && (m.t.startsWith('board_') || m.t === 'night_new')) { const h = window.__ext && window.__ext.onBoard; if (h) h(m); return; }
   switch (m.t) {
     case 'ready':
       S.wsOk = true; wsBackoff = 1000;
+      if (window.__ext && window.__ext.onWsReady) window.__ext.onWsReady();
       clearInterval(hb); hb = setInterval(() => sendWS({ t: 'ping' }), 25000);
       await loadConvs().catch(() => {});                     // resync after (re)connect
       api('GET', '/api/presence', null, { quiet: true }).then((d) => { for (const p of d.presence) S.presence.set(p.userId, p); ui.renderAll(); }).catch(() => {});
@@ -1063,20 +1118,28 @@ async function onWS(m) {
       const c = convOf(m.convId);
       if (!c) { await loadConvs(); return; }
       const mine = m.message.senderId === S.me.id;
+      const mc = m.message.channelId || null, mt = m.message.threadId || null, inMain = !mc && !mt;
+      const here = c._sub ? (c._sub.kind === 'thread' ? c._sub.id === mt : c._sub.id === mc) : inMain;
+      if (!inMain) {
+        if (here) { await decryptMsg(c, m.message); if (c.loaded) addMessage(c, m.message); if (!mine && !document.hidden) { const t = S.typing.get(c.id); if (t) t.delete(m.message.senderId); } if (S.active === c.id) ui.renderMessages(c, mine); }
+        else if (!mine) { c._subUnread = c._subUnread || {}; const k = mt || mc; c._subUnread[k] = (c._subUnread[k] || 0) + 1; window.__ext.drawChanbar && window.__ext.drawChanbar(c); }
+        if (!mine && window.__ext.noteSubActivity) window.__ext.noteSubActivity(c, m.message);
+        return;
+      }
       if (!c.loaded && !mine) { c.lastMessage = m.message; }
       const payload = await decryptMsg(c, m.message);
-      if (c.loaded) addMessage(c, m.message); else c.lastMessage = m.message;
+      if (c.loaded && here) addMessage(c, m.message); else if (!c.loaded) c.lastMessage = m.message; else c.lastMessage = m.message;
       c._preview = previewText(payload, mine);
       sortConvs();
       if (!mine) {
-        const viewing = S.view === 'chats' && S.active === c.id && !document.hidden;
+        const viewing = S.view === 'chats' && S.active === c.id && !document.hidden && !c._sub;
         const t = S.typing.get(c.id); if (t) { t.delete(m.message.senderId); }
         if (viewing) markRead(c);
         else { c.unread = (c.unread || 0) + 1; if (!m.muted && !c.systemKind) ui.notifyMessage(c, m.message, payload); }
         if (c.systemKind && !memberOf(c, m.message.senderId)) { clearTimeout(c._memT); c._memT = setTimeout(() => loadConvs().catch(() => {}), 1500); } // new speaker in a big room: fetch the name
         updateBadge();
       }
-      ui.renderSide(); ui.renderRail(); if (S.active === c.id) ui.renderMessages(c, mine);
+      ui.renderSide(); ui.renderRail(); if (S.active === c.id && here) ui.renderMessages(c, mine);
       break;
     }
     case 'msg_deleted': {
@@ -1176,7 +1239,7 @@ async function onWS(m) {
     case 'notif': {
       S.notifs.unshift(m.notif); S.notifUnread++;
       ui.renderRail();
-      const txt = m.notif.type === 'group_added' ? `${m.notif.data.by} added you to ${m.notif.data.name}` : m.notif.type === 'dm_new' ? `${m.notif.data.from} started a chat with you` : m.notif.type === 'sched_failed' ? 'a scheduled message could not be sent' : m.notif.type === 'referral' ? `${m.notif.data.name} joined, +${m.notif.data.minutes} min beta` : m.notif.type === 'report' ? 'new report to review' : m.notif.type === 'game_night' ? `game night starting: ${m.notif.data.title}${m.notif.data.convName ? ' in ' + m.notif.data.convName : ''}` : m.notif.type === 'mention' ? `${m.notif.data.byName || m.notif.data.by} mentioned you${m.notif.data.convName ? ' in ' + m.notif.data.convName : ''}` : m.notif.type === 'reminder' ? 'reminder: ' + (m.notif.data.note || 'a message you saved') : m.notif.type === 'warn' ? `warning from ${m.notif.data.by}: ${m.notif.data.text}` : m.notif.type === 'appeal' ? `${m.notif.data.by} sent an appeal` : m.notif.type === 'verified' ? 'you are verified' : m.notif.type === 'verify_rejected' ? 'verification was not approved' + (m.notif.data.note ? ': ' + m.notif.data.note : '') : 'new notification';
+      const txt = m.notif.type === 'group_added' ? `${m.notif.data.by} added you to ${m.notif.data.name}` : m.notif.type === 'dm_new' ? `${m.notif.data.from} started a chat with you` : m.notif.type === 'sched_failed' ? 'a scheduled message could not be sent' : m.notif.type === 'referral' ? `${m.notif.data.name} joined, +${m.notif.data.minutes} min beta` : m.notif.type === 'report' ? 'new report to review' : m.notif.type === 'game_night' ? `game night starting: ${m.notif.data.title}${m.notif.data.convName ? ' in ' + m.notif.data.convName : ''}` : m.notif.type === 'mention' ? `${m.notif.data.byName || m.notif.data.by} mentioned you${m.notif.data.convName ? ' in ' + m.notif.data.convName : ''}` : m.notif.type === 'reminder' ? 'reminder: ' + (m.notif.data.note || 'a message you saved') : m.notif.type === 'warn' ? `warning from ${m.notif.data.by}: ${m.notif.data.text}` : m.notif.type === 'appeal' ? `${m.notif.data.by} sent an appeal` : m.notif.type === 'verified' ? 'you are verified' : m.notif.type === 'verify_rejected' ? 'verification was not approved' + (m.notif.data.note ? ': ' + m.notif.data.note : '') : (window.__ext.notifExtra && window.__ext.notifExtra(m.notif.type, m.notif.data)) || 'new notification';
       const quiet = window.__ext && window.__ext.dndActive && window.__ext.dndActive() && m.notif.type !== 'warn';
       if (!quiet) { toast(txt, 'info', () => { if (m.notif.data.convId) { ui.openConv(m.notif.data.convId); if (m.notif.data.msgId && window.__ext) setTimeout(() => window.__ext.jumpTo(convOf(m.notif.data.convId), m.notif.data.msgId), 600); } }); beep(); }
       break;
@@ -1493,6 +1556,7 @@ function buildChat(m, c) {
   const pinbar = el('div', { class: 'pinbar' });
   const msgs = el('div', { class: 'msgs' });
   const typing = el('div', { class: 'typing' });
+  const chanbar = el('div', { class: 'chanbar' });
   const cool = el('div', { class: 'cool' });
   const selbar = el('div', { class: 'selbar' });
   const sugg = el('div', { class: 'sugg' });
@@ -1537,12 +1601,12 @@ function buildChat(m, c) {
         el('button', { class: 'icon-btn', title: 'smart fix (ai)', onclick: () => X.smartFix(input) }, ic('sparkle', 20)),
         emojiBtn, input, sendBtn);
   const rulesbar = X.rulesBar(c, composerEl);
-  m.append(el('div', { class: 'chat' }, head, pinbar, msgs, typing, selbar,
+  m.append(el('div', { class: 'chat' }, head, chanbar, pinbar, msgs, typing, selbar,
     el('div', { class: 'composer-wrap' }, cool, freebar, modbar, replybar, sugg, rulesbar, composerEl)));
   c._shown = null;                                           // first paint of a chat should not animate every old message
   sel = null;                                                // leave select mode when switching chats
-  chatRef = { head, pinbar, msgs, typing, input, sendBtn, cool, selbar, freebar, modbar, replybar, convId: c.id };
-  renderHeader(); renderTyping(); tickCooldown(); X.loadPins(c); X.renderTop(); X.drawReply(c); X.applyWallpaper(c);
+  chatRef = { head, chanbar, pinbar, msgs, typing, input, sendBtn, cool, selbar, freebar, modbar, replybar, convId: c.id };
+  renderHeader(); renderTyping(); tickCooldown(); X.drawChanbar(c); X.loadPins(c); X.renderTop(); X.drawReply(c); X.applyWallpaper(c);
 }
 function renderHeader() {
   const h = chatRef.head; if (!h) return;
@@ -1563,6 +1627,8 @@ function renderHeader() {
     el('span', { class: 'ic muted', title: c.isPublic ? 'public room: open to everyone, not end-to-end encrypted' : 'end-to-end encrypted' }, ic(c.isPublic ? 'globe' : 'lock', 16)),
     !c.systemKind && (c.type === 'dm' || c.role === 'admin') ? el('button', { class: 'icon-btn' + (c.ttlSeconds ? ' on' : ''), title: 'disappearing messages', onclick: () => X.ttlModal(c) }, ic('timer', 20)) : null,
     !c.systemKind || c.gamePath ? el('button', { class: 'icon-btn' + (c.gamePath ? ' on' : ''), title: c.gamePath ? 'game room: ' + c.gameTitle : 'pin a game here', onclick: () => X.gameRoomModal(c) }, ic('gamepad', 20)) : null,
+    o ? el('button', { class: 'icon-btn', title: 'voice call', onclick: () => X.startCall(c, false) }, ic('phone', 20)) : null,
+    o ? el('button', { class: 'icon-btn', title: 'video call', onclick: () => X.startCall(c, true) }, ic('video', 20)) : null,
     el('button', { class: 'icon-btn', title: 'search this chat', onclick: () => X.searchModal(c) }, ic('search', 20)),
     X.dndActive() ? el('button', { class: 'icon-btn on', title: 'do not disturb is on', onclick: () => X.dndModal() }, ic('moon', 20)) : null,
     el('button', { class: 'icon-btn', title: c.muted ? 'unmute' : 'mute', onclick: async () => { c.muted = !c.muted; await api('PATCH', `/api/conversations/${c.id}/me`, { muted: c.muted }).catch(() => {}); renderHeader(); renderSide(); updateBadge(); } }, ic(c.muted ? 'mute' : 'volume', 20)),
@@ -1638,6 +1704,7 @@ function msgTools(c, m, mine) {
   if (!m.deleted) kids.unshift(b('reply', 'reply', () => X.setReply(c, m)));
   if (!m.deleted && ['text', 'gif', 'game', 'image', 'sticker', 'voice'].includes(p.t)) kids.push(b('forward', 'forward', () => X.forwardModal(c, m)));
   if (!m.deleted) kids.push(b('bell', 'remind me', () => X.remindModal(c, m)));
+  if (!m.deleted && c.isPublic && c.type === 'group' && X.canThread(c, m)) kids.push(b('thread', 'start a thread', () => X.threadFromMsg(c, m)));
   if (canPin(c)) kids.push(b('pin', m.pinned ? 'unpin' : 'pin', () => X.pinMessage(c, m)));
   if (mine && p.t === 'text' && C.betaActive()) kids.push(b('edit', 'edit', () => X.editMessage(c, m)));
   if (p.t === 'text') kids.push(b('copy', 'copy', () => { navigator.clipboard && navigator.clipboard.writeText(p.text).then(() => toast('copied', 'success')).catch(() => {}); }));
@@ -1857,7 +1924,7 @@ function settingsModal() {
       el('button', { class: 'btn grow', onclick: () => { m.close(); avatarModal(); } }, avatar(S.me.displayName, 22, '', S.me.avatar), 'profile picture'),
       el('button', { class: 'btn grow', onclick: () => { m.close(); statusModal(); } }, ic('edit', 16), 'set status')),
     el('div', { class: 'row gap', style: 'margin-top:8px' },
-      S.me.verified ? el('div', { class: 'btn grow verified-pill' }, ic('verified', 16), 'verified') : el('button', { class: 'btn grow primary', onclick: () => { m.close(); X.verifyModal(); } }, ic('verified', 16), 'verify me'),
+      S.me.verified ? el('button', { class: 'btn grow verified-pill', onclick: () => { m.close(); X.verifyModal(); } }, ic('verified', 16), 'verified, vouch') : el('button', { class: 'btn grow primary', onclick: () => { m.close(); X.verifyModal(); } }, ic('verified', 16), 'verify me'),
       el('button', { class: 'btn grow', onclick: () => { m.close(); X.badgesModal(); } }, ic('trophy', 16), 'badges')),
     el('div', { class: 'row gap', style: 'margin-top:8px' },
       el('button', { class: 'btn grow', onclick: () => { m.close(); X.inviteModal(); } }, ic('gift', 16), 'invite friends'),
@@ -1877,6 +1944,7 @@ function settingsModal() {
     toggle('show what i am playing', S.me.shareActivity, async (v) => { try { const d = await api('PATCH', '/api/me', { shareActivity: v }); S.me.shareActivity = d.user.shareActivity; } catch (e) { toast(e.message, 'error'); return false; } }),
     toggle('autocorrect', S.prefs.autocorrect !== false, (v) => { S.prefs.autocorrect = v; savePrefs(); }),
     toggle('sound', S.prefs.sound, (v) => { S.prefs.sound = v; savePrefs(); if (v) beep(); }),
+    X.callSettingsRows(toggle),
     toggle('desktop popups', S.prefs.desktop && 'Notification' in window && Notification.permission === 'granted', async (v) => {
       if (!v) { S.prefs.desktop = false; savePrefs(); return; }
       if (!('Notification' in window)) { toast('this browser has no notifications', 'error'); return false; }
@@ -1946,7 +2014,7 @@ function pickGameModal(c) {
 // ---------- alerts ----------
 function buildAlerts(m) {
   const list = S.notifs.length ? S.notifs.map((n) => {
-    const txt = n.type === 'group_added' ? `${n.data.by} added you to ${n.data.name}` : n.type === 'dm_new' ? `${n.data.from} started a chat` : n.type === 'sched_failed' ? 'a scheduled message could not be sent' : n.type === 'referral' ? `${n.data.name} joined, +${n.data.minutes} min beta` : n.type === 'report' ? 'new report to review' : n.type === 'game_night' ? `game night starting: ${n.data.title}` : n.type === 'verified' ? 'you are verified' : n.type === 'verify_rejected' ? 'verification not approved' + (n.data.note ? ': ' + n.data.note : '') : 'new alert';
+    const txt = n.type === 'group_added' ? `${n.data.by} added you to ${n.data.name}` : n.type === 'dm_new' ? `${n.data.from} started a chat` : n.type === 'sched_failed' ? 'a scheduled message could not be sent' : n.type === 'referral' ? `${n.data.name} joined, +${n.data.minutes} min beta` : n.type === 'report' ? 'new report to review' : n.type === 'game_night' ? `game night starting: ${n.data.title}` : n.type === 'verified' ? 'you are verified' : n.type === 'verify_rejected' ? 'verification not approved' + (n.data.note ? ': ' + n.data.note : '') : (X.notifExtra && X.notifExtra(n.type, n.data)) || 'new alert';
     return el('div', { class: 'urow click' + (n.read ? '' : ' unread'), onclick: () => n.data.convId && convOf(n.data.convId) && openConv(n.data.convId) }, el('div', { class: 'gshare-ic sm', style: `background:${tone(txt)}` }, ic(n.type === 'group_added' ? 'users' : n.type === 'referral' ? 'gift' : n.type === 'report' ? 'flag' : 'chat', 16)), el('div', { class: 'grow' }, el('div', null, txt), el('div', { class: 'muted small' }, ago(n.createdAt))));
   }) : [el('div', { class: 'empty-s' }, mugIcon())];
   m.append(el('div', { class: 'page' }, el('div', { class: 'page-head' }, el('h2', null, 'alerts'), S.notifs.length ? el('button', { class: 'btn small', onclick: async () => { await api('POST', '/api/notifications/read').catch(() => {}); S.notifs.forEach((n) => (n.read = true)); S.notifUnread = 0; renderAll(); builtMain = ''; renderMain(); } }, 'mark read') : null), el('div', { class: 'ulist stagger' }, list.map((x, i) => { x.style.setProperty('--i', Math.min(i, 10)); return x; }))));
@@ -1978,7 +2046,7 @@ function buildAdmin(m) {
           el('div', { class: 'avwrap' }, avatar(u.displayName, 40, '', u.avatar), dot(u.online)),
           el('div', { class: 'grow' }, el('div', { class: 'ctitle' }, u.displayName, u.isOwner ? el('span', { class: 'tag gold', style: 'margin-left:8px' }, 'owner') : u.isAdmin ? el('span', { class: 'tag gold', style: 'margin-left:8px' }, 'admin') : null, u.banned ? el('span', { class: 'tag', style: 'margin-left:8px' }, 'suspended') : null, u.beta && !u.isAdmin ? el('span', { class: 'tag', style: 'margin-left:8px' }, 'beta') : null),
             el('div', { class: 'muted small' }, `@${u.username} · ${u.messages} msgs · joined ${fmtDay(u.createdAt).toLowerCase()}`)),
-          el('div', { class: 'acts' }, !u.isAdmin ? el('button', { class: 'icon-btn' + (u.verified ? ' on' : ''), title: u.verified ? 'remove verification' : 'verify', onclick: () => act(() => api('POST', `/api/admin/users/${u.id}/verify`, { verified: !u.verified }), u.verified ? 'unverified' : 'verified') }, ic('verified', 18)) : null, el('button', { class: 'icon-btn' + (u.beta ? ' on' : ''), title: 'beta time', onclick: () => X.betaModal(u, loadUsers) }, ic('star', 18)),
+          el('div', { class: 'acts' }, el('button', { class: 'icon-btn', title: 'vouches', onclick: () => X.adminVouches(u.id) }, ic('verified', 16)), !u.isAdmin ? el('button', { class: 'icon-btn' + (u.verified ? ' on' : ''), title: u.verified ? 'remove verification' : 'verify', onclick: () => act(() => api('POST', `/api/admin/users/${u.id}/verify`, { verified: !u.verified }), u.verified ? 'unverified' : 'verified') }, ic('verified', 18)) : null, el('button', { class: 'icon-btn' + (u.beta ? ' on' : ''), title: 'beta time', onclick: () => X.betaModal(u, loadUsers) }, ic('star', 18)),
             isOwner && !u.isOwner ? el('button', { class: 'icon-btn', title: u.isAdmin ? 'remove admin' : 'make admin', onclick: () => act(() => api('POST', `/api/admin/users/${u.id}/admin`, { admin: !u.isAdmin }), u.isAdmin ? 'admin removed' : `${u.displayName} is an admin now`) }, ic('crown', 18)) : null,
             !locked ? el('button', { class: 'icon-btn', title: u.banned ? 'restore' : 'suspend', onclick: async () => { if (u.banned || await confirmModal(`suspend ${u.displayName}?`, 'they get signed out and cannot come back until restored.', 'suspend')) act(() => api('POST', `/api/admin/users/${u.id}/ban`, { banned: !u.banned }), u.banned ? 'restored' : 'suspended'); } }, ic('ban', 18)) : null,
             !locked ? el('button', { class: 'icon-btn', title: 'remove account', onclick: async () => { if (await confirmModal(`remove ${u.displayName}?`, 'the account is deleted for good.', 'remove')) act(() => api('DELETE', `/api/admin/users/${u.id}`), 'removed'); } }, ic('trash', 18)) : null));
@@ -2610,7 +2678,7 @@ async function verifyModal() {
   const m = modal('verify your account', body);
   let st = null;
   try { st = await api('GET', '/api/verify/status', null, { quiet: true }); } catch (e) { return body.replaceChildren(el('div', { class: 'form-err' }, e.message)); }
-  if (st.verified) { S.me.verified = true; return body.replaceChildren(el('div', { class: 'locked' }, ic('verified', 34), el('h3', null, 'you are verified'), el('p', { class: 'muted' }, 'the blue tick shows next to your name'))); }
+  if (st.verified) { S.me.verified = true; body.replaceChildren(el('div', { class: 'locked' }, ic('verified', 34), el('h3', null, 'you are verified'), el('p', { class: 'muted' }, 'the blue tick shows next to your name'))); const vs = await window.__ext.vouchSection(true); body.append(vs); return; }
   if (st.last && st.last.status === 'pending') return body.replaceChildren(el('div', { class: 'locked' }, ic('timer', 30), el('h3', null, 'waiting for review'), el('p', { class: 'muted' }, 'an admin will look at it soon. your photo is deleted as soon as they decide.')));
   let dataUrl = '';
   const prev = el('div', { class: 'idprev' });
@@ -2640,7 +2708,8 @@ async function verifyModal() {
     send,
     el('div', { class: 'or' }, 'or'),
     el('p', { class: 'muted small', style: 'margin:0 0 8px' }, 'no id? message an admin instead. chats with admins are always free, and they can verify you by hand.'),
-    ...(st.admins || []).map((a) => el('button', { class: 'btn wide', style: 'margin-bottom:6px', onclick: () => { m.close(); U.startDM(a.username); } }, ic('chat', 16), 'talk to ' + a.displayName)));
+    ...(st.admins || []).map((a) => el('button', { class: 'btn wide', style: 'margin-bottom:6px', onclick: () => { m.close(); U.startDM(a.username); } }, ic('chat', 16), 'talk to ' + a.displayName)),
+    await window.__ext.vouchSection(false));
 }
 
 // ---------- badges ----------
@@ -5157,6 +5226,731 @@ function boardsRow(c) {
 }
 
 Object.assign(window.__ext, { boardsModal, boardModal, nightsSection, boardsRow, onBoard: null });
+})();
+
+(() => {
+'use strict';
+const C = window.__core, U = window.__ui, X = window.__ext;
+const { S, el, ic, toast, api, convOf, loadMessages } = C;
+const { modal, confirmModal } = U;
+
+const KIND_IC = { text: 'hash', voice: 'volume', video: 'video', stage: 'stage' };
+const KIND_HINT = { text: 'type and send, like the main chat', voice: 'hop in and talk', video: 'talk with cameras on', stage: 'mods and invited speakers talk, everyone else listens' };
+
+const pub = (c) => !!c && c.type === 'group' && c.isPublic;
+const data = (c) => c._ch || (c._ch = { loaded: false, channels: [], threads: [], staff: false });
+
+async function loadChans(c) {
+  const d = data(c);
+  if (d.busy) return d.busy;
+  d.busy = api('GET', `/api/conversations/${c.id}/channels`, null, { quiet: true }).then((r) => {
+    d.channels = r.channels; d.threads = r.threads; d.staff = r.staff; d.max = r.max; d.loaded = true;
+  }).catch(() => { d.loaded = true; }).finally(() => { d.busy = null; });
+  return d.busy;
+}
+
+function unreadOf(c, id) { return (c._subUnread && c._subUnread[id]) || 0; }
+function mainUnread(c) { return c._mainPending || 0; }
+
+function drawChanbar(c) {
+  const ref = U.chatRef(); if (!ref || !ref.chanbar || ref.convId !== c.id) return;
+  const bar = ref.chanbar;
+  if (!pub(c)) { bar.replaceChildren(); bar.classList.remove('on'); return; }
+  bar.classList.add('on');
+  const d = data(c);
+  if (!d.loaded) { loadChans(c).then(() => drawChanbar(c)); }
+  const inRoom = X.callRoom ? X.callRoom() : null;
+  const chip = (cls, icon, label, onclick, extra) => el('button', { class: 'chip ' + cls, onclick }, ic(icon, 14), el('span', null, label), extra);
+  const sub = c._sub;
+  const chips = [chip(!sub ? 'on' : '', 'chat', 'main', () => openSub(c, null))];
+  for (const ch of d.channels) {
+    const mine = ch.mine || d.staff;
+    const live = ch.live > 0 ? el('b', { class: 'live' }, String(ch.live)) : null;
+    const dot = unreadOf(c, ch.id) ? el('i', { class: 'newdot inline' }) : null;
+    const del = mine ? el('span', { class: 'chipx', title: 'delete channel', onclick: async (e) => { e.stopPropagation(); if (await confirmModal('delete #' + ch.name + '?', ch.kind === 'text' ? 'its messages go too' : 'anyone inside gets dropped', 'delete')) { try { await api('DELETE', `/api/channels/${ch.id}`, null, { quiet: true }); } catch (er) { toast(er.message, 'error'); } } } }, ic('x', 12)) : null;
+    const isOn = ch.kind === 'text' ? (sub && sub.kind === 'channel' && sub.id === ch.id) : inRoom === 'ch:' + ch.id;
+    chips.push(chip((isOn ? 'on ' : '') + ch.kind, KIND_IC[ch.kind] || 'hash', ch.name, () => (ch.kind === 'text' ? openSub(c, { kind: 'channel', id: ch.id, name: ch.name }) : X.joinChannel(c, ch)), [live, dot, del]));
+  }
+  const open = d.threads.slice(0, 40);
+  if (open.length) {
+    const tu = open.reduce((n, t) => n + unreadOf(c, t.id), 0);
+    chips.push(chip(sub && sub.kind === 'thread' ? 'on' : '', 'thread', 'threads', () => threadsModal(c), [el('b', { class: 'count' }, String(open.length)), tu ? el('i', { class: 'newdot inline' }) : null]));
+  }
+  chips.push(el('button', { class: 'chip add', title: 'new channel or thread', onclick: () => createModal(c) }, ic('plus', 14)));
+  const rows = [el('div', { class: 'chips' }, chips)];
+  if (sub) {
+    rows.push(el('div', { class: 'subline' },
+      el('button', { class: 'btn small ghost', onclick: () => openSub(c, sub.kind === 'thread' && sub.channelId ? { kind: 'channel', id: sub.channelId, name: (d.channels.find((x) => x.id === sub.channelId) || {}).name || 'channel' } : null) }, ic('back', 14), 'back'),
+      el('span', { class: 'grow' }, sub.kind === 'thread' ? 'thread: ' + sub.name : '#' + sub.name),
+      sub.kind === 'thread' ? el('span', { class: 'muted small' }, 'replies stay in here') : null));
+  }
+  bar.replaceChildren(rows);
+}
+
+async function openSub(c, sub) {
+  if ((c._sub ? c._sub.id : null) === (sub ? sub.id : null)) return;
+  if (sub && sub.kind === 'thread' && !sub.channelId) { const t = data(c).threads.find((x) => x.id === sub.id); if (t) sub.channelId = t.channelId; }
+  c._sub = sub || null; c.msgs = []; c.loaded = false; c.hasMore = false; c._shown = null; c._reply = null;
+  if (sub && c._subUnread) delete c._subUnread[sub.id];
+  drawChanbar(c);
+  try { X.drawReply(c); } catch { /* none */ }
+  U.renderMessages(c, true);
+  try { await loadMessages(c); } catch (e) { toast(e.message, 'error'); }
+  const ref = U.chatRef();
+  if (ref && ref.input) ref.input.placeholder = sub ? (sub.kind === 'thread' ? 'reply in thread' : 'message #' + sub.name) : 'say something';
+  if (S.active === c.id) { U.renderMessages(c, true); if (!sub) C.markRead(c); }
+  drawChanbar(c);
+}
+
+function threadsModal(c) {
+  const d = data(c);
+  const list = el('div', { class: 'list' });
+  const m = modal('threads', list);
+  const paint = () => {
+    list.replaceChildren(d.threads.length ? d.threads.map((t) => {
+      const chan = t.channelId ? (d.channels.find((x) => x.id === t.channelId) || {}).name : null;
+      return el('div', { class: 'urow click', onclick: () => { m.close(); openSub(c, { kind: 'thread', id: t.id, name: t.title, channelId: t.channelId }); } },
+        el('div', { class: 'gshare-ic sm', style: `background:${C.tone(t.title)}` }, ic('thread', 16)),
+        el('div', { class: 'grow' }, el('div', null, t.title, unreadOf(c, t.id) ? el('i', { class: 'newdot inline' }) : null), el('div', { class: 'muted small' }, `${chan ? '#' + chan + ' · ' : ''}by ${t.creator} · ${C.ago(t.lastAt)}`)),
+        (t.mine || d.staff) ? el('button', { class: 'icon-btn tiny', title: 'delete', onclick: async (e) => { e.stopPropagation(); if (await confirmModal('delete this thread?', 'its messages go too', 'delete')) { try { await api('DELETE', `/api/threads/${t.id}`, null, { quiet: true }); } catch (er) { toast(er.message, 'error'); } } } }, ic('trash', 14)) : null);
+    }) : el('div', { class: 'muted pad' }, 'no threads yet. hover a message and hit the thread button'));
+  };
+  paint();
+}
+
+function createModal(c) {
+  const d = data(c);
+  let kind = 'text', what = 'channel';
+  const name = el('input', { placeholder: 'name', maxLength: 24 });
+  const hint = el('p', { class: 'muted small' });
+  const kinds = el('div', { class: 'seg small' });
+  const whatRow = el('div', { class: 'seg small' });
+  const err = el('div', { class: 'form-err' });
+  const paint = () => {
+    hint.textContent = what === 'thread' ? 'a side conversation. stays out of the main chat' : KIND_HINT[kind];
+    kinds.replaceChildren(['text', 'voice', 'video', ...(d.staff ? ['stage'] : [])].map((k) => el('button', { class: k === kind ? 'on' : '', onclick: () => { kind = k; paint(); } }, ic(KIND_IC[k], 14), k)));
+    whatRow.replaceChildren(['channel', 'thread'].map((k) => el('button', { class: k === what ? 'on' : '', onclick: () => { what = k; paint(); } }, k)));
+    kinds.style.display = what === 'channel' ? '' : 'none';
+    name.placeholder = what === 'thread' ? 'thread title' : 'channel name';
+    name.maxLength = what === 'thread' ? 50 : 24;
+  };
+  const go = el('button', { class: 'btn primary wide', onclick: async () => {
+    err.textContent = '';
+    go.disabled = true;
+    try {
+      if (what === 'channel') {
+        const r = await api('POST', `/api/conversations/${c.id}/channels`, { name: name.value, kind }, { quiet: true });
+        m.close();
+        if (!d.channels.some((x) => x.id === r.channel.id)) d.channels.push(r.channel);
+        drawChanbar(c);
+        if (r.channel.kind === 'text') openSub(c, { kind: 'channel', id: r.channel.id, name: r.channel.name });
+      } else {
+        const body = { title: name.value };
+        if (c._sub && c._sub.kind === 'channel') body.channelId = c._sub.id;
+        const r = await api('POST', `/api/conversations/${c.id}/threads`, body, { quiet: true });
+        m.close();
+        if (!d.threads.some((x) => x.id === r.thread.id)) d.threads.unshift(r.thread);
+        openSub(c, { kind: 'thread', id: r.thread.id, name: r.thread.title, channelId: r.thread.channelId });
+      }
+    } catch (e) { err.textContent = e.message; go.disabled = false; }
+  } }, ic('plus', 16), 'create');
+  const m = modal('new in ' + c.name, el('div', null, whatRow, kinds, name, hint, err, go));
+  paint();
+  setTimeout(() => name.focus(), 50);
+}
+
+function canThread(c, msg) {
+  if (!pub(c) || msg.deleted || msg.threadId) return false;
+  const d = data(c);
+  if (d.threads.some((t) => t.rootMsgId === msg.id)) return false;
+  return !!(S.me.verified || S.me.isAdmin);
+}
+function threadFromMsg(c, msg) {
+  const p = msg._p || {};
+  const first = p.t === 'text' ? String(p.text || '').replace(/\s+/g, ' ').slice(0, 40) : '';
+  const name = el('input', { value: first, maxLength: 50, placeholder: 'thread title' });
+  const err = el('div', { class: 'form-err' });
+  const go = el('button', { class: 'btn primary wide', onclick: async () => {
+    go.disabled = true; err.textContent = '';
+    try {
+      const body = { title: name.value, rootMsgId: msg.id };
+      if (c._sub && c._sub.kind === 'channel') body.channelId = c._sub.id;
+      const r = await api('POST', `/api/conversations/${c.id}/threads`, body, { quiet: true });
+      m.close();
+      const d = data(c);
+      if (!d.threads.some((x) => x.id === r.thread.id)) d.threads.unshift(r.thread);
+      openSub(c, { kind: 'thread', id: r.thread.id, name: r.thread.title, channelId: r.thread.channelId });
+    } catch (e) { err.textContent = e.message; go.disabled = false; }
+  } }, ic('thread', 16), 'start thread');
+  const m = modal('start a thread', el('div', null, name, err, go));
+  setTimeout(() => { name.focus(); name.select(); }, 50);
+}
+
+function onChan(m) {
+  const c = convOf(m.convId); if (!c) return;
+  const d = data(c);
+  if (m.t === 'channel_new') { if (!d.channels.some((x) => x.id === m.channel.id)) d.channels.push({ ...m.channel, mine: m.by === S.me.id }); }
+  else if (m.t === 'channel_update') { const x = d.channels.find((y) => y.id === m.id); if (x) x.name = m.name; if (c._sub && c._sub.id === m.id) c._sub.name = m.name; }
+  else if (m.t === 'channel_gone') {
+    d.channels = d.channels.filter((x) => x.id !== m.id);
+    d.threads = d.threads.filter((t) => t.channelId !== m.id);
+    if (c._sub && (c._sub.id === m.id || c._sub.channelId === m.id)) { toast('that channel was deleted', 'info'); openSub(c, null); }
+  } else if (m.t === 'thread_new') { if (!d.threads.some((x) => x.id === m.thread.id)) d.threads.unshift({ ...m.thread, mine: m.by === S.me.id }); }
+  else if (m.t === 'thread_gone') {
+    d.threads = d.threads.filter((x) => x.id !== m.id);
+    if (c._sub && c._sub.id === m.id) { toast('that thread was deleted', 'info'); openSub(c, c._sub.channelId ? { kind: 'channel', id: c._sub.channelId, name: (d.channels.find((x) => x.id === c._sub.channelId) || {}).name || 'channel' } : null); }
+  }
+  if (S.active === c.id) drawChanbar(c);
+}
+
+function setLive(m) {
+  const c = convOf(m.convId); if (!c) return;
+  const x = data(c).channels.find((y) => y.id === m.channelId);
+  if (x) x.live = m.n;
+  if (S.active === c.id) drawChanbar(c);
+}
+
+function noteSubActivity(c, msg) {
+  if (msg.threadId) { const t = data(c).threads.find((x) => x.id === msg.threadId); if (t) t.lastAt = msg.createdAt; }
+}
+
+Object.assign(window.__ext, { drawChanbar, openSub, canThread, threadFromMsg, onChan, setLive, noteSubActivity, chanData: data, loadChans });
+})();
+
+(() => {
+'use strict';
+const C = window.__core, U = window.__ui, X = window.__ext;
+const { S, el, ic, toast, api, convOf, sendWS, avatar, rid } = C;
+const { modal, confirmModal } = U;
+
+const K = { room: null, kind: null, convId: null, name: '', members: [], links: new Map(), localAudio: null, localVideo: null, mic: true, cam: false, deaf: false, small: false, incoming: null, micPromise: null, dock: null, media: new Map(), localEl: null };
+let ice = null, actx = null, ringTimer = null, titleTimer = null, origTitle = null, meter = null;
+
+const myId = () => S.me.id;
+const meMember = () => K.members.find((x) => x.id === myId());
+const stage = () => K.kind === 'stage';
+const hasVideo = () => K.kind === 'dm' || K.kind === 'video';
+
+async function getIce() {
+  if (ice) return ice;
+  try { ice = (await api('GET', '/api/rtc-config', null, { quiet: true })).iceServers; } catch { ice = [{ urls: 'stun:stun.l.google.com:19302' }]; }
+  return ice;
+}
+function audioCtx() {
+  if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch { actx = null; } }
+  if (actx && actx.state === 'suspended') actx.resume().catch(() => {});
+  return actx;
+}
+for (const ev of ['pointerdown', 'keydown']) window.addEventListener(ev, () => { if (actx || K.incoming) audioCtx(); }, { passive: true });
+
+async function acquireMic() {
+  if (K.localAudio) return true;
+  if (K.micPromise) return K.micPromise;
+  K.micPromise = (async () => {
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+      K.localAudio = s.getAudioTracks()[0];
+      K.localAudio.enabled = K.mic;
+      watchLevel('me', new MediaStream([K.localAudio]));
+      return true;
+    } catch { toast('could not use your microphone, check the browser permission', 'error'); return false; }
+    finally { K.micPromise = null; }
+  })();
+  return K.micPromise;
+}
+async function acquireCam() {
+  if (K.localVideo) return true;
+  try {
+    const s = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 360 }, frameRate: { ideal: 24 } } });
+    K.localVideo = s.getVideoTracks()[0];
+    K.localVideo.onended = () => { if (K.localVideo) toggleCam(false); };
+    return true;
+  } catch { toast('could not use your camera, check the browser permission', 'error'); return false; }
+}
+
+function watchLevel(id, stream) {
+  const ctx = audioCtx(); if (!ctx || !stream.getAudioTracks().length) return;
+  try {
+    const src = ctx.createMediaStreamSource(stream), an = ctx.createAnalyser();
+    an.fftSize = 256; src.connect(an);
+    K.levels = K.levels || new Map();
+    K.levels.set(id, { an, buf: new Uint8Array(an.fftSize), src });
+    if (!meter) meter = setInterval(tickMeter, 140);
+  } catch { /* no meter */ }
+}
+function tickMeter() {
+  if (!K.levels || !K.dock) return;
+  for (const [id, l] of K.levels) {
+    l.an.getByteTimeDomainData(l.buf);
+    let s = 0; for (let i = 0; i < l.buf.length; i++) { const v = (l.buf[i] - 128) / 128; s += v * v; }
+    const loud = Math.sqrt(s / l.buf.length) > 0.04 && (id !== 'me' || K.mic);
+    const t = K.dock.querySelector(`[data-uid="${id === 'me' ? myId() : id}"]`);
+    if (t) t.classList.toggle('speaking', loud);
+  }
+}
+
+function closeLink(id) {
+  const L = K.links.get(id); if (!L) return;
+  K.links.delete(id);
+  try { L.pc.ontrack = null; L.pc.onicecandidate = null; L.pc.onconnectionstatechange = null; L.pc.close(); } catch { /* closed */ }
+  const v = K.media.get(id); if (v) { v.srcObject = null; v.remove(); K.media.delete(id); }
+  if (K.levels && K.levels.has(id)) { try { K.levels.get(id).src.disconnect(); } catch { /* gone */ } K.levels.delete(id); }
+}
+
+const sigSend = (to, o) => sendWS({ t: 'vc_sig', room: K.room, to, data: JSON.stringify(o) });
+
+function dirFor(me, mem) {
+  if (!stage()) return 'sendrecv';
+  const send = !!me.speaker, recv = !!mem.speaker;
+  return send && recv ? 'sendrecv' : send ? 'sendonly' : 'recvonly';
+}
+
+async function newLink(mem, sig, sid) {
+  const pc = new RTCPeerConnection({ iceServers: await getIce() });
+  const L = { pc, sid, sig, ice: [], stream: new MediaStream(), id: mem.id };
+  K.links.set(mem.id, L);
+  pc.onicecandidate = (e) => { if (e.candidate) sigSend(mem.id, { sid, k: 'ice', c: e.candidate }); };
+  pc.ontrack = (e) => {
+    L.stream.addTrack(e.track);
+    attachMedia(mem.id, L.stream);
+    if (e.track.kind === 'audio') watchLevel(mem.id, new MediaStream([e.track]));
+    e.track.onunmute = () => paintDock();
+    paintDock();
+  };
+  pc.onconnectionstatechange = () => {
+    if (pc.connectionState === 'failed' && K.links.get(mem.id) === L) { closeLink(mem.id); setTimeout(() => reconcile().catch(() => {}), 900); }
+  };
+  return L;
+}
+function attachMedia(id, stream) {
+  let v = K.media.get(id);
+  if (!v) { v = el('video', { autoplay: true, playsinline: true }); K.media.set(id, v); }
+  if (v.srcObject !== stream) v.srcObject = stream;
+  v.muted = K.deaf;
+  v.play().catch(() => {});
+}
+async function wireTracks(pc, me, mem) {
+  for (const tr of pc.getTransceivers()) {
+    const kind = tr.receiver && tr.receiver.track ? tr.receiver.track.kind : null;
+    if (kind === 'audio') {
+      tr.direction = dirFor(me, mem);
+      if (tr.direction !== 'recvonly' && K.localAudio) await tr.sender.replaceTrack(K.localAudio).catch(() => {});
+    } else if (kind === 'video') {
+      tr.direction = 'sendrecv';
+      if (K.localVideo) await tr.sender.replaceTrack(K.localVideo).catch(() => {});
+    }
+  }
+}
+
+async function makeOffer(me, mem, sig) {
+  const L = await newLink(mem, sig, rid());
+  const at = L.pc.addTransceiver('audio', { direction: dirFor(me, mem) });
+  if (at.direction !== 'recvonly' && K.localAudio) await at.sender.replaceTrack(K.localAudio).catch(() => {});
+  if (hasVideo()) { const vt = L.pc.addTransceiver('video', { direction: 'sendrecv' }); if (K.localVideo) await vt.sender.replaceTrack(K.localVideo).catch(() => {}); }
+  const offer = await L.pc.createOffer();
+  await L.pc.setLocalDescription(offer);
+  sigSend(mem.id, { sid: L.sid, k: 'offer', sdp: L.pc.localDescription.sdp });
+}
+
+async function onSig(m) {
+  if (!K.room || m.room !== K.room) return;
+  let d; try { d = JSON.parse(m.data); } catch { return; }
+  const me = meMember(), mem = K.members.find((x) => x.id === m.from);
+  if (!me || !mem || !d || typeof d.sid !== 'string') return;
+  if (d.k === 'offer') {
+    if (K.micPromise) await K.micPromise;
+    const old = K.links.get(m.from); if (old) closeLink(m.from);
+    const L = await newLink(mem, [me.e, mem.e, me.speaker, mem.speaker].join('|'), d.sid);
+    await L.pc.setRemoteDescription({ type: 'offer', sdp: d.sdp });
+    await wireTracks(L.pc, me, mem);
+    const ans = await L.pc.createAnswer();
+    await L.pc.setLocalDescription(ans);
+    sigSend(m.from, { sid: d.sid, k: 'answer', sdp: L.pc.localDescription.sdp });
+    for (const c of L.ice.splice(0)) L.pc.addIceCandidate(c).catch(() => {});
+    return;
+  }
+  const L = K.links.get(m.from);
+  if (!L || L.sid !== d.sid) return;
+  if (d.k === 'answer') {
+    await L.pc.setRemoteDescription({ type: 'answer', sdp: d.sdp }).catch(() => {});
+    for (const c of L.ice.splice(0)) L.pc.addIceCandidate(c).catch(() => {});
+  } else if (d.k === 'ice' && d.c) {
+    if (L.pc.remoteDescription) L.pc.addIceCandidate(d.c).catch(() => {}); else L.ice.push(d.c);
+  }
+}
+
+let reconciling = false, again = false;
+async function reconcile() {
+  if (reconciling) { again = true; return; }
+  reconciling = true;
+  try {
+    do {
+      again = false;
+      const room = K.room;
+      const me = meMember(); if (!me || !room) break;
+      if (stage()) {
+        if (me.speaker && !K.localAudio) {
+          const ok = await acquireMic();
+          if (!ok) { sendWS({ t: 'vc_promote', room, user: myId(), on: false }); continue; }
+          sendWS({ t: 'vc_media', room, mic: K.mic });
+        }
+        if (!me.speaker && K.localAudio) { K.localAudio.stop(); K.localAudio = null; if (K.levels && K.levels.has('me')) K.levels.delete('me'); }
+      }
+      if (K.room !== room) break;
+      for (const mem of K.members) {
+        if (mem.id === me.id) continue;
+        const want = !stage() || me.speaker || mem.speaker;
+        const sig = [me.e, mem.e, me.speaker, mem.speaker].join('|');
+        const L = K.links.get(mem.id);
+        if (L && (!want || L.sig !== sig)) closeLink(mem.id);
+        if (!want || K.links.has(mem.id)) continue;
+        if (myId() < mem.id) await makeOffer(me, mem, sig).catch((e) => console.warn('offer', e));
+      }
+      for (const id of [...K.links.keys()]) if (!K.members.some((x) => x.id === id)) closeLink(id);
+    } while (again);
+  } finally { reconciling = false; }
+}
+
+function onState(m) {
+  if (K.incoming && m.room === K.incoming.room && m.members.some((x) => x.id === myId())) stopIncoming();
+  if (m.room !== K.room) return;
+  K.kind = m.kind; K.convId = m.convId; K.name = m.name || K.name;
+  K.members = m.members;
+  if (!meMember()) { if (K.joined) cleanup(); return; }
+  K.joined = true;
+  paintDock();
+  reconcile().catch((e) => console.warn('reconcile', e));
+}
+
+function cleanup(msg) {
+  for (const id of [...K.links.keys()]) closeLink(id);
+  for (const t of [K.localAudio, K.localVideo]) if (t) try { t.stop(); } catch { /* ended */ }
+  for (const l of (K.levels || new Map()).values()) try { l.src.disconnect(); } catch { /* gone */ }
+  clearInterval(meter); meter = null;
+  if (K.dock) K.dock.remove();
+  if (K.audioBox) { K.audioBox.remove(); K.audioBox = null; }
+  Object.assign(K, { room: null, kind: null, convId: null, name: '', members: [], localAudio: null, localVideo: null, mic: true, cam: false, deaf: false, small: false, dock: null, joined: false, levels: null, outgoing: false, localEl: null });
+  K.media.clear();
+  if (msg) toast(msg, 'info');
+  U.renderSide && U.renderSide();
+  const c = S.active && convOf(S.active); if (c) X.drawChanbar(c);
+}
+function leave() {
+  if (!K.room) return;
+  const room = K.room;
+  const ringing = K.kind === 'dm' && K.members.length < 2;
+  sendWS({ t: ringing ? 'call_cancel' : 'vc_leave', room });
+  cleanup();
+}
+
+async function toggleMic(v) {
+  if (!K.room) return;
+  K.mic = typeof v === 'boolean' ? v : !K.mic;
+  if (K.localAudio) K.localAudio.enabled = K.mic;
+  sendWS({ t: 'vc_media', room: K.room, mic: K.mic });
+  paintDock();
+}
+async function toggleCam(v) {
+  if (!K.room || !hasVideo()) return;
+  const on = typeof v === 'boolean' ? v : !K.cam;
+  if (on) { if (!(await acquireCam())) return; }
+  else if (K.localVideo) { K.localVideo.stop(); K.localVideo = null; }
+  K.cam = on;
+  for (const L of K.links.values()) { const t = L.pc.getTransceivers().find((x) => x.receiver.track && x.receiver.track.kind === 'video'); if (t) await t.sender.replaceTrack(K.localVideo).catch(() => {}); }
+  K.localEl = null;
+  sendWS({ t: 'vc_media', room: K.room, cam: K.cam });
+  paintDock();
+}
+function toggleDeaf() { K.deaf = !K.deaf; for (const v of K.media.values()) v.muted = K.deaf; paintDock(); }
+
+async function enter(room, kind, convId, name) {
+  if (K.room && K.room !== room) leave();
+  Object.assign(K, { room, kind, convId, name, members: [], joined: false });
+  paintDock();
+}
+
+async function startCall(c, video) {
+  if (!navigator.mediaDevices || !window.RTCPeerConnection) return toast('this browser cannot do calls', 'error');
+  if (S.me.callsOff) return toast('you turned calls off, flip them back on in settings', 'error');
+  if (K.room) return toast('you are already in a call', 'error');
+  if (!(await acquireMic())) return;
+  if (video && !(await acquireCam())) video = false;
+  K.cam = !!K.localVideo;
+  await enter('dm:' + c.id, 'dm', c.id, C.convTitle(c));
+  K.outgoing = true; paintDock();
+  sendWS({ t: 'call_start', convId: c.id, video: !!video });
+}
+
+async function joinChannel(c, ch) {
+  if (!navigator.mediaDevices || !window.RTCPeerConnection) return toast('this browser cannot do calls', 'error');
+  const room = 'ch:' + ch.id;
+  if (K.room === room) { K.small = false; return paintDock(); }
+  if (!S.me.verified && !S.me.isAdmin && c.role !== 'admin' && c.role !== 'mod') { return X.verifyModal(); }
+  if (K.room) leave();
+  if (ch.kind !== 'stage' && !(await acquireMic())) return;
+  K.mic = true;
+  await enter(room, ch.kind, c.id, ch.name);
+  sendWS({ t: 'vc_join', room, mic: K.mic });
+}
+
+function ringPref() { return S.me.callPref || null; }
+function playRing() {
+  const ctx = audioCtx(); if (!ctx || ctx.state !== 'running') return;
+  const t0 = ctx.currentTime;
+  [[440, 0], [480, 0], [440, 0.55], [480, 0.55]].forEach(([f, off]) => {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine'; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, t0 + off); g.gain.exponentialRampToValueAtTime(0.12, t0 + off + 0.04); g.gain.exponentialRampToValueAtTime(0.0001, t0 + off + 0.45);
+    o.connect(g).connect(ctx.destination); o.start(t0 + off); o.stop(t0 + off + 0.5);
+  });
+}
+function startRing(name, force) {
+  stopRing();
+  const pref = force || ringPref();
+  if (pref !== 'title') { audioCtx(); playRing(); ringTimer = setInterval(playRing, 2200); }
+  if (pref !== 'sound') {
+    origTitle = origTitle || document.title;
+    const msg = `(${String(name).toUpperCase()} IS CALLING!)`;
+    let flip = false;
+    document.title = msg;
+    titleTimer = setInterval(() => { flip = !flip; document.title = flip ? origTitle : msg; }, 800);
+  }
+}
+function stopRing() {
+  clearInterval(ringTimer); ringTimer = null;
+  if (titleTimer) { clearInterval(titleTimer); titleTimer = null; if (origTitle) document.title = origTitle; origTitle = null; }
+}
+function testRing() { startRing('a friend', ringPref() || undefined); setTimeout(stopRing, 4000); }
+
+function stopIncoming() {
+  stopRing();
+  if (K.incoming && K.incoming.card) K.incoming.card.remove();
+  K.incoming = null;
+}
+function showIncoming(m) {
+  if (K.incoming) stopIncoming();
+  const done = () => stopIncoming();
+  const card = el('div', { class: 'incall', role: 'alertdialog', 'aria-label': 'incoming call' },
+    avatar(m.from.name, 46, '', m.from.avatar),
+    el('div', { class: 'grow' }, el('div', { class: 'ctitle' }, m.from.name), el('div', { class: 'muted small' }, m.video ? 'is video calling you' : 'is calling you')),
+    el('button', { class: 'btn danger round', title: 'decline', onclick: () => { sendWS({ t: 'call_decline', room: m.room }); done(); } }, ic('phoneoff', 20)),
+    el('button', { class: 'btn primary round', title: 'accept', onclick: async () => {
+      const room = m.room; done();
+      if (K.room) return toast('you are already in a call', 'error');
+      if (!(await acquireMic())) { sendWS({ t: 'call_decline', room }); return; }
+      if (m.video) await acquireCam();
+      K.cam = !!K.localVideo;
+      await enter(room, 'dm', m.convId, m.from.name);
+      sendWS({ t: 'vc_join', room, mic: true });
+      if (K.cam) sendWS({ t: 'vc_media', room, cam: true });
+      if (convOf(m.convId)) U.openConv(m.convId);
+    } }, ic('phone', 20)));
+  document.body.append(card);
+  K.incoming = { ...m, card };
+  startRing(m.from.name);
+}
+
+function onCall(m) {
+  switch (m.t) {
+    case 'vc_state': onState(m); break;
+    case 'vc_sig': onSig(m).catch((e) => console.warn('sig', e)); break;
+    case 'vc_live': X.setLive(m); break;
+    case 'vc_closed':
+      if (m.room === K.room) cleanup(({ ended: 'call ended', declined: 'they declined', missed: 'no answer', kicked: 'you were removed by a mod', deleted: 'that channel was deleted', moved: 'moved to another call', cancelled: 'call cancelled', replaced: 'call replaced' })[m.why] || 'call ended');
+      break;
+    case 'vc_error': toast(m.message || 'could not join', 'error'); if (m.room === K.room && !K.joined) cleanup(); break;
+    case 'vc_forcemute': toggleMic(false); toast('a mod muted you', 'info'); break;
+    case 'call_incoming':
+      if (S.me.callsOff) { sendWS({ t: 'call_decline', room: m.room }); break; }
+      if (K.room) { sendWS({ t: 'call_decline', room: m.room }); toast(m.from.name + ' called while you were busy', 'info'); break; }
+      showIncoming(m); break;
+    case 'call_gone': if (K.incoming && K.incoming.room === m.room) stopIncoming(); break;
+    case 'call_declined': toast('call declined', 'info'); if (m.room === K.room || 'dm:' + m.convId === K.room) cleanup(); break;
+    case 'call_missed': toast('no answer', 'info'); if (m.room === K.room) cleanup(); break;
+    case 'call_fail': toast(m.reason || 'could not start that call', 'error'); if (K.room === 'dm:' + m.convId) cleanup(); break;
+    default: break;
+  }
+}
+
+function btn(icon, title, fn, cls) { return el('button', { class: 'cbtn ' + (cls || ''), title, 'aria-label': title, onclick: fn }, ic(icon, 20)); }
+
+function tile(mem) {
+  const mine = mem.id === myId();
+  let video = null;
+  if (mine) {
+    if (K.localVideo && K.cam) {
+      if (!K.localEl) { K.localEl = el('video', { autoplay: true, playsinline: true, muted: true }); K.localEl.srcObject = new MediaStream([K.localVideo]); K.localEl.play().catch(() => {}); }
+      video = K.localEl;
+    }
+  } else {
+    const v = K.media.get(mem.id);
+    if (v) { v.style.display = mem.cam ? '' : 'none'; if (mem.cam) video = v; }
+  }
+  const t = el('div', { class: 'tile' + (video ? ' vid' : '') + (mine ? ' me' : ''), 'data-uid': mem.id },
+    video || el('div', { class: 'tav' }, avatar(mem.name, 56, '', mem.avatar)),
+    el('div', { class: 'tname' }, !mem.mic ? ic('micoff', 12) : null, mine ? 'you' : mem.name));
+  return t;
+}
+
+function paintDock() {
+  if (!K.room) return;
+  if (!K.dock) { K.dock = el('div', { class: 'calldock' }); document.body.append(K.dock); }
+  const d = K.dock, me = meMember();
+  const stg = stage();
+  const kindIc = K.kind === 'dm' ? 'phone' : K.kind === 'stage' ? 'stage' : K.kind === 'video' ? 'video' : 'volume';
+  const title = K.kind === 'dm' ? K.name : '#' + K.name;
+  const ringing = K.kind === 'dm' && K.members.length < 2;
+  const status = ringing ? (K.outgoing ? 'calling...' : 'connecting...') : stg ? `${K.members.filter((x) => x.speaker).length} speaking · ${K.members.length} here` : `${K.members.length} in the call`;
+  d.classList.toggle('small', K.small);
+  d.classList.toggle('stage', stg);
+  const parts = [el('div', { class: 'callhead' }, ic(kindIc, 16), el('div', { class: 'grow' }, el('b', null, title), el('div', { class: 'muted small' }, status)),
+    el('button', { class: 'icon-btn tiny', title: K.small ? 'expand' : 'minimize', onclick: () => { K.small = !K.small; paintDock(); } }, ic(K.small ? 'plus' : 'x', 14)))];
+  if (!K.small) {
+    if (stg) {
+      const speakers = K.members.filter((x) => x.speaker), aud = K.members.filter((x) => !x.speaker);
+      const staff = !!(me && me.staff);
+      parts.push(el('div', { class: 'tiles' }, speakers.length ? speakers.map(tile) : el('div', { class: 'muted pad' }, 'nobody is speaking yet')));
+      parts.push(el('div', { class: 'aud' }, el('div', { class: 'muted small' }, `audience (${aud.length})`),
+        aud.map((a) => el('div', { class: 'arow', 'data-uid': a.id }, avatar(a.name, 24, '', a.avatar), el('span', { class: 'grow' }, a.id === myId() ? 'you' : a.name), a.hand ? el('span', { class: 'hand', title: 'hand raised' }, ic('hand', 15)) : null,
+          staff && a.id !== myId() ? [
+            el('button', { class: 'btn small' + (a.hand ? ' primary' : ''), onclick: () => sendWS({ t: 'vc_promote', room: K.room, user: a.id, on: true }) }, 'let speak'),
+            el('button', { class: 'icon-btn tiny', title: 'remove', onclick: () => sendWS({ t: 'vc_kick', room: K.room, user: a.id }) }, ic('x', 13))] : null))));
+      if (staff) {
+        const mutable = speakers.filter((x) => !x.staff && x.id !== myId());
+        if (mutable.length) parts.push(el('div', { class: 'aud' }, el('div', { class: 'muted small' }, 'speakers'), mutable.map((s) => el('div', { class: 'arow' }, avatar(s.name, 24, '', s.avatar), el('span', { class: 'grow' }, s.name),
+          el('button', { class: 'btn small', onclick: () => sendWS({ t: 'vc_forcemute', room: K.room, user: s.id }) }, 'mute'),
+          el('button', { class: 'btn small', onclick: () => sendWS({ t: 'vc_promote', room: K.room, user: s.id, on: false }) }, 'to audience')))));
+      }
+    } else {
+      const list = K.members.length ? K.members : [{ id: myId(), name: S.me.displayName, avatar: S.me.avatar, mic: K.mic, cam: K.cam }];
+      parts.push(el('div', { class: 'tiles n' + Math.min(list.length, 6) }, list.map(tile)));
+    }
+  }
+  const bar = [];
+  const canSpeak = !stg || (me && me.speaker);
+  if (canSpeak) bar.push(btn(K.mic ? 'mic' : 'micoff', K.mic ? 'mute' : 'unmute', () => toggleMic(), K.mic ? '' : 'off'));
+  if (hasVideo()) bar.push(btn(K.cam ? 'video' : 'videooff', K.cam ? 'camera off' : 'camera on', () => toggleCam(), K.cam ? 'on' : 'off'));
+  bar.push(btn('headphones', K.deaf ? 'undeafen' : 'deafen', toggleDeaf, K.deaf ? 'off' : ''));
+  if (stg && me && !me.speaker) bar.push(btn('hand', me.hand ? 'lower hand' : 'raise hand', () => sendWS({ t: 'vc_hand', room: K.room, up: !me.hand }), me.hand ? 'on' : ''));
+  if (stg && me && me.speaker) bar.push(btn('users', 'step down to audience', () => sendWS({ t: 'vc_promote', room: K.room, user: myId(), on: false })));
+  bar.push(btn('phoneoff', ringing && K.outgoing ? 'cancel' : 'leave', leave, 'hang'));
+  parts.push(el('div', { class: 'callbar' }, bar));
+  d.replaceChildren(parts);
+  if (!K.audioBox) { K.audioBox = el('div', { style: 'display:none' }); document.body.append(K.audioBox); }
+  for (const v of K.media.values()) { if (!v.isConnected) K.audioBox.append(v); if (v.paused) v.play().catch(() => {}); }
+}
+
+function callSettingsRows(toggle) {
+  const seg = el('div', { class: 'seg small' });
+  const paint = () => seg.replaceChildren(
+    el('button', { class: S.me.callPref === 'sound' ? 'on' : '', onclick: () => setPref('sound') }, 'ringtone'),
+    el('button', { class: S.me.callPref === 'title' ? 'on' : '', onclick: () => setPref('title') }, 'tab title'));
+  const setPref = async (p) => { try { const r = await api('PUT', '/api/me/calls', { pref: p }, { quiet: true }); S.me.callPref = r.callPref; paint(); } catch (e) { toast(e.message, 'error'); } };
+  paint();
+  return el('div', null,
+    el('h4', null, ic('phone', 14), 'calls'),
+    toggle('allow calls', !S.me.callsOff, async (v) => { try { const r = await api('PUT', '/api/me/calls', { off: !v }, { quiet: true }); S.me.callsOff = r.callsOff; } catch (e) { toast(e.message, 'error'); return false; } }),
+    el('div', { class: 'setrow' }, el('div', { class: 'grow' }, 'when someone calls'), seg),
+    el('button', { class: 'btn small', style: 'margin-top:6px', onclick: testRing }, ic('bell', 14), 'test it'));
+}
+
+let asks = 0;
+function askPref() {
+  if (!S.me || S.me.callPref || S.me.callsOff || X._askedPref) return;
+  if (document.querySelector('.modal-back')) { if (asks++ < 30) setTimeout(askPref, 6000); return; }
+  X._askedPref = true;
+  let picked = false;
+  const pick = async (pref, off) => {
+    picked = true;
+    try { const r = await api('PUT', '/api/me/calls', off ? { off: true, pref: 'title' } : { pref }, { quiet: true }); S.me.callPref = r.callPref; S.me.callsOff = r.callsOff; } catch (e) { toast(e.message, 'error'); }
+    m.close();
+    if (!off && pref) toast(pref === 'sound' ? 'ringtone on. change it any time in settings' : 'ok, your tab title will flash instead', 'success');
+  };
+  const m = modal('calls are here', el('div', null,
+    el('p', { style: 'margin-top:0' }, 'you can now voice and video call in dms, hop into voice channels in public rooms, and join stages. when someone calls you, how should we let you know?'),
+    el('button', { class: 'btn primary wide', onclick: () => pick('sound') }, ic('bell', 16), 'play a ringtone'),
+    el('button', { class: 'btn wide', style: 'margin-top:8px', onclick: () => pick('title') }, ic('chat', 16), 'no sound, flash the tab title'),
+    el('p', { class: 'muted small' }, 'the tab title thing looks like (NAME IS CALLING!). you can switch in settings, or turn calls off for good.'),
+    el('button', { class: 'btn ghost small', onclick: () => pick(null, true) }, 'turn calls off')), { onClose: () => { if (!picked) X._askedPref = false; } });
+}
+const boot = setInterval(() => {
+  if (!S.token) return;
+  if (S.me && S.wsOk) { clearInterval(boot); setTimeout(askPref, 2500); }
+}, 1500);
+setTimeout(() => clearInterval(boot), 600000);
+
+function onWsReady() { if (K.room) cleanup('connection dropped, call ended'); stopIncoming(); }
+function notifExtra(type, d) {
+  if (type === 'missed_call') return `missed call from ${d.from}`;
+  if (type === 'vouch_ask') return `${d.from} (@${d.username}) asks you to vouch for them`;
+  if (type === 'vouch_got') return `${d.from} vouched for you (${d.count}/${d.need})`;
+  if (type === 'vouch_done') return 'you are verified, thanks to your vouchers';
+  if (type === 'vouch_used') return `your vouch for ${d.name} helped verify them`;
+  if (type === 'vouch_strike') return `${d.name} was banned after you vouched for them (${d.strikes}/${d.max} strikes)`;
+  return null;
+}
+
+window.addEventListener('pagehide', () => { if (K.room) sendWS({ t: 'vc_leave', room: K.room }); });
+Object.assign(window.__ext, { onCall, startCall, joinChannel, callRoom: () => K.room, callSettingsRows, onWsReady, notifExtra, testRing, _callState: K });
+})();
+
+(() => {
+'use strict';
+const C = window.__core, U = window.__ui, X = window.__ext;
+const { S, el, ic, toast, api } = C;
+
+async function vouchSection(verified) {
+  const box = el('div', { class: 'vouchbox' });
+  let st;
+  try { st = await api('GET', '/api/vouch/status', null, { quiet: true }); } catch { return box; }
+  const name = el('input', { placeholder: 'their username', maxLength: 32 });
+  const err = el('div', { class: 'form-err' });
+  if (!verified) {
+    const have = st.vouchers.length;
+    const go = el('button', { class: 'btn', onclick: async () => {
+      err.textContent = ''; go.disabled = true;
+      try { await api('POST', '/api/vouch/ask', { username: name.value }, { quiet: true }); toast('asked them to vouch for you', 'success'); name.value = ''; } catch (e) { err.textContent = e.message; }
+      go.disabled = false;
+    } }, ic('send', 14), 'ask');
+    box.append(
+      el('div', { class: 'or' }, 'or get vouched'),
+      el('p', { class: 'muted small', style: 'margin:0 0 8px' }, `get ${st.need} verified friends to vouch for you and you are verified, no id needed. they have to know you, and they answer for you if you get banned.`),
+      el('div', { class: 'vdots' }, Array.from({ length: st.need }, (_, i) => el('span', { class: 'vdot' + (i < have ? ' on' : '') }, i < have ? ic('check', 12) : null)), el('span', { class: 'muted small' }, `${have} of ${st.need}${have ? ': ' + st.vouchers.map((v) => v.displayName).join(', ') : ''}`)),
+      el('div', { class: 'row gap' }, name, go), err);
+    return box;
+  }
+  const go = el('button', { class: 'btn primary', disabled: !st.canVouch, onclick: async () => {
+    err.textContent = ''; go.disabled = true;
+    try {
+      const r = await api('POST', '/api/vouch', { username: name.value }, { quiet: true });
+      toast(r.verified ? 'vouched, and that made them verified' : `vouched (${r.count}/${st.need})`, 'success'); name.value = '';
+      const nb = await vouchSection(true); box.replaceWith(nb);
+    } catch (e) { err.textContent = e.message; go.disabled = false; }
+  } }, ic('verified', 14), 'vouch');
+  box.append(
+    el('div', { class: 'or' }, 'vouch for a friend'),
+    el('p', { class: 'muted small', style: 'margin:0 0 8px' }, st.canVouch ? `only vouch for people you actually know. if they get banned it counts against you, and ${2} strikes ends your vouching. ${st.left} of ${st.weekly} left this week.` : st.whyNot),
+    el('div', { class: 'row gap' }, name, go), err,
+    st.given.length ? el('div', { class: 'muted small', style: 'margin-top:8px' }, 'you vouched for: ' + st.given.map((g) => g.displayName + (g.verified ? ' (verified)' : ' (waiting)')).join(', ')) : null);
+  return box;
+}
+
+async function adminVouches(userId) {
+  const { modal } = U;
+  const body = el('div', null, el('div', { class: 'muted pad' }, '...'));
+  modal('vouches', body);
+  try {
+    const d = await api('GET', `/api/admin/users/${userId}/vouches`, null, { quiet: true });
+    const row = (x) => el('div', { class: 'urow' }, el('div', { class: 'grow' }, `${x.displayName} (@${x.username})`), el('span', { class: 'muted small' }, (x.banned ? 'banned' : x.verified ? 'verified' : 'unverified'))); 
+    body.replaceChildren(
+      el('p', { style: 'margin-top:0' }, `${d.user.displayName}: ${d.user.verified ? 'verified via ' + (d.user.via || 'unknown') : 'not verified'}. vouch strikes: ${d.user.strikes}.`),
+      el('h4', null, 'vouched for them'), d.vouchedBy.length ? d.vouchedBy.map(row) : el('div', { class: 'muted small' }, 'nobody'),
+      el('h4', null, 'they vouched for'), d.vouchedFor.length ? d.vouchedFor.map(row) : el('div', { class: 'muted small' }, 'nobody'),
+      d.user.strikes ? el('button', { class: 'btn small', style: 'margin-top:10px', onclick: async () => { await api('POST', `/api/admin/users/${userId}/vouch-reset`, {}, { quiet: true }); toast('strikes cleared', 'success'); } }, 'clear strikes') : null);
+  } catch (e) { body.replaceChildren(el('div', { class: 'form-err' }, e.message)); }
+}
+
+Object.assign(window.__ext, { vouchSection, adminVouches });
 })();
 
 /* ===== Chatroom client: mod tools, admin panes (appeals, audit log, stats), appeal screen, and app start ===== */
