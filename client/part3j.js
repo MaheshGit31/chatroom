@@ -19,7 +19,7 @@ const roleChips = (c, uid) => {
 };
 
 function rolesSection(c, redraw) {
-  if (c.type !== 'group' || c.systemKind || U.myRank(c) < 2) return null;
+  if (c.type !== 'group' || (c.systemKind && !S.me.isAdmin) || U.myRank(c) < 2) return null;
   const name = el('input', { placeholder: 'new role name', maxLength: 20 });
   let color = PALETTE[0];
   const swatches = el('div', { class: 'row gap-s wraprow' });
@@ -59,7 +59,7 @@ function assignModal(c, role, after) {
 }
 
 function rulesSection(c, redraw) {
-  if (c.type !== 'group' || c.systemKind || U.myRank(c) < 2) return null;
+  if (c.type !== 'group' || (c.systemKind && !S.me.isAdmin) || U.myRank(c) < 2) return null;
   const ta = el('textarea', { rows: 5, maxLength: 1200, placeholder: 'be kind. no spam. keep it on topic.' });
   ta.value = c.rules || '';
   let on = !!c.rulesOn;

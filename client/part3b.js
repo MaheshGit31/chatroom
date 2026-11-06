@@ -101,14 +101,14 @@ function themeModal() {
 async function inviteModal() {
   const body = el('div', null, el('div', { class: 'muted pad' }, '...'));
   const im = modal('invite friends', body);
-  if (!S.me.verified) { body.replaceChildren(el('div', { class: 'locked' }, ic('verified', 30), el('h3', null, 'verify to get an invite link'), el('p', { class: 'muted' }, 'only verified people can invite friends. a friend counts once they get verified too, and you earn 30 minutes of beta each time.'), el('button', { class: 'btn primary', onclick: () => { im.close(); verifyModal(); } }, ic('verified', 16), 'verify me'))); return; }
+  if (!S.me.verified) { body.replaceChildren(el('div', { class: 'locked' }, ic('verified', 30), el('h3', null, 'verify to get an invite link'), el('p', { class: 'muted' }, 'only verified people can invite friends. a friend counts once they get verified too, and you earn ' + ((S.referral && S.referral.minutes) || 30) + ' minutes of beta each time. referral time only counts down while you are online.'), el('button', { class: 'btn primary', onclick: () => { im.close(); verifyModal(); } }, ic('verified', 16), 'verify me'))); return; }
   try {
     const r = S.referral && S.referral.code ? S.referral : await api('GET', '/api/referral');
     S.referral = r;
     const link = `${C.API}/?ref=${r.code}`;
     const field = (v) => el('div', { class: 'copyrow' }, el('input', { value: v, readOnly: true, onfocus: (e) => e.target.select() }), el('button', { class: 'btn', onclick: () => copyText(v) }, ic('copy', 16), 'copy'));
     const active = C.betaActive();
-    const left = S.me.isAdmin ? 'always on' : active ? 'until ' + new Date(S.me.betaUntil).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : 'off';
+    const left = S.me.isAdmin ? 'always on' : active ? C.betaUntilLabel() : 'off';
     body.replaceChildren(
       !S.me.verified ? el('div', { class: 'betacard' }, ic('verified', 20), el('div', { class: 'grow' }, el('b', null, 'verify to use beta'), el('div', { class: 'muted small' }, 'friends still earn you time, it switches on once you are verified')), el('button', { class: 'btn small primary', onclick: () => verifyModal() }, 'verify')) : null,
       el('div', { class: 'betacard' + (active ? ' on' : '') }, ic('star', 20), el('div', { class: 'grow' }, el('b', null, 'beta ' + (active ? 'active' : 'off')), el('div', { class: 'muted small' }, left))),
@@ -394,7 +394,7 @@ const dismissedAnn = () => { try { return JSON.parse(lsGet('chatroom.ann') || '[
 function betaLeft() {                                        // short text for the pill
   if (S.me.isAdmin) return 'beta on';
   if (!C.betaActive()) return null;
-  const ms = new Date(S.me.betaUntil) - Date.now();
+  const ms = C.betaMsLeft();
   const m = Math.max(1, Math.ceil(ms / 60000));
   return 'beta ' + (m >= 1440 ? Math.floor(m / 1440) + 'd' : m >= 60 ? Math.floor(m / 60) + 'h ' + (m % 60) + 'm' : m + 'm') + ' left';
 }
@@ -411,7 +411,7 @@ function renderTop() {
   const free = Math.max(0, (S.me.freeMessages || 20) - (S.me.msgCount || 0));
   bar.replaceChildren(left,
     !S.me.verified ? el('button', { class: 'pill warn', title: 'verify your account', onclick: verifyModal }, ic('verified', 15), el('span', null, free ? `verify · ${free} free left` : 'verify to chat')) : null,
-    el('button', { class: 'pill' + (bl ? ' on' : ''), title: 'invite friends, earn beta time', onclick: inviteModal }, ic(bl ? 'star' : 'gift', 15), el('span', null, bl || 'invite · +30m beta')));
+    el('button', { class: 'pill' + (bl ? ' on' : ''), title: 'invite friends, earn beta time', onclick: inviteModal }, ic(bl ? 'star' : 'gift', 15), el('span', null, bl || 'invite · +' + ((S.referral && S.referral.minutes) || 30) + 'm beta')));
   const r = U.chatRef(); if (r && r.freebar) drawFree(r.freebar);
 }
 function drawFree(box) {                                     // small reminder above the composer while unverified
@@ -433,7 +433,9 @@ function annModal(a) {
 // ---------- verification ----------
 async function verifyModal() {
   const body = el('div', null, el('div', { class: 'muted pad' }, '...'));
-  const m = modal('verify your account', body);
+  let stream = null;
+  const stopCam = () => { if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; } };
+  const m = modal('verify your account', body, { onClose: stopCam });
   let st = null;
   try { st = await api('GET', '/api/verify/status', null, { quiet: true }); } catch (e) { return body.replaceChildren(el('div', { class: 'form-err' }, e.message)); }
   if (st.verified) { S.me.verified = true; body.replaceChildren(el('div', { class: 'locked' }, ic('verified', 34), el('h3', null, 'you are verified'), el('p', { class: 'muted' }, 'the blue tick shows next to your name'))); const vs = await window.__ext.vouchSection(true); body.append(vs); return; }
@@ -445,24 +447,36 @@ async function verifyModal() {
     try { await api('POST', '/api/verify', { image: dataUrl }, { quiet: true }); toast('sent for review', 'success'); m.close(); }
     catch (e) { toast(e.message, 'error'); send.disabled = false; }
   } }, ic('send', 16), 'send for review');
+  const finish = (cv) => {
+    let w = cv.width, h = cv.height; const k = Math.min(1, 1100 / Math.max(w, h)); w = Math.round(w * k); h = Math.round(h * k);
+    const out = document.createElement('canvas'); out.width = w; out.height = h; out.getContext('2d').drawImage(cv, 0, 0, w, h);
+    let q = 0.78; dataUrl = out.toDataURL('image/jpeg', q);
+    while (dataUrl.length > 700_000 && q > 0.3) { q -= 0.1; dataUrl = out.toDataURL('image/jpeg', q); }
+    prev.replaceChildren(el('img', { src: dataUrl, alt: 'your scan' })); send.disabled = false;
+  };
+  const cam = el('video', { class: 'idcam', autoplay: true, playsInline: true, muted: true });
+  const camBox = el('div', { class: 'idcambox', style: 'display:none' }, cam, el('div', { class: 'row gap', style: 'margin-top:8px' },
+    el('button', { class: 'btn primary grow', onclick: () => { if (!cam.videoWidth) return; const cv = document.createElement('canvas'); cv.width = cam.videoWidth; cv.height = cam.videoHeight; cv.getContext('2d').drawImage(cam, 0, 0); stopCam(); camBox.style.display = 'none'; finish(cv); scanBtn.textContent = 'scan again'; } }, ic('camera', 16), 'capture'),
+    el('button', { class: 'btn', onclick: () => { stopCam(); camBox.style.display = 'none'; } }, 'cancel')));
   const file = el('input', { type: 'file', accept: 'image/*', capture: 'environment', style: 'display:none', onchange: async () => {
     const f = file.files && file.files[0]; if (!f) return;
-    try {
-      const bmp = await createImageBitmap(f);
-      let w = bmp.width, h = bmp.height; const k = Math.min(1, 1100 / Math.max(w, h)); w = Math.round(w * k); h = Math.round(h * k);
-      const cv = document.createElement('canvas'); cv.width = w; cv.height = h; cv.getContext('2d').drawImage(bmp, 0, 0, w, h);
-      let q = 0.78; dataUrl = cv.toDataURL('image/jpeg', q);
-      while (dataUrl.length > 700_000 && q > 0.3) { q -= 0.1; dataUrl = cv.toDataURL('image/jpeg', q); }   // keep it small
-      prev.replaceChildren(el('img', { src: dataUrl, alt: 'your photo' })); send.disabled = false;
-    } catch { toast('could not read that photo', 'error'); }
+    try { const bmp = await createImageBitmap(f); const cv = document.createElement('canvas'); cv.width = bmp.width; cv.height = bmp.height; cv.getContext('2d').drawImage(bmp, 0, 0); finish(cv); }
+    catch { toast('could not read that photo', 'error'); }
   } });
+  const scanBtn = el('button', { class: 'btn grow', onclick: async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return file.click();
+    try {
+      stopCam(); stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false });
+      cam.srcObject = stream; camBox.style.display = ''; cam.play().catch(() => {});
+    } catch { toast('camera blocked, allow it in your browser to scan', 'error'); file.click(); }
+  } }, ic('camera', 16), 'scan your id with the camera');
   body.replaceChildren(
     st.last && st.last.status === 'rejected' ? el('div', { class: 'form-err' }, 'last try was not approved' + (st.last.note ? ': ' + st.last.note : '')) : null,
-    el('p', { style: 'margin-top:0' }, 'take a photo of your school or bus pass so an admin can check you are real.'),
+    el('p', { style: 'margin-top:0' }, 'hold your school or bus pass up to your camera and scan it so an admin can check you are real.'),
     el('ul', { class: 'tips' }, el('li', null, 'show your name and photo'), el('li', null, 'cover your id number, birthday and address'), el('li', null, 'an admin looks at it, then the photo is deleted for good')),
     el('p', { class: 'muted small' }, `unverified accounts get ${st.freeMessages} messages (${st.used} used), no reactions and no beta. verified accounts get a blue tick.`),
-    prev, file,
-    el('div', { class: 'row gap', style: 'margin:12px 0' }, el('button', { class: 'btn grow', onclick: () => file.click() }, ic('camera', 16), 'choose or take a photo')),
+    camBox, prev, file,
+    el('div', { class: 'row gap', style: 'margin:12px 0' }, scanBtn),
     send,
     el('div', { class: 'or' }, 'or'),
     el('p', { class: 'muted small', style: 'margin:0 0 8px' }, 'no id? message an admin instead. chats with admins are always free, and they can verify you by hand.'),

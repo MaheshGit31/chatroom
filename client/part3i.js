@@ -243,7 +243,7 @@ async function directory(sort = 'top') {
   } catch (e) { body.replaceChildren(el('div', { class: 'form-err' }, e.message)); }
 }
 
-const hostedFor = (b) => S.convs.filter((c) => c.type === 'group' && c.role === 'admin' && !c.systemKind && (c.isPublic ? b.allowPublic : b.allowGroups) && !c.members.some((x) => x.id === b.id));
+const hostedFor = (b) => S.convs.filter((c) => c.type === 'group' && (c.role === 'admin' || S.me.isAdmin) && (!c.systemKind || S.me.isAdmin) && (c.isPublic ? b.allowPublic : b.allowGroups) && !c.members.some((x) => x.id === b.id));
 
 function botAddModal(c, b, after) {
   const state = { role: 'member' };
@@ -298,7 +298,7 @@ async function groupBotPicker(c, after) {
 function botsSection(c, redraw) {
   const bots = c.members.filter((x) => x.isBot && x.username !== 'gng');
   if (c.role !== 'admin' && !S.me.isAdmin) return null;
-  if (c.systemKind) return null;
+  if (c.systemKind && !S.me.isAdmin) return null;
   return el('div', null,
     el('h4', null, ic('sparkle', 14), 'bots'),
     ...(bots.length ? bots.map((u) => {

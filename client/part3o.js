@@ -337,9 +337,10 @@ function onCall(m) {
     case 'vc_sig': onSig(m).catch((e) => console.warn('sig', e)); break;
     case 'vc_live': X.setLive(m); break;
     case 'vc_closed':
-      if (m.room === K.room) cleanup(({ ended: 'call ended', declined: 'they declined', missed: 'no answer', kicked: 'you were removed by a mod', deleted: 'that channel was deleted', moved: 'moved to another call', cancelled: 'call cancelled', replaced: 'call replaced' })[m.why] || 'call ended');
+      if (m.room === K.room) cleanup(({ ended: 'call ended', declined: 'they declined', missed: 'no answer', kicked: 'you were removed by a mod', afk: 'you were removed for being inactive', deleted: 'that channel was deleted', moved: 'moved to another call', cancelled: 'call cancelled', replaced: 'call replaced' })[m.why] || 'call ended');
       break;
     case 'vc_error': toast(m.message || 'could not join', 'error'); if (m.room === K.room && !K.joined) cleanup(); break;
+    case 'vc_afk_warn': K.afk = true; paintDock(); break;
     case 'vc_forcemute': toggleMic(false); toast('a mod muted you', 'info'); break;
     case 'call_incoming':
       if (S.me.callsOff) { sendWS({ t: 'call_decline', room: m.room }); break; }
@@ -407,6 +408,7 @@ function paintDock() {
       parts.push(el('div', { class: 'tiles n' + Math.min(list.length, 6) }, list.map(tile)));
     }
   }
+  if (K.afk) parts.splice(1, 0, el('div', { class: 'afkwarn' }, el('div', { class: 'grow' }, 'still there? you will be removed soon to save bandwidth'), el('button', { class: 'btn small primary', onclick: sendAlive }, 'i am here')));
   const bar = [];
   const canSpeak = !stg || (me && me.speaker);
   if (canSpeak) bar.push(btn(K.mic ? 'mic' : 'micoff', K.mic ? 'mute' : 'unmute', () => toggleMic(), K.mic ? '' : 'off'));
@@ -459,6 +461,14 @@ const boot = setInterval(() => {
   if (S.me && S.wsOk) { clearInterval(boot); setTimeout(askPref, 2500); }
 }, 1500);
 setTimeout(() => clearInterval(boot), 600000);
+
+let lastAct = Date.now(), sentAct = 0;
+function sendAlive() { if (!K.room) return; sentAct = Date.now(); K.afk = false; sendWS({ t: 'vc_alive', room: K.room }); paintDock(); }
+function noteAct() { lastAct = Date.now(); if (K.afk) sendAlive(); }
+for (const ev of ['pointerdown', 'keydown', 'touchstart', 'wheel']) window.addEventListener(ev, noteAct, { passive: true });
+let moveAt = 0;
+window.addEventListener('pointermove', () => { const n = Date.now(); if (n - moveAt > 3000) { moveAt = n; noteAct(); } }, { passive: true });
+setInterval(() => { if (!K.room) return; if (K.mic && K.localAudio && K.dock && K.dock.querySelector('.tile.me.speaking')) lastAct = Date.now(); if (lastAct > sentAct && Date.now() - sentAct > 25000) sendAlive(); }, 12000);
 
 function onWsReady() { if (K.room) cleanup('connection dropped, call ended'); stopIncoming(); }
 function notifExtra(type, d) {

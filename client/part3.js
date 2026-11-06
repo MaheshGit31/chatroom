@@ -328,7 +328,7 @@ function buildChat(m, c) {
   async function doSend() {
     if (sending) return;
     const raw = input.value.trim();
-    if (raw.startsWith('/') && await X.slash(c, raw)) { input.value = ''; c.draft = ''; input.style.height = 'auto'; sugg.classList.remove('on'); input.focus(); return; }   // /ban, /mute, /slow and friends never get sent as messages
+    if ((raw.startsWith('/') || raw.toLowerCase() === '$verify') && await X.slash(c, raw)) { input.value = ''; c.draft = ''; input.style.height = 'auto'; sugg.classList.remove('on'); input.focus(); return; }   // /ban, /mute, /slow and friends never get sent as messages
     const text = C.expandShortcodes(raw);                    // :skull: becomes the emoji before encryption
     if (!text) return;
     if (X.sendBlock(c)) { toast(X.sendBlock(c).text, 'error'); return; }
@@ -341,12 +341,10 @@ function buildChat(m, c) {
     sending = false; tickCooldown(); input.focus();
   }
   const emojiBtn = el('button', { class: 'icon-btn', title: 'emoji', onclick: () => X.emojiPicker(emojiBtn, (ch) => { const a = input.selectionStart ?? input.value.length; input.setRangeText(ch, a, input.selectionEnd ?? a, 'end'); input.dispatchEvent(new Event('input')); input.focus(); }) }, ic('smile', 20));
-  X.attachAutocorrect(input);
   const composerEl = el('div', { class: 'composer' },
         el('button', { class: 'icon-btn', title: 'more: voice, stickers, polls, schedule, games', onclick: (e) => X.plusMenu(e.currentTarget, c, input) }, ic('plus', 20)),
         el('button', { class: 'icon-btn', title: 'share a game', onclick: () => pickGameModal(c) }, ic('gamepad', 20)),
         el('button', { class: 'icon-btn gifbtn', title: 'gif', onclick: () => X.gifModal(c) }, ic('image', 20)),
-        el('button', { class: 'icon-btn', title: 'smart fix (ai)', onclick: () => X.smartFix(input) }, ic('sparkle', 20)),
         emojiBtn, input, sendBtn);
   const rulesbar = X.rulesBar(c, composerEl);
   m.append(el('div', { class: 'chat' }, head, chanbar, pinbar, msgs, typing, selbar,
@@ -373,8 +371,9 @@ function renderHeader() {
     o ? el('div', { class: 'avwrap' }, avatar(convTitle(c), 42, '', o.avatar), dot(isOnline(c, o.id), st.mode)) : el('div', { class: 'avatar', style: `width:42px;height:42px;background:${tone(c.name)}` }, ic(c.isPublic ? 'globe' : 'users', 18)),
     el('div', { class: 'grow click', onclick: () => (o ? openProfile(o.username) : groupModal(c)) }, el('div', { class: 'ctitle' }, convTitle(c), o ? vb(o) : null), el('div', { class: 'small' }, sub)),
     el('span', { class: 'ic muted', title: c.isPublic ? 'public room: open to everyone, not end-to-end encrypted' : 'end-to-end encrypted' }, ic(c.isPublic ? 'globe' : 'lock', 16)),
-    !c.systemKind && (c.type === 'dm' || c.role === 'admin') ? el('button', { class: 'icon-btn' + (c.ttlSeconds ? ' on' : ''), title: 'disappearing messages', onclick: () => X.ttlModal(c) }, ic('timer', 20)) : null,
+    (!c.systemKind || S.me.isAdmin) && (c.type === 'dm' || c.role === 'admin' || S.me.isAdmin) ? el('button', { class: 'icon-btn' + (c.ttlSeconds ? ' on' : ''), title: 'disappearing messages', onclick: () => X.ttlModal(c) }, ic('timer', 20)) : null,
     !c.systemKind || c.gamePath ? el('button', { class: 'icon-btn' + (c.gamePath ? ' on' : ''), title: c.gamePath ? 'game room: ' + c.gameTitle : 'pin a game here', onclick: () => X.gameRoomModal(c) }, ic('gamepad', 20)) : null,
+    o && S.me.isAdmin && !o.verified && !o.isAdmin ? el('button', { class: 'btn small primary', title: 'verify them', onclick: async () => { try { await api('POST', `/api/admin/users/${o.id}/verify`, { verified: true }, { quiet: true }); o.verified = true; toast('verified ' + o.displayName, 'success'); renderHeader(); } catch (e) { toast(e.message, 'error'); } } }, ic('verified', 14), 'verify') : null,
     o ? el('button', { class: 'icon-btn', title: 'voice call', onclick: () => X.startCall(c, false) }, ic('phone', 20)) : null,
     o ? el('button', { class: 'icon-btn', title: 'video call', onclick: () => X.startCall(c, true) }, ic('video', 20)) : null,
     el('button', { class: 'icon-btn', title: 'search this chat', onclick: () => X.searchModal(c) }, ic('search', 20)),
@@ -650,7 +649,21 @@ async function openProfile(username) {
 }
 function avatarModal() {                                     // pick one of the preset pictures, or go back to the letter
   const grid = el('div', { class: 'avgrid' });
-  const m = modal('profile picture', el('div', null, el('p', { class: 'muted small', style: 'margin-top:0' }, 'pick one. everyone sees it next to your name.'), grid));
+  const err = el('div', { class: 'form-err' });
+  const file = el('input', { type: 'file', accept: 'image/*', style: 'display:none', onchange: async () => {
+    const f = file.files && file.files[0]; file.value = ''; if (!f) return;
+    err.textContent = '';
+    if (!S.me.verified && !S.me.isAdmin) { err.textContent = 'verify your account to upload a picture'; return; }
+    if (f.size > 5 * 1024 * 1024) { err.textContent = 'that picture is over 5 MB'; return; }
+    try {
+      const bmp = await createImageBitmap(f);
+      const side = Math.min(bmp.width, bmp.height), cv = document.createElement('canvas'); cv.width = cv.height = 256;
+      cv.getContext('2d').drawImage(bmp, (bmp.width - side) / 2, (bmp.height - side) / 2, side, side, 0, 0, 256, 256);
+      const d = await api('POST', '/api/me/avatar', { image: cv.toDataURL('image/jpeg', 0.86) }, { quiet: true });
+      S.me.avatar = d.user.avatar; draw(); renderAll(); toast('picture updated', 'success');
+    } catch (e) { err.textContent = e.message || 'could not use that picture'; }
+  } });
+  const m = modal('profile picture', el('div', null, el('p', { class: 'muted small', style: 'margin-top:0' }, 'upload your own (up to 5 MB) or pick one. everyone sees it next to your name.'), el('button', { class: 'btn wide', style: 'margin-bottom:10px', onclick: () => file.click() }, ic('image', 16), 'upload a picture'), file, err, grid));
   const draw = () => grid.replaceChildren(
     el('button', { class: 'avopt' + (!S.me.avatar ? ' on' : ''), title: 'letter', onclick: () => pick(null) }, avatar(S.me.displayName, 52)),
     ...Object.keys(C.PRESETS).map((id) => el('button', { class: 'avopt' + (S.me.avatar === id ? ' on' : ''), title: C.PRESETS[id][0], onclick: () => pick(id) }, avatar('', 52, '', id))));
@@ -690,7 +703,6 @@ function settingsModal() {
     el('button', { class: 'btn wide', style: 'margin-top:8px', onclick: () => { m.close(); X.wallpaperModal(null); } }, ic('image', 16), 'chat wallpaper', el('span', { class: 'tag gold' }, 'beta')),
     el('h4', null, 'ping me'),
     toggle('show what i am playing', S.me.shareActivity, async (v) => { try { const d = await api('PATCH', '/api/me', { shareActivity: v }); S.me.shareActivity = d.user.shareActivity; } catch (e) { toast(e.message, 'error'); return false; } }),
-    toggle('autocorrect', S.prefs.autocorrect !== false, (v) => { S.prefs.autocorrect = v; savePrefs(); }),
     toggle('sound', S.prefs.sound, (v) => { S.prefs.sound = v; savePrefs(); if (v) beep(); }),
     X.callSettingsRows(toggle),
     toggle('desktop popups', S.prefs.desktop && 'Notification' in window && Notification.permission === 'granted', async (v) => {
@@ -794,7 +806,7 @@ function buildAdmin(m) {
           el('div', { class: 'avwrap' }, avatar(u.displayName, 40, '', u.avatar), dot(u.online)),
           el('div', { class: 'grow' }, el('div', { class: 'ctitle' }, u.displayName, u.isOwner ? el('span', { class: 'tag gold', style: 'margin-left:8px' }, 'owner') : u.isAdmin ? el('span', { class: 'tag gold', style: 'margin-left:8px' }, 'admin') : null, u.banned ? el('span', { class: 'tag', style: 'margin-left:8px' }, 'suspended') : null, u.beta && !u.isAdmin ? el('span', { class: 'tag', style: 'margin-left:8px' }, 'beta') : null),
             el('div', { class: 'muted small' }, `@${u.username} · ${u.messages} msgs · joined ${fmtDay(u.createdAt).toLowerCase()}`)),
-          el('div', { class: 'acts' }, el('button', { class: 'icon-btn', title: 'vouches', onclick: () => X.adminVouches(u.id) }, ic('verified', 16)), !u.isAdmin ? el('button', { class: 'icon-btn' + (u.verified ? ' on' : ''), title: u.verified ? 'remove verification' : 'verify', onclick: () => act(() => api('POST', `/api/admin/users/${u.id}/verify`, { verified: !u.verified }), u.verified ? 'unverified' : 'verified') }, ic('verified', 18)) : null, el('button', { class: 'icon-btn' + (u.beta ? ' on' : ''), title: 'beta time', onclick: () => X.betaModal(u, loadUsers) }, ic('star', 18)),
+          el('div', { class: 'acts' }, u.avatar && /^u:/.test(u.avatar) ? el('button', { class: 'icon-btn', title: 'remove their profile picture', onclick: () => act(() => api('POST', `/api/admin/users/${u.id}/avatar-reset`, {})) }, ic('image', 16)) : null, el('button', { class: 'icon-btn', title: 'vouches', onclick: () => X.adminVouches(u.id) }, ic('verified', 16)), !u.isAdmin ? el('button', { class: 'icon-btn' + (u.verified ? ' on' : ''), title: u.verified ? 'remove verification' : 'verify', onclick: () => act(() => api('POST', `/api/admin/users/${u.id}/verify`, { verified: !u.verified }), u.verified ? 'unverified' : 'verified') }, ic('verified', 18)) : null, el('button', { class: 'icon-btn' + (u.beta ? ' on' : ''), title: 'beta time', onclick: () => X.betaModal(u, loadUsers) }, ic('star', 18)),
             isOwner && !u.isOwner ? el('button', { class: 'icon-btn', title: u.isAdmin ? 'remove admin' : 'make admin', onclick: () => act(() => api('POST', `/api/admin/users/${u.id}/admin`, { admin: !u.isAdmin }), u.isAdmin ? 'admin removed' : `${u.displayName} is an admin now`) }, ic('crown', 18)) : null,
             !locked ? el('button', { class: 'icon-btn', title: u.banned ? 'restore' : 'suspend', onclick: async () => { if (u.banned || await confirmModal(`suspend ${u.displayName}?`, 'they get signed out and cannot come back until restored.', 'suspend')) act(() => api('POST', `/api/admin/users/${u.id}/ban`, { banned: !u.banned }), u.banned ? 'restored' : 'suspended'); } }, ic('ban', 18)) : null,
             !locked ? el('button', { class: 'icon-btn', title: 'remove account', onclick: async () => { if (await confirmModal(`remove ${u.displayName}?`, 'the account is deleted for good.', 'remove')) act(() => api('DELETE', `/api/admin/users/${u.id}`), 'removed'); } }, ic('trash', 18)) : null));

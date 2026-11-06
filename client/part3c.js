@@ -29,7 +29,7 @@ function plusMenu(anchor, c, input, sub) {
   anchor.dataset.plus = 1;
   const on = C.betaActive();
   const item = (icon, label, fn, free) => el('button', { class: 'plusitem', onclick: () => { closePlus(); fn(); } }, ic(icon, 18), el('span', { class: 'grow' }, label), on || free ? null : el('span', { class: 'tag gold' }, 'beta'));
-  const noImg = !!c.systemKind;
+  const noImg = !!c.systemKind && !S.me.isAdmin;
   const games = [['grid', 'tic-tac-toe', 'ttt'], ['users', 'rock paper scissors', 'rps'], ['grid', 'connect 4', 'c4'], ['book', 'word duel', 'wd'], ['trophy', 'trivia duel', 'tr']];
   if (sub === '2p') plus = el('div', { class: 'plusmenu' },
     el('button', { class: 'plusitem', onclick: () => plusMenu(anchor, c, input, 'main') }, ic('back', 18), el('span', { class: 'grow' }, '2 player games')),
@@ -455,7 +455,7 @@ function buildBeta(m) {
   m.append(page);
   const draw = () => {
     const on = C.betaActive(), v = S.me.verified;
-    const until = S.me.isAdmin ? 'always on for admins' : on ? 'until ' + new Date(S.me.betaUntil).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'off right now';
+    const until = S.me.isAdmin ? 'always on for admins' : on ? C.betaUntilLabel() : 'off right now';
     const price = betaInfo ? (betaInfo.priceCents / 100).toFixed(2) : '0.50';
     page.replaceChildren(
       el('div', { class: 'page-head' }, el('h2', null, 'be', el('i', null, 'ta'))),

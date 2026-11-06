@@ -179,8 +179,9 @@ function helpModal(c, input) {
 const firstWord = (s) => { const m = String(s).trim().match(/^@?([a-z0-9_]{1,20})\s*(.*)$/is); return m ? { user: m[1].toLowerCase(), rest: m[2].trim() } : { user: '', rest: '' }; };
 
 async function slash(c, raw) {
-  const m = raw.match(/^\/([a-z]+)(?:\s+([\s\S]*))?$/i);
+  const m = raw.match(/^[\/$]([a-z]+)(?:\s+([\s\S]*))?$/i);
   if (!m) return false;
+  if (raw[0] === '$' && m[1].toLowerCase() !== 'verify') return false;
   const cmd = CMDS.find((x) => x.n === m[1].toLowerCase());
   if (!cmd) return false;                                    // not one of ours, so it is just a message
   const arg = (m[2] || '').trim();
@@ -244,7 +245,9 @@ async function slash(c, raw) {
       case 'audit': case 'stats': case 'appeals': U.goAdminTab(cmd.n === 'audit' ? 'audit' : cmd.n); break;
       case 'announce': { const r = await api('POST', '/api/cmd', { cmd: 'announce', arg }); ok(r.message); break; }
       default: {                                             // ban unban gmute ungmute warn verify unverify beta whois
-        const w = target(); if (!w) break;
+        let w;
+        if ((cmd.n === 'verify' || cmd.n === 'unverify') && !arg && c.type === 'dm') { const o = C.other(c); w = o ? { user: o.username, rest: '' } : null; } else w = target();
+        if (!w) break;
         if (cmd.n === 'ban' && !(await confirmModal(`suspend @${w.user}?`, 'they are signed out right away and can appeal.', 'suspend'))) break;
         const r = await api('POST', '/api/cmd', { cmd: cmd.n, target: w.user, arg: w.rest });
         if (cmd.n === 'whois') whoisModal(r.info); else ok(r.message);
@@ -440,7 +443,7 @@ document.addEventListener('paste', (e) => {
   if (!item) return;
   const file = item.getAsFile(); if (!file) return;
   e.preventDefault();
-  if (c.systemKind) return toast('photos are not allowed in the built-in rooms', 'error');
+  if (c.systemKind && !S.me.isAdmin) return toast('photos are not allowed in the built-in rooms', 'error');
   if (c.isPublic && !(S.me.verified || S.me.isAdmin)) return toast('verify your account to send pictures in public groups', 'error');
   if (!betaGate('sending photos')) return;
   photoModal(c, file);
@@ -454,7 +457,7 @@ async function reportImage(reportId) {
 }
 function pickPhoto(c) {
   if (!betaGate('sending photos')) return;
-  if (c.systemKind) return toast('photos are not allowed in the built-in rooms', 'error');
+  if (c.systemKind && !S.me.isAdmin) return toast('photos are not allowed in the built-in rooms', 'error');
   if (c.isPublic && !(S.me.verified || S.me.isAdmin)) return toast('verify your account to send pictures in public groups', 'error');
   const f = el('input', { type: 'file', accept: 'image/png,image/jpeg,image/gif,image/webp', style: 'display:none' });
   f.addEventListener('change', () => { const file = f.files[0]; f.remove(); if (file) photoModal(c, file); });
