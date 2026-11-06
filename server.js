@@ -300,7 +300,7 @@ app.post('/api/admin/users/:id/avatar-reset', auth, adminOnly, wrap(async (req, 
 app.get('/api/admin/stats', auth, adminOnly, wrap(async (req, res) => {
   const r = await q(`select (select count(*) from users)::int users, (select count(*) from users where banned)::int banned,
     (select count(*) from messages)::int messages, (select count(*) from conversations where type='group')::int groups,
-    (select count(*) from plays)::int plays, (select count(*) from reports where status='open')::int reports, (select count(*) from conversations where is_public and system_kind is null)::int public_groups, (select count(*) from verifications where status='pending' and image is not null)::int pending_verifications, pg_database_size(current_database())::bigint bytes`);
+    (select count(*) from plays)::int plays, (select count(*) from reports where status='open')::int reports, (select count(*) from conversations where is_public and system_kind is null)::int public_groups, (select count(*) from verifications where status='pending' and image is not null)::int pending_verifications, (select count(*) from admin_apps where status='pending')::int pending_adminapps, pg_database_size(current_database())::bigint bytes`);
   const ap = await q("select count(*)::int c from appeals where status='pending'");
   res.json({ ...r.rows[0], bytes: Number(r.rows[0].bytes), online: sockets.size, ttlHours: TTL_HOURS, pending_appeals: ap.rows[0].c });
 }));
@@ -843,6 +843,7 @@ extrasApi.mount(app, { auth, byUser, bad, wrap, requireMember, sendToConv, betaO
 require('./lib/roles').mount(app, { q, auth, byUser, bad, wrap, isUuid, requireMember, sendToConv, filter: safety.F });
 voice.init({ q, sendTo, sendToConv, sockets, limiter, notify, isUuid, isBlockedEitherWay });
 channelsLib.mount(app, { q, auth, byUser, bad, wrap, isUuid, sendToConv, isStaff: mod.isStaff, filter: safety.F, voice });
+require('./lib/adminapps').mount(app, { q, auth, adminOnly, ownerOnly, byUser, bad, wrap, sendTo, notify, ownerName: ADMIN_USERNAME });
 vouch.mount(app, { q, auth, byUser, bad, wrap, isUuid, sendTo, notify, adminOnly });
 require('./lib/boards').mount(app, { q, auth, byUser, bad, wrap, isUuid, requireMember, sendToConv, sendTo, notify, isStaff: mod.isStaff, filter: safety.F });
 modApi = mod.mount(app, { q, auth, adminOnly, byUser, bad, wrap, sendTo, sendToConv, notify, isUuid, requireMember, sockets, secret: () => SERVER_SECRET, adminName: ADMIN_USERNAME, ensureFor, rl });
