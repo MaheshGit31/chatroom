@@ -58,6 +58,15 @@ const ICONS = {
   bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
   sliders: '<line x1="4" x2="20" y1="7" y2="7"/><line x1="4" x2="20" y1="17" y2="17"/><circle cx="9" cy="7" r="2.5"/><circle cx="15" cy="17" r="2.5"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
+  phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>',
+  phoneoff: '<path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7a2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91"/><path d="m22 2-20 20"/>',
+  video: '<path d="m22 8-6 4 6 4V8z"/><rect x="2" y="6" width="14" height="12" rx="2"/>',
+  videooff: '<path d="M10.66 6H14a2 2 0 0 1 2 2v2.5l5.25-3.5a.5.5 0 0 1 .75.4v9.2a.5.5 0 0 1-.75.4L16 13.5"/><path d="M16 16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2"/><path d="m2 2 20 20"/>',
+  micoff: '<path d="m2 2 20 20"/><path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2M5 10v2a7 7 0 0 0 12 5M15 9.34V5a3 3 0 0 0-5.68-1.33M9 9v3a3 3 0 0 0 5.12 2.12M12 19v3"/>',
+  hash: '<path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"/>',
+  stage: '<path d="M4.9 19.1a10 10 0 0 1 0-14.2M7.8 16.2a6 6 0 0 1 0-8.4M16.2 7.8a6 6 0 0 1 0 8.4M19.1 4.9a10 10 0 0 1 0 14.2"/><circle cx="12" cy="12" r="2"/>',
+  hand: '<path d="M18 11V6a2 2 0 0 0-4 0M14 10V4a2 2 0 0 0-4 0v2M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>',
+  thread: '<path d="M7 8h10M7 12h6"/><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
   users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
   user: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
   userplus: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>',
@@ -376,7 +385,8 @@ async function loadConvs() {
 }
 async function loadMessages(c, older) {
   const before = older && c.msgs.length ? c.msgs[0].id : '';
-  const d = await api('GET', `/api/conversations/${c.id}/messages?limit=50${before ? '&before=' + before : ''}`);
+  const sub = c._sub ? (c._sub.kind === 'thread' ? '&thread=' : '&channel=') + c._sub.id : '';
+  const d = await api('GET', `/api/conversations/${c.id}/messages?limit=50${before ? '&before=' + before : ''}${sub}`);
   await Promise.all(d.messages.map((m) => decryptMsg(c, m)));
   c.msgs = older ? d.messages.concat(c.msgs) : d.messages;
   c.hasMore = d.hasMore; c.loaded = true;
@@ -387,7 +397,7 @@ function addMessage(c, msg, payload) {
   if (payload) msg._p = payload;
   c.msgs.push(msg);
   c.msgs.sort((a, b) => a.id - b.id);
-  c.lastMessage = msg;
+  if (!msg.channelId && !msg.threadId) c.lastMessage = msg;
   return true;
 }
 function startCooldown(sec, msg) {
@@ -396,13 +406,14 @@ function startCooldown(sec, msg) {
   window.__ui.tickCooldown();
 }
 async function sendPayload(c, payload, retried, extra) {
+  if (c._sub) extra = { ...(extra || {}), ...(c._sub.kind === 'thread' ? { threadId: c._sub.id } : { channelId: c._sub.id }) };
   if (S.cooldownUntil > Date.now()) { toast('you are on cooldown, wait a moment', 'error'); return false; }
   try {
     const e = await encryptPayload(c, payload);
     const r = await api('POST', `/api/conversations/${c.id}/messages`, { ...e, ...(extra || {}), cid: rid() }, { quiet: true });
     S.me.msgCount = (S.me.msgCount || 0) + 1; window.__ext && window.__ext.renderTop();
     if (c.slowSeconds && !(S.me.isAdmin || c.role === 'admin' || c.role === 'mod')) c.slowUntil = Date.now() + c.slowSeconds * 1000;   // slow mode: next message after the wait
-    if (addMessage(c, r.message, payload)) { c._preview = previewText(payload, true); sortConvs(); }
+    if (addMessage(c, r.message, payload) && !c._sub) { c._preview = previewText(payload, true); sortConvs(); }
     window.__ui.renderSide(); window.__ui.renderMessages(c, true);
     return true;
   } catch (err) {
@@ -446,10 +457,13 @@ const sendWS = (o) => { if (S.ws && S.ws.readyState === 1) S.ws.send(JSON.string
 
 async function onWS(m) {
   const ui = window.__ui;
+  if (typeof m.t === 'string' && (m.t.startsWith('vc_') || m.t.startsWith('call_'))) { const h = window.__ext && window.__ext.onCall; if (h) h(m); return; }
+  if (typeof m.t === 'string' && (m.t.startsWith('channel_') || m.t.startsWith('thread_'))) { const h = window.__ext && window.__ext.onChan; if (h) h(m); return; }
   if (typeof m.t === 'string' && (m.t.startsWith('board_') || m.t === 'night_new')) { const h = window.__ext && window.__ext.onBoard; if (h) h(m); return; }
   switch (m.t) {
     case 'ready':
       S.wsOk = true; wsBackoff = 1000;
+      if (window.__ext && window.__ext.onWsReady) window.__ext.onWsReady();
       clearInterval(hb); hb = setInterval(() => sendWS({ t: 'ping' }), 25000);
       await loadConvs().catch(() => {});                     // resync after (re)connect
       api('GET', '/api/presence', null, { quiet: true }).then((d) => { for (const p of d.presence) S.presence.set(p.userId, p); ui.renderAll(); }).catch(() => {});
@@ -459,20 +473,28 @@ async function onWS(m) {
       const c = convOf(m.convId);
       if (!c) { await loadConvs(); return; }
       const mine = m.message.senderId === S.me.id;
+      const mc = m.message.channelId || null, mt = m.message.threadId || null, inMain = !mc && !mt;
+      const here = c._sub ? (c._sub.kind === 'thread' ? c._sub.id === mt : c._sub.id === mc) : inMain;
+      if (!inMain) {
+        if (here) { await decryptMsg(c, m.message); if (c.loaded) addMessage(c, m.message); if (!mine && !document.hidden) { const t = S.typing.get(c.id); if (t) t.delete(m.message.senderId); } if (S.active === c.id) ui.renderMessages(c, mine); }
+        else if (!mine) { c._subUnread = c._subUnread || {}; const k = mt || mc; c._subUnread[k] = (c._subUnread[k] || 0) + 1; window.__ext.drawChanbar && window.__ext.drawChanbar(c); }
+        if (!mine && window.__ext.noteSubActivity) window.__ext.noteSubActivity(c, m.message);
+        return;
+      }
       if (!c.loaded && !mine) { c.lastMessage = m.message; }
       const payload = await decryptMsg(c, m.message);
-      if (c.loaded) addMessage(c, m.message); else c.lastMessage = m.message;
+      if (c.loaded && here) addMessage(c, m.message); else if (!c.loaded) c.lastMessage = m.message; else c.lastMessage = m.message;
       c._preview = previewText(payload, mine);
       sortConvs();
       if (!mine) {
-        const viewing = S.view === 'chats' && S.active === c.id && !document.hidden;
+        const viewing = S.view === 'chats' && S.active === c.id && !document.hidden && !c._sub;
         const t = S.typing.get(c.id); if (t) { t.delete(m.message.senderId); }
         if (viewing) markRead(c);
         else { c.unread = (c.unread || 0) + 1; if (!m.muted && !c.systemKind) ui.notifyMessage(c, m.message, payload); }
         if (c.systemKind && !memberOf(c, m.message.senderId)) { clearTimeout(c._memT); c._memT = setTimeout(() => loadConvs().catch(() => {}), 1500); } // new speaker in a big room: fetch the name
         updateBadge();
       }
-      ui.renderSide(); ui.renderRail(); if (S.active === c.id) ui.renderMessages(c, mine);
+      ui.renderSide(); ui.renderRail(); if (S.active === c.id && here) ui.renderMessages(c, mine);
       break;
     }
     case 'msg_deleted': {
@@ -572,7 +594,7 @@ async function onWS(m) {
     case 'notif': {
       S.notifs.unshift(m.notif); S.notifUnread++;
       ui.renderRail();
-      const txt = m.notif.type === 'group_added' ? `${m.notif.data.by} added you to ${m.notif.data.name}` : m.notif.type === 'dm_new' ? `${m.notif.data.from} started a chat with you` : m.notif.type === 'sched_failed' ? 'a scheduled message could not be sent' : m.notif.type === 'referral' ? `${m.notif.data.name} joined, +${m.notif.data.minutes} min beta` : m.notif.type === 'report' ? 'new report to review' : m.notif.type === 'game_night' ? `game night starting: ${m.notif.data.title}${m.notif.data.convName ? ' in ' + m.notif.data.convName : ''}` : m.notif.type === 'mention' ? `${m.notif.data.byName || m.notif.data.by} mentioned you${m.notif.data.convName ? ' in ' + m.notif.data.convName : ''}` : m.notif.type === 'reminder' ? 'reminder: ' + (m.notif.data.note || 'a message you saved') : m.notif.type === 'warn' ? `warning from ${m.notif.data.by}: ${m.notif.data.text}` : m.notif.type === 'appeal' ? `${m.notif.data.by} sent an appeal` : m.notif.type === 'verified' ? 'you are verified' : m.notif.type === 'verify_rejected' ? 'verification was not approved' + (m.notif.data.note ? ': ' + m.notif.data.note : '') : 'new notification';
+      const txt = m.notif.type === 'group_added' ? `${m.notif.data.by} added you to ${m.notif.data.name}` : m.notif.type === 'dm_new' ? `${m.notif.data.from} started a chat with you` : m.notif.type === 'sched_failed' ? 'a scheduled message could not be sent' : m.notif.type === 'referral' ? `${m.notif.data.name} joined, +${m.notif.data.minutes} min beta` : m.notif.type === 'report' ? 'new report to review' : m.notif.type === 'game_night' ? `game night starting: ${m.notif.data.title}${m.notif.data.convName ? ' in ' + m.notif.data.convName : ''}` : m.notif.type === 'mention' ? `${m.notif.data.byName || m.notif.data.by} mentioned you${m.notif.data.convName ? ' in ' + m.notif.data.convName : ''}` : m.notif.type === 'reminder' ? 'reminder: ' + (m.notif.data.note || 'a message you saved') : m.notif.type === 'warn' ? `warning from ${m.notif.data.by}: ${m.notif.data.text}` : m.notif.type === 'appeal' ? `${m.notif.data.by} sent an appeal` : m.notif.type === 'verified' ? 'you are verified' : m.notif.type === 'verify_rejected' ? 'verification was not approved' + (m.notif.data.note ? ': ' + m.notif.data.note : '') : (window.__ext.notifExtra && window.__ext.notifExtra(m.notif.type, m.notif.data)) || 'new notification';
       const quiet = window.__ext && window.__ext.dndActive && window.__ext.dndActive() && m.notif.type !== 'warn';
       if (!quiet) { toast(txt, 'info', () => { if (m.notif.data.convId) { ui.openConv(m.notif.data.convId); if (m.notif.data.msgId && window.__ext) setTimeout(() => window.__ext.jumpTo(convOf(m.notif.data.convId), m.notif.data.msgId), 600); } }); beep(); }
       break;

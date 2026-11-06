@@ -436,7 +436,7 @@ async function verifyModal() {
   const m = modal('verify your account', body);
   let st = null;
   try { st = await api('GET', '/api/verify/status', null, { quiet: true }); } catch (e) { return body.replaceChildren(el('div', { class: 'form-err' }, e.message)); }
-  if (st.verified) { S.me.verified = true; return body.replaceChildren(el('div', { class: 'locked' }, ic('verified', 34), el('h3', null, 'you are verified'), el('p', { class: 'muted' }, 'the blue tick shows next to your name'))); }
+  if (st.verified) { S.me.verified = true; body.replaceChildren(el('div', { class: 'locked' }, ic('verified', 34), el('h3', null, 'you are verified'), el('p', { class: 'muted' }, 'the blue tick shows next to your name'))); const vs = await window.__ext.vouchSection(true); body.append(vs); return; }
   if (st.last && st.last.status === 'pending') return body.replaceChildren(el('div', { class: 'locked' }, ic('timer', 30), el('h3', null, 'waiting for review'), el('p', { class: 'muted' }, 'an admin will look at it soon. your photo is deleted as soon as they decide.')));
   let dataUrl = '';
   const prev = el('div', { class: 'idprev' });
@@ -466,7 +466,8 @@ async function verifyModal() {
     send,
     el('div', { class: 'or' }, 'or'),
     el('p', { class: 'muted small', style: 'margin:0 0 8px' }, 'no id? message an admin instead. chats with admins are always free, and they can verify you by hand.'),
-    ...(st.admins || []).map((a) => el('button', { class: 'btn wide', style: 'margin-bottom:6px', onclick: () => { m.close(); U.startDM(a.username); } }, ic('chat', 16), 'talk to ' + a.displayName)));
+    ...(st.admins || []).map((a) => el('button', { class: 'btn wide', style: 'margin-bottom:6px', onclick: () => { m.close(); U.startDM(a.username); } }, ic('chat', 16), 'talk to ' + a.displayName)),
+    await window.__ext.vouchSection(false));
 }
 
 // ---------- badges ----------
