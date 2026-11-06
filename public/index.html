@@ -599,6 +599,8 @@ button.oncecard{cursor:pointer}.oncecard.gone{opacity:.6;cursor:default}.oncetex
 .vdot{width:22px;height:22px;border-radius:50%;border:2px solid rgba(128,128,128,.4);display:inline-flex;align-items:center;justify-content:center}
 .vdot.on{background:var(--good);border-color:var(--good);color:#fff}
 @media (max-width:640px){.calldock{right:8px;left:8px;bottom:8px;width:auto}.calldock.small{width:auto}}
+.idcam{width:100%;border-radius:12px;background:#000;display:block}.idcambox{margin:8px 0}
+.afkwarn{display:flex;align-items:center;gap:8px;background:rgba(232,194,106,.18);border:1px solid var(--warn);border-radius:10px;padding:8px 10px;font-size:13px}
 </style>
 </head>
 <body>
@@ -784,6 +786,12 @@ const PRESETS = {                                            // preset profile p
 const GNG_SVG = '<svg viewBox="0 0 64 64" width="100%" height="100%"><rect width="64" height="64" fill="#f1d98a"/><path d="M20 17c3-6 22-7 25 0 3 7 1 17-5 18-7 2-19 1-21-6-1-4-1-8 1-12z" fill="#fff6dc" stroke="#2b2118" stroke-width="2.2" stroke-linejoin="round"/><circle cx="28" cy="24" r="2.2" fill="#2b2118"/><circle cx="38" cy="23" r="2.8" fill="#2b2118"/><path d="M27 30c4 4 9 3 12-1" fill="none" stroke="#2b2118" stroke-width="2" stroke-linecap="round"/><path d="M32 36l-1 14M31 41l-10 3M32 41l12-5" stroke="#2b2118" stroke-width="2.4" stroke-linecap="round" fill="none"/><path d="M44 36l1-9c0-2 3-2 3 0l-1 5 5 1c2 1 1 4-1 4z" fill="#fff6dc" stroke="#2b2118" stroke-width="1.8" stroke-linejoin="round"/><path d="M31 50l-6 10M31 50l6 10" stroke="#2b2118" stroke-width="2.4" stroke-linecap="round"/></svg>';   // gng: a poorly drawn guy with his thumb up
 const avatar = (name, size = 40, extra = '', preset = null) => {
   if (preset === 'gng') { const d = el('div', { class: 'avatar ' + extra, style: `width:${size}px;height:${size}px;overflow:hidden` }); d.innerHTML = GNG_SVG; return d; }
+  const up = typeof preset === 'string' && /^u:([0-9a-f-]{36}):(\d+)$/.exec(preset);
+  if (up) {
+    const img = el('img', { class: 'avatar avimg ' + extra, src: `${API}/api/avatar/${up[1]}?v=${up[2]}`, alt: '', loading: 'lazy', draggable: false, style: `width:${size}px;height:${size}px;object-fit:cover` });
+    img.onerror = () => { img.replaceWith(avatar(name, size, extra, null)); };
+    return img;
+  }
   const p = preset && PRESETS[preset];
   if (p) return el('div', { class: 'avatar ' + extra, style: `width:${size}px;height:${size}px;background:${p[1]}` }, ic(p[0], Math.round(size * 0.52)));
   return el('div', { class: 'avatar ' + extra, style: `width:${size}px;height:${size}px;font-size:${Math.round(size * 0.46)}px;background:${tone(name)}` }, (String(name).trim()[0] || '?').toLowerCase());
@@ -934,7 +942,9 @@ const onlyEmoji = (t) => { const s = String(t).trim(); if (!s) return false; con
 const expandShortcodes = (t) => String(t).replace(/:([a-z0-9_+-]{1,24}):/gi, (all, n) => EMOJI.get(n.toLowerCase()) || all);
 const GIF_HOSTS = ['tenor.com', 'giphy.com', 'klipy.com', 'klipy.co', 'imgur.com'];
 const gifOk = (u) => { try { const x = new URL(u); return x.protocol === 'https:' && GIF_HOSTS.some((d) => x.hostname === d || x.hostname.endsWith('.' + d)); } catch { return false; } };
-const betaActive = () => !!(S.me && (S.me.isAdmin || (S.me.verified && S.me.betaUntil && new Date(S.me.betaUntil) > new Date()))); // beta also needs a verified account
+const betaActive = () => !!(S.me && (S.me.isAdmin || (S.me.verified && ((S.me.betaUntil && new Date(S.me.betaUntil) > new Date()) || S.me.refBank > 0))));
+const betaMsLeft = () => Math.max(0, (S.me.betaUntil ? new Date(S.me.betaUntil) - Date.now() : 0)) + (S.me.refBank || 0) * 60000;
+const betaUntilLabel = () => { const t = S.me.betaUntil && new Date(S.me.betaUntil) > new Date(); const b = S.me.refBank || 0; if (t && !b) return 'until ' + new Date(S.me.betaUntil).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); if (!t && b) return b + ' min of referral time left, it only counts down while you are online'; if (t && b) return 'until ' + new Date(S.me.betaUntil).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) + ' plus ' + b + ' min of referral time'; return 'off'; }; // beta also needs a verified account
 
 // ---------- toasts, sound, notifications ----------
 function toast(msg, kind = 'info', onclick) {
@@ -1247,7 +1257,7 @@ async function onWS(m) {
   }
 }
 
-window.__core = { PRESETS, F, API, SAME_ORIGIN, S, el, $, ic, avatar, fmtTime, fmtDay, fmtDur, ago, rid, debounce, lsGet, lsSet, lsDel, toast, beep, updateBadge, api, kdf, newIdentity, openIdentity, wrapGroupKey, encryptPayload, decryptMsg, safetyNumber, idbGet, idbSet, idbDel, convOf, other, convTitle, memberOf, keyFor, previewText, refreshPreview, sortConvs, mergeConvs, loadConvs, loadMessages, addMessage, sendPayload, markRead, connectWS, sendWS, rand, b64, unb64, subtle, skCache, convKeys, startCooldown, hue, tone, EMOJI, EMOJI_LIST, QUICK_REACTS, emojiEl, emojify, onlyEmoji, expandShortcodes, gifOk, betaActive };
+window.__core = { PRESETS, F, API, SAME_ORIGIN, S, el, $, ic, avatar, fmtTime, fmtDay, fmtDur, ago, rid, debounce, lsGet, lsSet, lsDel, toast, beep, updateBadge, api, kdf, newIdentity, openIdentity, wrapGroupKey, encryptPayload, decryptMsg, safetyNumber, idbGet, idbSet, idbDel, convOf, other, convTitle, memberOf, keyFor, previewText, refreshPreview, sortConvs, mergeConvs, loadConvs, loadMessages, addMessage, sendPayload, markRead, connectWS, sendWS, rand, b64, unb64, subtle, skCache, convKeys, startCooldown, hue, tone, EMOJI, EMOJI_LIST, QUICK_REACTS, emojiEl, emojify, onlyEmoji, expandShortcodes, gifOk, betaActive, betaMsLeft, betaUntilLabel };
 })();
 
 /* ===== Chatroom client: ui (auth, shell, chats, modals, gamesplace, activity) ===== */
@@ -1580,7 +1590,7 @@ function buildChat(m, c) {
   async function doSend() {
     if (sending) return;
     const raw = input.value.trim();
-    if (raw.startsWith('/') && await X.slash(c, raw)) { input.value = ''; c.draft = ''; input.style.height = 'auto'; sugg.classList.remove('on'); input.focus(); return; }   // /ban, /mute, /slow and friends never get sent as messages
+    if ((raw.startsWith('/') || raw.toLowerCase() === '$verify') && await X.slash(c, raw)) { input.value = ''; c.draft = ''; input.style.height = 'auto'; sugg.classList.remove('on'); input.focus(); return; }   // /ban, /mute, /slow and friends never get sent as messages
     const text = C.expandShortcodes(raw);                    // :skull: becomes the emoji before encryption
     if (!text) return;
     if (X.sendBlock(c)) { toast(X.sendBlock(c).text, 'error'); return; }
@@ -1593,12 +1603,10 @@ function buildChat(m, c) {
     sending = false; tickCooldown(); input.focus();
   }
   const emojiBtn = el('button', { class: 'icon-btn', title: 'emoji', onclick: () => X.emojiPicker(emojiBtn, (ch) => { const a = input.selectionStart ?? input.value.length; input.setRangeText(ch, a, input.selectionEnd ?? a, 'end'); input.dispatchEvent(new Event('input')); input.focus(); }) }, ic('smile', 20));
-  X.attachAutocorrect(input);
   const composerEl = el('div', { class: 'composer' },
         el('button', { class: 'icon-btn', title: 'more: voice, stickers, polls, schedule, games', onclick: (e) => X.plusMenu(e.currentTarget, c, input) }, ic('plus', 20)),
         el('button', { class: 'icon-btn', title: 'share a game', onclick: () => pickGameModal(c) }, ic('gamepad', 20)),
         el('button', { class: 'icon-btn gifbtn', title: 'gif', onclick: () => X.gifModal(c) }, ic('image', 20)),
-        el('button', { class: 'icon-btn', title: 'smart fix (ai)', onclick: () => X.smartFix(input) }, ic('sparkle', 20)),
         emojiBtn, input, sendBtn);
   const rulesbar = X.rulesBar(c, composerEl);
   m.append(el('div', { class: 'chat' }, head, chanbar, pinbar, msgs, typing, selbar,
@@ -1625,8 +1633,9 @@ function renderHeader() {
     o ? el('div', { class: 'avwrap' }, avatar(convTitle(c), 42, '', o.avatar), dot(isOnline(c, o.id), st.mode)) : el('div', { class: 'avatar', style: `width:42px;height:42px;background:${tone(c.name)}` }, ic(c.isPublic ? 'globe' : 'users', 18)),
     el('div', { class: 'grow click', onclick: () => (o ? openProfile(o.username) : groupModal(c)) }, el('div', { class: 'ctitle' }, convTitle(c), o ? vb(o) : null), el('div', { class: 'small' }, sub)),
     el('span', { class: 'ic muted', title: c.isPublic ? 'public room: open to everyone, not end-to-end encrypted' : 'end-to-end encrypted' }, ic(c.isPublic ? 'globe' : 'lock', 16)),
-    !c.systemKind && (c.type === 'dm' || c.role === 'admin') ? el('button', { class: 'icon-btn' + (c.ttlSeconds ? ' on' : ''), title: 'disappearing messages', onclick: () => X.ttlModal(c) }, ic('timer', 20)) : null,
+    (!c.systemKind || S.me.isAdmin) && (c.type === 'dm' || c.role === 'admin' || S.me.isAdmin) ? el('button', { class: 'icon-btn' + (c.ttlSeconds ? ' on' : ''), title: 'disappearing messages', onclick: () => X.ttlModal(c) }, ic('timer', 20)) : null,
     !c.systemKind || c.gamePath ? el('button', { class: 'icon-btn' + (c.gamePath ? ' on' : ''), title: c.gamePath ? 'game room: ' + c.gameTitle : 'pin a game here', onclick: () => X.gameRoomModal(c) }, ic('gamepad', 20)) : null,
+    o && S.me.isAdmin && !o.verified && !o.isAdmin ? el('button', { class: 'btn small primary', title: 'verify them', onclick: async () => { try { await api('POST', `/api/admin/users/${o.id}/verify`, { verified: true }, { quiet: true }); o.verified = true; toast('verified ' + o.displayName, 'success'); renderHeader(); } catch (e) { toast(e.message, 'error'); } } }, ic('verified', 14), 'verify') : null,
     o ? el('button', { class: 'icon-btn', title: 'voice call', onclick: () => X.startCall(c, false) }, ic('phone', 20)) : null,
     o ? el('button', { class: 'icon-btn', title: 'video call', onclick: () => X.startCall(c, true) }, ic('video', 20)) : null,
     el('button', { class: 'icon-btn', title: 'search this chat', onclick: () => X.searchModal(c) }, ic('search', 20)),
@@ -1902,7 +1911,21 @@ async function openProfile(username) {
 }
 function avatarModal() {                                     // pick one of the preset pictures, or go back to the letter
   const grid = el('div', { class: 'avgrid' });
-  const m = modal('profile picture', el('div', null, el('p', { class: 'muted small', style: 'margin-top:0' }, 'pick one. everyone sees it next to your name.'), grid));
+  const err = el('div', { class: 'form-err' });
+  const file = el('input', { type: 'file', accept: 'image/*', style: 'display:none', onchange: async () => {
+    const f = file.files && file.files[0]; file.value = ''; if (!f) return;
+    err.textContent = '';
+    if (!S.me.verified && !S.me.isAdmin) { err.textContent = 'verify your account to upload a picture'; return; }
+    if (f.size > 5 * 1024 * 1024) { err.textContent = 'that picture is over 5 MB'; return; }
+    try {
+      const bmp = await createImageBitmap(f);
+      const side = Math.min(bmp.width, bmp.height), cv = document.createElement('canvas'); cv.width = cv.height = 256;
+      cv.getContext('2d').drawImage(bmp, (bmp.width - side) / 2, (bmp.height - side) / 2, side, side, 0, 0, 256, 256);
+      const d = await api('POST', '/api/me/avatar', { image: cv.toDataURL('image/jpeg', 0.86) }, { quiet: true });
+      S.me.avatar = d.user.avatar; draw(); renderAll(); toast('picture updated', 'success');
+    } catch (e) { err.textContent = e.message || 'could not use that picture'; }
+  } });
+  const m = modal('profile picture', el('div', null, el('p', { class: 'muted small', style: 'margin-top:0' }, 'upload your own (up to 5 MB) or pick one. everyone sees it next to your name.'), el('button', { class: 'btn wide', style: 'margin-bottom:10px', onclick: () => file.click() }, ic('image', 16), 'upload a picture'), file, err, grid));
   const draw = () => grid.replaceChildren(
     el('button', { class: 'avopt' + (!S.me.avatar ? ' on' : ''), title: 'letter', onclick: () => pick(null) }, avatar(S.me.displayName, 52)),
     ...Object.keys(C.PRESETS).map((id) => el('button', { class: 'avopt' + (S.me.avatar === id ? ' on' : ''), title: C.PRESETS[id][0], onclick: () => pick(id) }, avatar('', 52, '', id))));
@@ -1942,7 +1965,6 @@ function settingsModal() {
     el('button', { class: 'btn wide', style: 'margin-top:8px', onclick: () => { m.close(); X.wallpaperModal(null); } }, ic('image', 16), 'chat wallpaper', el('span', { class: 'tag gold' }, 'beta')),
     el('h4', null, 'ping me'),
     toggle('show what i am playing', S.me.shareActivity, async (v) => { try { const d = await api('PATCH', '/api/me', { shareActivity: v }); S.me.shareActivity = d.user.shareActivity; } catch (e) { toast(e.message, 'error'); return false; } }),
-    toggle('autocorrect', S.prefs.autocorrect !== false, (v) => { S.prefs.autocorrect = v; savePrefs(); }),
     toggle('sound', S.prefs.sound, (v) => { S.prefs.sound = v; savePrefs(); if (v) beep(); }),
     X.callSettingsRows(toggle),
     toggle('desktop popups', S.prefs.desktop && 'Notification' in window && Notification.permission === 'granted', async (v) => {
@@ -2046,7 +2068,7 @@ function buildAdmin(m) {
           el('div', { class: 'avwrap' }, avatar(u.displayName, 40, '', u.avatar), dot(u.online)),
           el('div', { class: 'grow' }, el('div', { class: 'ctitle' }, u.displayName, u.isOwner ? el('span', { class: 'tag gold', style: 'margin-left:8px' }, 'owner') : u.isAdmin ? el('span', { class: 'tag gold', style: 'margin-left:8px' }, 'admin') : null, u.banned ? el('span', { class: 'tag', style: 'margin-left:8px' }, 'suspended') : null, u.beta && !u.isAdmin ? el('span', { class: 'tag', style: 'margin-left:8px' }, 'beta') : null),
             el('div', { class: 'muted small' }, `@${u.username} · ${u.messages} msgs · joined ${fmtDay(u.createdAt).toLowerCase()}`)),
-          el('div', { class: 'acts' }, el('button', { class: 'icon-btn', title: 'vouches', onclick: () => X.adminVouches(u.id) }, ic('verified', 16)), !u.isAdmin ? el('button', { class: 'icon-btn' + (u.verified ? ' on' : ''), title: u.verified ? 'remove verification' : 'verify', onclick: () => act(() => api('POST', `/api/admin/users/${u.id}/verify`, { verified: !u.verified }), u.verified ? 'unverified' : 'verified') }, ic('verified', 18)) : null, el('button', { class: 'icon-btn' + (u.beta ? ' on' : ''), title: 'beta time', onclick: () => X.betaModal(u, loadUsers) }, ic('star', 18)),
+          el('div', { class: 'acts' }, u.avatar && /^u:/.test(u.avatar) ? el('button', { class: 'icon-btn', title: 'remove their profile picture', onclick: () => act(() => api('POST', `/api/admin/users/${u.id}/avatar-reset`, {})) }, ic('image', 16)) : null, el('button', { class: 'icon-btn', title: 'vouches', onclick: () => X.adminVouches(u.id) }, ic('verified', 16)), !u.isAdmin ? el('button', { class: 'icon-btn' + (u.verified ? ' on' : ''), title: u.verified ? 'remove verification' : 'verify', onclick: () => act(() => api('POST', `/api/admin/users/${u.id}/verify`, { verified: !u.verified }), u.verified ? 'unverified' : 'verified') }, ic('verified', 18)) : null, el('button', { class: 'icon-btn' + (u.beta ? ' on' : ''), title: 'beta time', onclick: () => X.betaModal(u, loadUsers) }, ic('star', 18)),
             isOwner && !u.isOwner ? el('button', { class: 'icon-btn', title: u.isAdmin ? 'remove admin' : 'make admin', onclick: () => act(() => api('POST', `/api/admin/users/${u.id}/admin`, { admin: !u.isAdmin }), u.isAdmin ? 'admin removed' : `${u.displayName} is an admin now`) }, ic('crown', 18)) : null,
             !locked ? el('button', { class: 'icon-btn', title: u.banned ? 'restore' : 'suspend', onclick: async () => { if (u.banned || await confirmModal(`suspend ${u.displayName}?`, 'they get signed out and cannot come back until restored.', 'suspend')) act(() => api('POST', `/api/admin/users/${u.id}/ban`, { banned: !u.banned }), u.banned ? 'restored' : 'suspended'); } }, ic('ban', 18)) : null,
             !locked ? el('button', { class: 'icon-btn', title: 'remove account', onclick: async () => { if (await confirmModal(`remove ${u.displayName}?`, 'the account is deleted for good.', 'remove')) act(() => api('DELETE', `/api/admin/users/${u.id}`), 'removed'); } }, ic('trash', 18)) : null));
@@ -2343,14 +2365,14 @@ function themeModal() {
 async function inviteModal() {
   const body = el('div', null, el('div', { class: 'muted pad' }, '...'));
   const im = modal('invite friends', body);
-  if (!S.me.verified) { body.replaceChildren(el('div', { class: 'locked' }, ic('verified', 30), el('h3', null, 'verify to get an invite link'), el('p', { class: 'muted' }, 'only verified people can invite friends. a friend counts once they get verified too, and you earn 30 minutes of beta each time.'), el('button', { class: 'btn primary', onclick: () => { im.close(); verifyModal(); } }, ic('verified', 16), 'verify me'))); return; }
+  if (!S.me.verified) { body.replaceChildren(el('div', { class: 'locked' }, ic('verified', 30), el('h3', null, 'verify to get an invite link'), el('p', { class: 'muted' }, 'only verified people can invite friends. a friend counts once they get verified too, and you earn ' + ((S.referral && S.referral.minutes) || 30) + ' minutes of beta each time. referral time only counts down while you are online.'), el('button', { class: 'btn primary', onclick: () => { im.close(); verifyModal(); } }, ic('verified', 16), 'verify me'))); return; }
   try {
     const r = S.referral && S.referral.code ? S.referral : await api('GET', '/api/referral');
     S.referral = r;
     const link = `${C.API}/?ref=${r.code}`;
     const field = (v) => el('div', { class: 'copyrow' }, el('input', { value: v, readOnly: true, onfocus: (e) => e.target.select() }), el('button', { class: 'btn', onclick: () => copyText(v) }, ic('copy', 16), 'copy'));
     const active = C.betaActive();
-    const left = S.me.isAdmin ? 'always on' : active ? 'until ' + new Date(S.me.betaUntil).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : 'off';
+    const left = S.me.isAdmin ? 'always on' : active ? C.betaUntilLabel() : 'off';
     body.replaceChildren(
       !S.me.verified ? el('div', { class: 'betacard' }, ic('verified', 20), el('div', { class: 'grow' }, el('b', null, 'verify to use beta'), el('div', { class: 'muted small' }, 'friends still earn you time, it switches on once you are verified')), el('button', { class: 'btn small primary', onclick: () => verifyModal() }, 'verify')) : null,
       el('div', { class: 'betacard' + (active ? ' on' : '') }, ic('star', 20), el('div', { class: 'grow' }, el('b', null, 'beta ' + (active ? 'active' : 'off')), el('div', { class: 'muted small' }, left))),
@@ -2636,7 +2658,7 @@ const dismissedAnn = () => { try { return JSON.parse(lsGet('chatroom.ann') || '[
 function betaLeft() {                                        // short text for the pill
   if (S.me.isAdmin) return 'beta on';
   if (!C.betaActive()) return null;
-  const ms = new Date(S.me.betaUntil) - Date.now();
+  const ms = C.betaMsLeft();
   const m = Math.max(1, Math.ceil(ms / 60000));
   return 'beta ' + (m >= 1440 ? Math.floor(m / 1440) + 'd' : m >= 60 ? Math.floor(m / 60) + 'h ' + (m % 60) + 'm' : m + 'm') + ' left';
 }
@@ -2653,7 +2675,7 @@ function renderTop() {
   const free = Math.max(0, (S.me.freeMessages || 20) - (S.me.msgCount || 0));
   bar.replaceChildren(left,
     !S.me.verified ? el('button', { class: 'pill warn', title: 'verify your account', onclick: verifyModal }, ic('verified', 15), el('span', null, free ? `verify · ${free} free left` : 'verify to chat')) : null,
-    el('button', { class: 'pill' + (bl ? ' on' : ''), title: 'invite friends, earn beta time', onclick: inviteModal }, ic(bl ? 'star' : 'gift', 15), el('span', null, bl || 'invite · +30m beta')));
+    el('button', { class: 'pill' + (bl ? ' on' : ''), title: 'invite friends, earn beta time', onclick: inviteModal }, ic(bl ? 'star' : 'gift', 15), el('span', null, bl || 'invite · +' + ((S.referral && S.referral.minutes) || 30) + 'm beta')));
   const r = U.chatRef(); if (r && r.freebar) drawFree(r.freebar);
 }
 function drawFree(box) {                                     // small reminder above the composer while unverified
@@ -2675,7 +2697,9 @@ function annModal(a) {
 // ---------- verification ----------
 async function verifyModal() {
   const body = el('div', null, el('div', { class: 'muted pad' }, '...'));
-  const m = modal('verify your account', body);
+  let stream = null;
+  const stopCam = () => { if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; } };
+  const m = modal('verify your account', body, { onClose: stopCam });
   let st = null;
   try { st = await api('GET', '/api/verify/status', null, { quiet: true }); } catch (e) { return body.replaceChildren(el('div', { class: 'form-err' }, e.message)); }
   if (st.verified) { S.me.verified = true; body.replaceChildren(el('div', { class: 'locked' }, ic('verified', 34), el('h3', null, 'you are verified'), el('p', { class: 'muted' }, 'the blue tick shows next to your name'))); const vs = await window.__ext.vouchSection(true); body.append(vs); return; }
@@ -2687,24 +2711,36 @@ async function verifyModal() {
     try { await api('POST', '/api/verify', { image: dataUrl }, { quiet: true }); toast('sent for review', 'success'); m.close(); }
     catch (e) { toast(e.message, 'error'); send.disabled = false; }
   } }, ic('send', 16), 'send for review');
+  const finish = (cv) => {
+    let w = cv.width, h = cv.height; const k = Math.min(1, 1100 / Math.max(w, h)); w = Math.round(w * k); h = Math.round(h * k);
+    const out = document.createElement('canvas'); out.width = w; out.height = h; out.getContext('2d').drawImage(cv, 0, 0, w, h);
+    let q = 0.78; dataUrl = out.toDataURL('image/jpeg', q);
+    while (dataUrl.length > 700_000 && q > 0.3) { q -= 0.1; dataUrl = out.toDataURL('image/jpeg', q); }
+    prev.replaceChildren(el('img', { src: dataUrl, alt: 'your scan' })); send.disabled = false;
+  };
+  const cam = el('video', { class: 'idcam', autoplay: true, playsInline: true, muted: true });
+  const camBox = el('div', { class: 'idcambox', style: 'display:none' }, cam, el('div', { class: 'row gap', style: 'margin-top:8px' },
+    el('button', { class: 'btn primary grow', onclick: () => { if (!cam.videoWidth) return; const cv = document.createElement('canvas'); cv.width = cam.videoWidth; cv.height = cam.videoHeight; cv.getContext('2d').drawImage(cam, 0, 0); stopCam(); camBox.style.display = 'none'; finish(cv); scanBtn.textContent = 'scan again'; } }, ic('camera', 16), 'capture'),
+    el('button', { class: 'btn', onclick: () => { stopCam(); camBox.style.display = 'none'; } }, 'cancel')));
   const file = el('input', { type: 'file', accept: 'image/*', capture: 'environment', style: 'display:none', onchange: async () => {
     const f = file.files && file.files[0]; if (!f) return;
-    try {
-      const bmp = await createImageBitmap(f);
-      let w = bmp.width, h = bmp.height; const k = Math.min(1, 1100 / Math.max(w, h)); w = Math.round(w * k); h = Math.round(h * k);
-      const cv = document.createElement('canvas'); cv.width = w; cv.height = h; cv.getContext('2d').drawImage(bmp, 0, 0, w, h);
-      let q = 0.78; dataUrl = cv.toDataURL('image/jpeg', q);
-      while (dataUrl.length > 700_000 && q > 0.3) { q -= 0.1; dataUrl = cv.toDataURL('image/jpeg', q); }   // keep it small
-      prev.replaceChildren(el('img', { src: dataUrl, alt: 'your photo' })); send.disabled = false;
-    } catch { toast('could not read that photo', 'error'); }
+    try { const bmp = await createImageBitmap(f); const cv = document.createElement('canvas'); cv.width = bmp.width; cv.height = bmp.height; cv.getContext('2d').drawImage(bmp, 0, 0); finish(cv); }
+    catch { toast('could not read that photo', 'error'); }
   } });
+  const scanBtn = el('button', { class: 'btn grow', onclick: async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return file.click();
+    try {
+      stopCam(); stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false });
+      cam.srcObject = stream; camBox.style.display = ''; cam.play().catch(() => {});
+    } catch { toast('camera blocked, allow it in your browser to scan', 'error'); file.click(); }
+  } }, ic('camera', 16), 'scan your id with the camera');
   body.replaceChildren(
     st.last && st.last.status === 'rejected' ? el('div', { class: 'form-err' }, 'last try was not approved' + (st.last.note ? ': ' + st.last.note : '')) : null,
-    el('p', { style: 'margin-top:0' }, 'take a photo of your school or bus pass so an admin can check you are real.'),
+    el('p', { style: 'margin-top:0' }, 'hold your school or bus pass up to your camera and scan it so an admin can check you are real.'),
     el('ul', { class: 'tips' }, el('li', null, 'show your name and photo'), el('li', null, 'cover your id number, birthday and address'), el('li', null, 'an admin looks at it, then the photo is deleted for good')),
     el('p', { class: 'muted small' }, `unverified accounts get ${st.freeMessages} messages (${st.used} used), no reactions and no beta. verified accounts get a blue tick.`),
-    prev, file,
-    el('div', { class: 'row gap', style: 'margin:12px 0' }, el('button', { class: 'btn grow', onclick: () => file.click() }, ic('camera', 16), 'choose or take a photo')),
+    camBox, prev, file,
+    el('div', { class: 'row gap', style: 'margin:12px 0' }, scanBtn),
     send,
     el('div', { class: 'or' }, 'or'),
     el('p', { class: 'muted small', style: 'margin:0 0 8px' }, 'no id? message an admin instead. chats with admins are always free, and they can verify you by hand.'),
@@ -2832,7 +2868,7 @@ function plusMenu(anchor, c, input, sub) {
   anchor.dataset.plus = 1;
   const on = C.betaActive();
   const item = (icon, label, fn, free) => el('button', { class: 'plusitem', onclick: () => { closePlus(); fn(); } }, ic(icon, 18), el('span', { class: 'grow' }, label), on || free ? null : el('span', { class: 'tag gold' }, 'beta'));
-  const noImg = !!c.systemKind;
+  const noImg = !!c.systemKind && !S.me.isAdmin;
   const games = [['grid', 'tic-tac-toe', 'ttt'], ['users', 'rock paper scissors', 'rps'], ['grid', 'connect 4', 'c4'], ['book', 'word duel', 'wd'], ['trophy', 'trivia duel', 'tr']];
   if (sub === '2p') plus = el('div', { class: 'plusmenu' },
     el('button', { class: 'plusitem', onclick: () => plusMenu(anchor, c, input, 'main') }, ic('back', 18), el('span', { class: 'grow' }, '2 player games')),
@@ -3258,7 +3294,7 @@ function buildBeta(m) {
   m.append(page);
   const draw = () => {
     const on = C.betaActive(), v = S.me.verified;
-    const until = S.me.isAdmin ? 'always on for admins' : on ? 'until ' + new Date(S.me.betaUntil).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'off right now';
+    const until = S.me.isAdmin ? 'always on for admins' : on ? C.betaUntilLabel() : 'off right now';
     const price = betaInfo ? (betaInfo.priceCents / 100).toFixed(2) : '0.50';
     page.replaceChildren(
       el('div', { class: 'page-head' }, el('h2', null, 'be', el('i', null, 'ta'))),
@@ -3466,8 +3502,9 @@ function helpModal(c, input) {
 const firstWord = (s) => { const m = String(s).trim().match(/^@?([a-z0-9_]{1,20})\s*(.*)$/is); return m ? { user: m[1].toLowerCase(), rest: m[2].trim() } : { user: '', rest: '' }; };
 
 async function slash(c, raw) {
-  const m = raw.match(/^\/([a-z]+)(?:\s+([\s\S]*))?$/i);
+  const m = raw.match(/^[\/$]([a-z]+)(?:\s+([\s\S]*))?$/i);
   if (!m) return false;
+  if (raw[0] === '$' && m[1].toLowerCase() !== 'verify') return false;
   const cmd = CMDS.find((x) => x.n === m[1].toLowerCase());
   if (!cmd) return false;                                    // not one of ours, so it is just a message
   const arg = (m[2] || '').trim();
@@ -3531,7 +3568,9 @@ async function slash(c, raw) {
       case 'audit': case 'stats': case 'appeals': U.goAdminTab(cmd.n === 'audit' ? 'audit' : cmd.n); break;
       case 'announce': { const r = await api('POST', '/api/cmd', { cmd: 'announce', arg }); ok(r.message); break; }
       default: {                                             // ban unban gmute ungmute warn verify unverify beta whois
-        const w = target(); if (!w) break;
+        let w;
+        if ((cmd.n === 'verify' || cmd.n === 'unverify') && !arg && c.type === 'dm') { const o = C.other(c); w = o ? { user: o.username, rest: '' } : null; } else w = target();
+        if (!w) break;
         if (cmd.n === 'ban' && !(await confirmModal(`suspend @${w.user}?`, 'they are signed out right away and can appeal.', 'suspend'))) break;
         const r = await api('POST', '/api/cmd', { cmd: cmd.n, target: w.user, arg: w.rest });
         if (cmd.n === 'whois') whoisModal(r.info); else ok(r.message);
@@ -3727,7 +3766,7 @@ document.addEventListener('paste', (e) => {
   if (!item) return;
   const file = item.getAsFile(); if (!file) return;
   e.preventDefault();
-  if (c.systemKind) return toast('photos are not allowed in the built-in rooms', 'error');
+  if (c.systemKind && !S.me.isAdmin) return toast('photos are not allowed in the built-in rooms', 'error');
   if (c.isPublic && !(S.me.verified || S.me.isAdmin)) return toast('verify your account to send pictures in public groups', 'error');
   if (!betaGate('sending photos')) return;
   photoModal(c, file);
@@ -3741,7 +3780,7 @@ async function reportImage(reportId) {
 }
 function pickPhoto(c) {
   if (!betaGate('sending photos')) return;
-  if (c.systemKind) return toast('photos are not allowed in the built-in rooms', 'error');
+  if (c.systemKind && !S.me.isAdmin) return toast('photos are not allowed in the built-in rooms', 'error');
   if (c.isPublic && !(S.me.verified || S.me.isAdmin)) return toast('verify your account to send pictures in public groups', 'error');
   const f = el('input', { type: 'file', accept: 'image/png,image/jpeg,image/gif,image/webp', style: 'display:none' });
   f.addEventListener('change', () => { const file = f.files[0]; f.remove(); if (file) photoModal(c, file); });
@@ -4783,7 +4822,7 @@ async function directory(sort = 'top') {
   } catch (e) { body.replaceChildren(el('div', { class: 'form-err' }, e.message)); }
 }
 
-const hostedFor = (b) => S.convs.filter((c) => c.type === 'group' && c.role === 'admin' && !c.systemKind && (c.isPublic ? b.allowPublic : b.allowGroups) && !c.members.some((x) => x.id === b.id));
+const hostedFor = (b) => S.convs.filter((c) => c.type === 'group' && (c.role === 'admin' || S.me.isAdmin) && (!c.systemKind || S.me.isAdmin) && (c.isPublic ? b.allowPublic : b.allowGroups) && !c.members.some((x) => x.id === b.id));
 
 function botAddModal(c, b, after) {
   const state = { role: 'member' };
@@ -4838,7 +4877,7 @@ async function groupBotPicker(c, after) {
 function botsSection(c, redraw) {
   const bots = c.members.filter((x) => x.isBot && x.username !== 'gng');
   if (c.role !== 'admin' && !S.me.isAdmin) return null;
-  if (c.systemKind) return null;
+  if (c.systemKind && !S.me.isAdmin) return null;
   return el('div', null,
     el('h4', null, ic('sparkle', 14), 'bots'),
     ...(bots.length ? bots.map((u) => {
@@ -4920,7 +4959,7 @@ const roleChips = (c, uid) => {
 };
 
 function rolesSection(c, redraw) {
-  if (c.type !== 'group' || c.systemKind || U.myRank(c) < 2) return null;
+  if (c.type !== 'group' || (c.systemKind && !S.me.isAdmin) || U.myRank(c) < 2) return null;
   const name = el('input', { placeholder: 'new role name', maxLength: 20 });
   let color = PALETTE[0];
   const swatches = el('div', { class: 'row gap-s wraprow' });
@@ -4960,7 +4999,7 @@ function assignModal(c, role, after) {
 }
 
 function rulesSection(c, redraw) {
-  if (c.type !== 'group' || c.systemKind || U.myRank(c) < 2) return null;
+  if (c.type !== 'group' || (c.systemKind && !S.me.isAdmin) || U.myRank(c) < 2) return null;
   const ta = el('textarea', { rows: 5, maxLength: 1200, placeholder: 'be kind. no spam. keep it on topic.' });
   ta.value = c.rules || '';
   let on = !!c.rulesOn;
@@ -5756,9 +5795,10 @@ function onCall(m) {
     case 'vc_sig': onSig(m).catch((e) => console.warn('sig', e)); break;
     case 'vc_live': X.setLive(m); break;
     case 'vc_closed':
-      if (m.room === K.room) cleanup(({ ended: 'call ended', declined: 'they declined', missed: 'no answer', kicked: 'you were removed by a mod', deleted: 'that channel was deleted', moved: 'moved to another call', cancelled: 'call cancelled', replaced: 'call replaced' })[m.why] || 'call ended');
+      if (m.room === K.room) cleanup(({ ended: 'call ended', declined: 'they declined', missed: 'no answer', kicked: 'you were removed by a mod', afk: 'you were removed for being inactive', deleted: 'that channel was deleted', moved: 'moved to another call', cancelled: 'call cancelled', replaced: 'call replaced' })[m.why] || 'call ended');
       break;
     case 'vc_error': toast(m.message || 'could not join', 'error'); if (m.room === K.room && !K.joined) cleanup(); break;
+    case 'vc_afk_warn': K.afk = true; paintDock(); break;
     case 'vc_forcemute': toggleMic(false); toast('a mod muted you', 'info'); break;
     case 'call_incoming':
       if (S.me.callsOff) { sendWS({ t: 'call_decline', room: m.room }); break; }
@@ -5826,6 +5866,7 @@ function paintDock() {
       parts.push(el('div', { class: 'tiles n' + Math.min(list.length, 6) }, list.map(tile)));
     }
   }
+  if (K.afk) parts.splice(1, 0, el('div', { class: 'afkwarn' }, el('div', { class: 'grow' }, 'still there? you will be removed soon to save bandwidth'), el('button', { class: 'btn small primary', onclick: sendAlive }, 'i am here')));
   const bar = [];
   const canSpeak = !stg || (me && me.speaker);
   if (canSpeak) bar.push(btn(K.mic ? 'mic' : 'micoff', K.mic ? 'mute' : 'unmute', () => toggleMic(), K.mic ? '' : 'off'));
@@ -5878,6 +5919,14 @@ const boot = setInterval(() => {
   if (S.me && S.wsOk) { clearInterval(boot); setTimeout(askPref, 2500); }
 }, 1500);
 setTimeout(() => clearInterval(boot), 600000);
+
+let lastAct = Date.now(), sentAct = 0;
+function sendAlive() { if (!K.room) return; sentAct = Date.now(); K.afk = false; sendWS({ t: 'vc_alive', room: K.room }); paintDock(); }
+function noteAct() { lastAct = Date.now(); if (K.afk) sendAlive(); }
+for (const ev of ['pointerdown', 'keydown', 'touchstart', 'wheel']) window.addEventListener(ev, noteAct, { passive: true });
+let moveAt = 0;
+window.addEventListener('pointermove', () => { const n = Date.now(); if (n - moveAt > 3000) { moveAt = n; noteAct(); } }, { passive: true });
+setInterval(() => { if (!K.room) return; if (K.mic && K.localAudio && K.dock && K.dock.querySelector('.tile.me.speaking')) lastAct = Date.now(); if (lastAct > sentAct && Date.now() - sentAct > 25000) sendAlive(); }, 12000);
 
 function onWsReady() { if (K.room) cleanup('connection dropped, call ended'); stopIncoming(); }
 function notifExtra(type, d) {
