@@ -550,6 +550,7 @@ async function onWS(m) {
       ui.renderSide(); if (S.active === c.id) ui.renderMessages(c);
       break;
     }
+    case 'adminapps_changed': if (window.__ui.adminappsChanged) window.__ui.adminappsChanged(); break;
     case 'appeals_changed': if (window.__ui.appealsChanged) window.__ui.appealsChanged(); break;
     case 'extra': window.__ext && window.__ext.onExtra(m); break;
     case 'announce': window.__ext && window.__ext.onAnnounce(m.announcement); break;

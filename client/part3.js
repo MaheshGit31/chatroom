@@ -705,6 +705,7 @@ function settingsModal() {
     toggle('show what i am playing', S.me.shareActivity, async (v) => { try { const d = await api('PATCH', '/api/me', { shareActivity: v }); S.me.shareActivity = d.user.shareActivity; } catch (e) { toast(e.message, 'error'); return false; } }),
     toggle('sound', S.prefs.sound, (v) => { S.prefs.sound = v; savePrefs(); if (v) beep(); }),
     X.callSettingsRows(toggle),
+    S.me.isAdmin ? null : el('button', { class: 'btn wide', style: 'margin:8px 0', onclick: () => { m.close(); X.applyModal(); } }, ic('shield', 16), 'apply to be an admin'),
     toggle('desktop popups', S.prefs.desktop && 'Notification' in window && Notification.permission === 'granted', async (v) => {
       if (!v) { S.prefs.desktop = false; savePrefs(); return; }
       if (!('Notification' in window)) { toast('this browser has no notifications', 'error'); return false; }
@@ -792,7 +793,7 @@ function buildAdmin(m) {
     if (!tiles.isConnected) return;
     try {
       const d = await api('GET', '/api/admin/stats', null, { quiet: true });
-      const t = [['people', d.users], ['online', d.online], ['messages', d.messages], ['groups', d.groups], ['plays', d.plays], ['reports', d.reports], ['to verify', d.pending_verifications], ['appeals', d.pending_appeals || 0], ['public', d.public_groups], ['storage', fmtBytes(d.bytes)], ['vanish', d.ttlHours % 24 ? d.ttlHours + 'h' : d.ttlHours / 24 + 'd']];
+      const t = [['people', d.users], ['online', d.online], ['messages', d.messages], ['groups', d.groups], ['plays', d.plays], ['reports', d.reports], ['to verify', d.pending_verifications], ['appeals', d.pending_appeals || 0], ['applications', d.pending_adminapps || 0], ['public', d.public_groups], ['storage', fmtBytes(d.bytes)], ['vanish', d.ttlHours % 24 ? d.ttlHours + 'h' : d.ttlHours / 24 + 'd']];
       tiles.replaceChildren(...t.map(([l, v], i) => el('div', { class: 'tile', style: `--i:${i}` }, el('b', null, v), el('span', null, l))));
     } catch (e) { tiles.replaceChildren(el('div', { class: 'form-err' }, e.message)); }
   }
@@ -823,15 +824,16 @@ function buildAdmin(m) {
     (() => {
       const people = el('div', null, el('div', { class: 'searchbox' }, ic('search', 16), q), list);
       const hid = () => el('div', { style: 'display:none' });
-      const panes = { people, reports: hid(), verify: hid(), appeals: hid(), announce: hid(), audit: hid(), stats: hid(), owner: hid() };
-      const loaders = { reports: () => X.adminReports(panes.reports, loadStats), verify: () => X.adminVerify(panes.verify, loadStats), appeals: () => X.adminAppeals(panes.appeals, loadStats), announce: () => X.adminAnnounce(panes.announce), audit: () => X.adminAudit(panes.audit), stats: () => X.adminStats(panes.stats), owner: () => X.adminOwner(panes.owner) };
+      const panes = { people, reports: hid(), verify: hid(), appeals: hid(), apps: hid(), announce: hid(), audit: hid(), stats: hid(), owner: hid() };
+      const loaders = { reports: () => X.adminReports(panes.reports, loadStats), verify: () => X.adminVerify(panes.verify, loadStats), appeals: () => X.adminAppeals(panes.appeals, loadStats), apps: () => X.adminApps(panes.apps, loadStats), announce: () => X.adminAnnounce(panes.announce), audit: () => X.adminAudit(panes.audit), stats: () => X.adminStats(panes.stats), owner: () => X.adminOwner(panes.owner) };
       const tabBtns = {};
       const tab = (k, label) => tabBtns[k] = el('button', { class: k === 'people' ? 'on' : '', onclick: (e) => { e.currentTarget.parentNode.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b === e.currentTarget)); for (const [n, node] of Object.entries(panes)) node.style.display = n === k ? '' : 'none'; if (loaders[k]) loaders[k](); } }, label);
       window.__ui.reportsChanged = () => { loadStats(); if (panes.reports.isConnected && panes.reports.style.display !== 'none') loaders.reports(); };
       window.__ui.verifyChanged = () => { loadStats(); if (panes.verify.isConnected && panes.verify.style.display !== 'none') loaders.verify(); };
       window.__ui.appealsChanged = () => { loadStats(); if (panes.appeals.isConnected && panes.appeals.style.display !== 'none') loaders.appeals(); };
+      window.__ui.adminappsChanged = () => { loadStats(); if (panes.apps.isConnected && panes.apps.style.display !== 'none') loaders.apps(); };
       setTimeout(() => { const k = S.adminTab; S.adminTab = null; if (k && tabBtns[k]) tabBtns[k].click(); }, 0);   // /audit, /stats and /appeals jump straight to their tab
-      return el('div', null, el('div', { class: 'seg wrapseg' }, tab('people', 'people'), tab('reports', 'reports'), tab('verify', 'verify'), tab('appeals', 'appeals'), tab('announce', 'announce'), tab('audit', 'audit log'), tab('stats', 'stats'), isOwner ? tab('owner', 'owner') : null), people, panes.reports, panes.verify, panes.appeals, panes.announce, panes.audit, panes.stats, isOwner ? panes.owner : null);
+      return el('div', null, el('div', { class: 'seg wrapseg' }, tab('people', 'people'), tab('reports', 'reports'), tab('verify', 'verify'), tab('appeals', 'appeals'), tab('apps', 'applications'), tab('announce', 'announce'), tab('audit', 'audit log'), tab('stats', 'stats'), isOwner ? tab('owner', 'owner') : null), people, panes.reports, panes.verify, panes.appeals, panes.apps, panes.announce, panes.audit, panes.stats, isOwner ? panes.owner : null);
     })()));
   loadStats(); loadUsers();
   nowTimer = setInterval(loadStats, 20000);

@@ -473,6 +473,8 @@ setInterval(() => { if (!K.room) return; if (K.mic && K.localAudio && K.dock && 
 function onWsReady() { if (K.room) cleanup('connection dropped, call ended'); stopIncoming(); }
 function notifExtra(type, d) {
   if (type === 'missed_call') return `missed call from ${d.from}`;
+  if (type === 'adminapp_new') return `${d.by} (@${d.username}) applied to be an admin`;
+  if (type === 'adminapp_result') return d.approved ? 'your admin application was approved, welcome to the team' : 'your admin application was denied' + (d.response ? ': ' + d.response : '');
   if (type === 'vouch_ask') return `${d.from} (@${d.username}) asks you to vouch for them`;
   if (type === 'vouch_got') return `${d.from} vouched for you (${d.count}/${d.need})`;
   if (type === 'vouch_done') return 'you are verified, thanks to your vouchers';
