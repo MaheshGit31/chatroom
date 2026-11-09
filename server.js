@@ -845,6 +845,8 @@ extrasApi.mount(app, { auth, byUser, bad, wrap, requireMember, sendToConv, betaO
 require('./lib/roles').mount(app, { q, auth, byUser, bad, wrap, isUuid, requireMember, sendToConv, filter: safety.F });
 voice.init({ q, sendTo, sendToConv, sockets, limiter, notify, isUuid, isBlockedEitherWay });
 channelsLib.mount(app, { q, auth, byUser, bad, wrap, isUuid, sendToConv, isStaff: mod.isStaff, filter: safety.F, voice });
+const drop = require('./lib/drop');
+drop.mount(app, { q, auth, adminOnly, ownerOnly, byUser, bad, wrap, rl, sendTo, sockets, secret: () => SERVER_SECRET, ownerName: ADMIN_USERNAME });
 require('./lib/adminapps').mount(app, { q, auth, adminOnly, ownerOnly, byUser, bad, wrap, sendTo, notify, ownerName: ADMIN_USERNAME });
 vouch.mount(app, { q, auth, byUser, bad, wrap, isUuid, sendTo, notify, adminOnly });
 require('./lib/boards').mount(app, { q, auth, byUser, bad, wrap, isUuid, requireMember, sendToConv, sendTo, notify, isStaff: mod.isStaff, filter: safety.F });
@@ -870,6 +872,12 @@ app.get('/loader.html', (req, res) => {                      // convenience copy
   res.set('Cache-Control', 'no-cache').type('html').send(fs.readFileSync(path.join(PUB, 'loader.html'), 'utf8').replace('__SERVER__', `${proto}://${host}`));
 });
 app.get('/howto-image-link.gif', (req, res) => { const f = path.join(PUB, 'howto-image-link.gif'); fs.existsSync(f) ? res.set('Cache-Control', 'public, max-age=3600').type('gif').send(fs.readFileSync(f)) : res.status(404).end(); });   // the how-to-get-an-image-link guide, dropped in public/
+app.use('/icons', express.static(path.join(PUB, 'icons'), { maxAge: '7d' }));
+app.get('/manifest.webmanifest', (req, res) => res.set('Cache-Control', 'public, max-age=3600').type('application/manifest+json').send(JSON.stringify({
+  name: 'Chatroom', short_name: 'Chatroom', start_url: '/', scope: '/', display: 'standalone', orientation: 'portrait',
+  background_color: '#1c1612', theme_color: '#1c1612',
+  icons: [{ src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' }, { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' }, { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }],
+})));
 app.get('/sw.js', (req, res) => { res.set({ 'Content-Type': 'application/javascript', 'Cache-Control': 'no-cache', 'Service-Worker-Allowed': '/' }); res.send(fs.readFileSync(path.join(PUB, 'sw.js'), 'utf8')); });
 app.get('/api/health', (req, res) => res.json({ ok: true, games: games.items.length, online: sockets.size }));
 app.use('/api', (req, res) => bad(res, 'not found', 404));
@@ -1000,6 +1008,7 @@ async function getSetting(key, make) {
   await q('update users set is_admin=true where username=$1', [ADMIN_USERNAME]); // owner always admin
   sweepExpired().catch((e) => console.warn('sweep', e.message));
   setInterval(() => sweepExpired().catch((e) => console.warn('sweep', e.message)), 5 * 60_000).unref();
+  drop.start().catch((e) => console.warn('drop', e.message));
   beta.start({ q, sendTo, notify, pushTo, sockets, isBlockedEitherWay });
   setInterval(async () => {
     try {
