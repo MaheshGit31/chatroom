@@ -432,6 +432,7 @@ async function sendPayload(c, payload, retried, extra) {
     else if (err.status === 401) window.__chatroomLogout(true);
     else if (err.data && err.data.error === 'verify_required') { toast(err.message, 'error', () => window.__ext && window.__ext.verifyModal()); window.__ext && window.__ext.verifyModal(); }
     else if (err.data && err.data.error === 'blocked_word') toast('that message was blocked, keep it clean', 'error');
+    else if (err.data && err.data.error === 'spam') toast(err.data.message, 'error');
     else toast(err.message, 'error');
     return false;
   }
