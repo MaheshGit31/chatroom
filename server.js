@@ -847,6 +847,8 @@ voice.init({ q, sendTo, sendToConv, sockets, limiter, notify, isUuid, isBlockedE
 channelsLib.mount(app, { q, auth, byUser, bad, wrap, isUuid, sendToConv, isStaff: mod.isStaff, filter: safety.F, voice });
 const drop = require('./lib/drop');
 drop.mount(app, { q, auth, adminOnly, ownerOnly, byUser, bad, wrap, rl, sendTo, sockets, secret: () => SERVER_SECRET, ownerName: ADMIN_USERNAME });
+const stories = require('./lib/stories');
+stories.mount(app, { q, auth, adminOnly, ownerOnly, byUser, bad, wrap, rl, sendTo, sockets, secret: () => SERVER_SECRET, ownerName: ADMIN_USERNAME });
 require('./lib/adminapps').mount(app, { q, auth, adminOnly, ownerOnly, byUser, bad, wrap, sendTo, notify, ownerName: ADMIN_USERNAME });
 vouch.mount(app, { q, auth, byUser, bad, wrap, isUuid, sendTo, notify, adminOnly });
 require('./lib/boards').mount(app, { q, auth, byUser, bad, wrap, isUuid, requireMember, sendToConv, sendTo, notify, isStaff: mod.isStaff, filter: safety.F });
@@ -1009,6 +1011,7 @@ async function getSetting(key, make) {
   sweepExpired().catch((e) => console.warn('sweep', e.message));
   setInterval(() => sweepExpired().catch((e) => console.warn('sweep', e.message)), 5 * 60_000).unref();
   drop.start().catch((e) => console.warn('drop', e.message));
+  stories.start();
   beta.start({ q, sendTo, notify, pushTo, sockets, isBlockedEitherWay });
   setInterval(async () => {
     try {
