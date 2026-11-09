@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1c1612">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Chatroom">
 <title>Chatroom</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%23c4572c'/%3E%3Cpath d='M9 12h11v7a4 4 0 0 1-4 4h-3a4 4 0 0 1-4-4z' fill='%23fbefdc'/%3E%3Cpath d='M20 14h1.5a2.5 2.5 0 0 1 0 5H20' fill='none' stroke='%23fbefdc' stroke-width='1.8'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -450,6 +456,29 @@ html.shielded body::after{content:'hidden while you are away';position:fixed;ins
   .bubble{max-width:88%}.page{padding:16px}
   .status-grid{grid-template-columns:repeat(4,1fr)}
 }
+@media (max-width:760px){
+  html,body{height:100dvh}
+  .app{padding-bottom:env(safe-area-inset-bottom)}
+  .rail{padding-bottom:max(4px,env(safe-area-inset-bottom));height:auto}
+  .chat-head{padding:8px 10px;gap:8px;min-height:0}
+  .chat-head .avatar{width:34px;height:34px;flex:none}
+  .chat-head .ctitle{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chat-head .small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chat-head .grow{min-width:0}
+  .chat-head .icon-btn{width:36px;height:36px;flex:none}
+  .chanbar{padding:4px 10px}
+  .chanbar .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .chanbar .chips::-webkit-scrollbar{display:none}
+  .chanbar .chip{flex:none;white-space:nowrap}
+  .annbar{min-width:0}.annbar .anntext{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+  .composer{gap:2px;padding:6px 8px;padding-bottom:max(6px,env(safe-area-inset-bottom))}
+  .composer .icon-btn{width:34px;height:34px;flex:none}
+  .composer textarea{font-size:16px;min-width:0}
+  input,textarea,select{font-size:16px}
+  .modal{max-width:100vw;max-height:92dvh}
+  .msgs{overscroll-behavior:contain}
+}
+@media (display-mode:standalone){body{-webkit-user-select:none;user-select:none}.msgs,.bubble,textarea,input{-webkit-user-select:text;user-select:text}html{overscroll-behavior:none}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 .or{text-align:center;color:var(--muted,#8a7b6a);font-size:13px;margin:14px 0 8px}
 .avgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:10px}
@@ -583,6 +612,17 @@ button.oncecard{cursor:pointer}.oncecard.gone{opacity:.6;cursor:default}.oncetex
 .cbtn.hang{background:var(--bad);color:#fff}
 .tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .tiles.n1{grid-template-columns:1fr}
+.tiles.n7,.tiles.n8,.tiles.n9{grid-template-columns:repeat(3,1fr)}.tiles.n10,.tiles.n11,.tiles.n12{grid-template-columns:repeat(4,1fr)}
+.tiles.n7 .tile,.tiles.n8 .tile,.tiles.n9 .tile,.tiles.n10 .tile,.tiles.n11 .tile,.tiles.n12 .tile{aspect-ratio:4/3}
+.watchdock{position:fixed;left:16px;bottom:16px;width:min(680px,calc(100vw - 480px));min-width:300px;z-index:999;background:var(--panel);border:1px solid rgba(128,128,128,.3);border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.45);overflow:hidden}
+.watchhead{display:flex;align-items:center;gap:8px;padding:8px 10px}
+.watchstage{position:relative;aspect-ratio:16/9;background:#000}
+.watchstage iframe,.watchstage>div:first-child,.watchstage>video{position:absolute;inset:0;width:100%;height:100%;border:0}
+.watchblock{position:absolute;inset:0}
+.watchtap{position:absolute;inset:0;z-index:2;align-items:center;justify-content:center;background:rgba(0,0,0,.7);cursor:pointer;color:#fff;font-weight:700}
+.watchbar{display:flex;align-items:center;gap:10px;padding:6px 10px 10px}
+.watchseek{flex:1;min-width:0}.watchvol{width:80px}.watchtime{min-width:76px;text-align:center}
+@media (max-width:900px){.watchdock{left:8px;right:8px;width:auto;min-width:0;bottom:auto;top:calc(env(safe-area-inset-top,0px) + 8px)}}
 .tile{position:relative;aspect-ratio:16/10;border-radius:12px;background:rgba(128,128,128,.18);display:flex;align-items:center;justify-content:center;overflow:hidden;outline:3px solid transparent;transition:outline-color .12s}
 .tile.speaking{outline-color:var(--good)}
 .tile video{width:100%;height:100%;object-fit:cover;display:block}
@@ -758,6 +798,7 @@ const ICONS = {
   trash: '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
   x: '<path d="M18 6 6 18M6 6l12 12"/>',
   back: '<path d="m15 18-6-6 6-6"/>',
+  pause: '<rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/>',
   play: '<polygon points="6 3 20 12 6 21 6 3"/>',
   share: '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="m16 6-4-4-4 4"/><path d="M12 2v13"/>',
   external: '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
@@ -1150,12 +1191,14 @@ const sendWS = (o) => { if (S.ws && S.ws.readyState === 1) S.ws.send(JSON.string
 async function onWS(m) {
   const ui = window.__ui;
   if (typeof m.t === 'string' && (m.t.startsWith('vc_') || m.t.startsWith('call_'))) { const h = window.__ext && window.__ext.onCall; if (h) h(m); return; }
+  if (m.t === 'drop_update') { const h = window.__ext && window.__ext.onDrop; if (h) h(m); return; }
   if (typeof m.t === 'string' && (m.t.startsWith('channel_') || m.t.startsWith('thread_'))) { const h = window.__ext && window.__ext.onChan; if (h) h(m); return; }
   if (typeof m.t === 'string' && (m.t.startsWith('board_') || m.t === 'night_new')) { const h = window.__ext && window.__ext.onBoard; if (h) h(m); return; }
   switch (m.t) {
     case 'ready':
       S.wsOk = true; wsBackoff = 1000;
       if (window.__ext && window.__ext.onWsReady) window.__ext.onWsReady();
+      if (window.__ext && window.__ext.dropSync) window.__ext.dropSync();
       clearInterval(hb); hb = setInterval(() => sendWS({ t: 'ping' }), 25000);
       await loadConvs().catch(() => {});                     // resync after (re)connect
       api('GET', '/api/presence', null, { quiet: true }).then((d) => { for (const p of d.presence) S.presence.set(p.userId, p); ui.renderAll(); }).catch(() => {});
@@ -2124,8 +2167,8 @@ function buildAdmin(m) {
     (() => {
       const people = el('div', null, el('div', { class: 'searchbox' }, ic('search', 16), q), list);
       const hid = () => el('div', { style: 'display:none' });
-      const panes = { people, reports: hid(), verify: hid(), appeals: hid(), apps: hid(), announce: hid(), audit: hid(), stats: hid(), owner: hid() };
-      const loaders = { reports: () => X.adminReports(panes.reports, loadStats), verify: () => X.adminVerify(panes.verify, loadStats), appeals: () => X.adminAppeals(panes.appeals, loadStats), apps: () => X.adminApps(panes.apps, loadStats), announce: () => X.adminAnnounce(panes.announce), audit: () => X.adminAudit(panes.audit), stats: () => X.adminStats(panes.stats), owner: () => X.adminOwner(panes.owner) };
+      const panes = { people, reports: hid(), verify: hid(), appeals: hid(), apps: hid(), doom: hid(), announce: hid(), audit: hid(), stats: hid(), owner: hid() };
+      const loaders = { reports: () => X.adminReports(panes.reports, loadStats), verify: () => X.adminVerify(panes.verify, loadStats), appeals: () => X.adminAppeals(panes.appeals, loadStats), apps: () => X.adminApps(panes.apps, loadStats), doom: () => X.adminDrop(panes.doom), announce: () => X.adminAnnounce(panes.announce), audit: () => X.adminAudit(panes.audit), stats: () => X.adminStats(panes.stats), owner: () => X.adminOwner(panes.owner) };
       const tabBtns = {};
       const tab = (k, label) => tabBtns[k] = el('button', { class: k === 'people' ? 'on' : '', onclick: (e) => { e.currentTarget.parentNode.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b === e.currentTarget)); for (const [n, node] of Object.entries(panes)) node.style.display = n === k ? '' : 'none'; if (loaders[k]) loaders[k](); } }, label);
       window.__ui.reportsChanged = () => { loadStats(); if (panes.reports.isConnected && panes.reports.style.display !== 'none') loaders.reports(); };
@@ -2133,7 +2176,7 @@ function buildAdmin(m) {
       window.__ui.appealsChanged = () => { loadStats(); if (panes.appeals.isConnected && panes.appeals.style.display !== 'none') loaders.appeals(); };
       window.__ui.adminappsChanged = () => { loadStats(); if (panes.apps.isConnected && panes.apps.style.display !== 'none') loaders.apps(); };
       setTimeout(() => { const k = S.adminTab; S.adminTab = null; if (k && tabBtns[k]) tabBtns[k].click(); }, 0);   // /audit, /stats and /appeals jump straight to their tab
-      return el('div', null, el('div', { class: 'seg wrapseg' }, tab('people', 'people'), tab('reports', 'reports'), tab('verify', 'verify'), tab('appeals', 'appeals'), tab('apps', 'applications'), tab('announce', 'announce'), tab('audit', 'audit log'), tab('stats', 'stats'), isOwner ? tab('owner', 'owner') : null), people, panes.reports, panes.verify, panes.appeals, panes.apps, panes.announce, panes.audit, panes.stats, isOwner ? panes.owner : null);
+      return el('div', null, el('div', { class: 'seg wrapseg' }, tab('people', 'people'), tab('reports', 'reports'), tab('verify', 'verify'), tab('appeals', 'appeals'), tab('apps', 'applications'), tab('doom', 'doomsclock'), tab('announce', 'announce'), tab('audit', 'audit log'), tab('stats', 'stats'), isOwner ? tab('owner', 'owner') : null), people, panes.reports, panes.verify, panes.appeals, panes.apps, panes.doom, panes.announce, panes.audit, panes.stats, isOwner ? panes.owner : null);
     })()));
   loadStats(); loadUsers();
   nowTimer = setInterval(loadStats, 20000);
@@ -5698,10 +5741,11 @@ function onState(m) {
   if (!meMember()) { if (K.joined) cleanup(); return; }
   K.joined = true;
   paintDock();
-  reconcile().catch((e) => console.warn('reconcile', e));
+  reconcile().catch((e) => console.warn('reconcile', e)).then(tuneSenders);
 }
 
 function cleanup(msg) {
+  wClose();
   for (const id of [...K.links.keys()]) closeLink(id);
   for (const t of [K.localAudio, K.localVideo]) if (t) try { t.stop(); } catch { /* ended */ }
   for (const l of (K.levels || new Map()).values()) try { l.src.disconnect(); } catch { /* gone */ }
@@ -5832,6 +5876,7 @@ function showIncoming(m) {
 function onCall(m) {
   switch (m.t) {
     case 'vc_state': onState(m); break;
+    case 'vc_watch': onWatch(m); break;
     case 'vc_sig': onSig(m).catch((e) => console.warn('sig', e)); break;
     case 'vc_live': X.setLive(m); break;
     case 'vc_closed':
@@ -5903,7 +5948,7 @@ function paintDock() {
       }
     } else {
       const list = K.members.length ? K.members : [{ id: myId(), name: S.me.displayName, avatar: S.me.avatar, mic: K.mic, cam: K.cam }];
-      parts.push(el('div', { class: 'tiles n' + Math.min(list.length, 6) }, list.map(tile)));
+      parts.push(el('div', { class: 'tiles n' + Math.min(list.length, 12) }, list.map(tile)));
     }
   }
   if (K.afk) parts.splice(1, 0, el('div', { class: 'afkwarn' }, el('div', { class: 'grow' }, 'still there? you will be removed soon to save bandwidth'), el('button', { class: 'btn small primary', onclick: sendAlive }, 'i am here')));
@@ -5912,6 +5957,7 @@ function paintDock() {
   if (canSpeak) bar.push(btn(K.mic ? 'mic' : 'micoff', K.mic ? 'mute' : 'unmute', () => toggleMic(), K.mic ? '' : 'off'));
   if (hasVideo()) bar.push(btn(K.cam ? 'video' : 'videooff', K.cam ? 'camera off' : 'camera on', () => toggleCam(), K.cam ? 'on' : 'off'));
   bar.push(btn('headphones', K.deaf ? 'undeafen' : 'deafen', toggleDeaf, K.deaf ? 'off' : ''));
+  if (window.__ext.dropOn && window.__ext.dropOn() && K.joined && (!stg || (me && me.staff))) bar.push(btn('play', 'watch together', openWatchModal, W.host ? 'on' : ''));
   if (stg && me && !me.speaker) bar.push(btn('hand', me.hand ? 'lower hand' : 'raise hand', () => sendWS({ t: 'vc_hand', room: K.room, up: !me.hand }), me.hand ? 'on' : ''));
   if (stg && me && me.speaker) bar.push(btn('users', 'step down to audience', () => sendWS({ t: 'vc_promote', room: K.room, user: myId(), on: false })));
   bar.push(btn('phoneoff', ringing && K.outgoing ? 'cancel' : 'leave', leave, 'hang'));
@@ -5982,6 +6028,101 @@ function notifExtra(type, d) {
 }
 
 window.addEventListener('pagehide', () => { if (K.room) sendWS({ t: 'vc_leave', room: K.room }); });
+
+const W = { host: null, st: null, p: null, key: '', off: 0, tick: 0, yt: null };
+function wClose() {
+  clearInterval(W.tick);
+  if (W.p) { try { W.p.destroy(); } catch { /* gone */ } }
+  if (W.host) W.host.remove();
+  Object.assign(W, { host: null, st: null, p: null, key: '', tick: 0 });
+}
+const wPos = () => W.st.pos + (W.st.playing ? (Date.now() + W.off - W.st.at) / 1000 : 0);
+const mmss = (s) => { s = Math.max(0, Math.floor(s || 0)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+function loadYT() {
+  if (W.yt) return W.yt;
+  W.yt = new Promise((res, rej) => {
+    if (window.YT && window.YT.Player) return res();
+    const prev = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => { if (prev) prev(); res(); };
+    const s = document.createElement('script'); s.src = 'https://www.youtube.com/iframe_api'; s.onerror = () => rej(new Error('youtube is blocked on this network'));
+    document.head.append(s);
+    setTimeout(() => rej(new Error('youtube did not load')), 12000);
+  });
+  W.yt.catch(() => { W.yt = null; });
+  return W.yt;
+}
+async function wBuild(st) {
+  const stage = el('div', { class: 'watchstage' });
+  const tapBox = el('div', { class: 'watchtap', style: 'display:none', onclick: () => { tapBox.style.display = 'none'; wSync(true); } }, el('span', null, 'tap to join the video'));
+  let p;
+  if (st.kind === 'yt') {
+    await loadYT();
+    const holder = el('div'); stage.append(holder);
+    let ready = false;
+    const pl = new window.YT.Player(holder, { videoId: st.id, width: '100%', height: '100%', playerVars: { controls: 0, disablekb: 1, playsinline: 1, rel: 0, modestbranding: 1, fs: 0, iv_load_policy: 3, origin: location.origin }, events: { onReady: () => { ready = true; wSync(true); }, onError: () => toast('that video cannot be played here', 'error') } });
+    p = { pos: () => (ready ? pl.getCurrentTime() : 0), dur: () => (ready ? pl.getDuration() : 0), play: () => { if (ready) pl.playVideo(); }, pause: () => { if (ready) pl.pauseVideo(); }, seek: (t) => { if (ready) pl.seekTo(t, true); }, vol: (x) => { if (ready) pl.setVolume(x * 100); }, destroy: () => { try { pl.destroy(); } catch { /* gone */ } } };
+  } else {
+    const v = el('video', { src: st.url, playsinline: true, preload: 'auto', style: 'width:100%;height:100%;background:#000' });
+    v.controls = false; v.setAttribute('playsinline', '');
+    stage.append(v);
+    p = { pos: () => v.currentTime, dur: () => v.duration || 0, play: () => { v.play().catch(() => { tapBox.style.display = 'flex'; }); }, pause: () => v.pause(), seek: (t) => { try { v.currentTime = t; } catch { /* not ready */ } }, vol: (x) => { v.volume = x; }, destroy: () => { v.pause(); v.removeAttribute('src'); v.load(); } };
+    v.onerror = () => toast('that video could not be loaded', 'error');
+  }
+  stage.append(el('div', { class: 'watchblock' }), tapBox);
+  return { p, stage };
+}
+async function onWatch(m) {
+  if (m.room !== K.room) return;
+  if (!m.watch) { if (W.host) toast('watch together ended', 'info'); wClose(); return; }
+  const st = m.watch; W.off = st.now - Date.now();
+  const key = st.kind + '|' + st.url;
+  if (key === W.key && W.p) { W.st = st; wSync(false); return; }
+  wClose(); W.key = key; W.st = st;
+  let built;
+  try { built = await wBuild(st); } catch (e) { toast(e.message || 'could not start the video', 'error'); W.key = ''; return; }
+  if (W.key !== key) { built.p.destroy(); return; }
+  W.p = built.p;
+  const play = el('button', { class: 'icon-btn', title: 'play or pause', onclick: () => { if (!W.p) return; sendWS({ t: 'vc_watch', room: K.room, act: W.st.playing ? 'pause' : 'play', pos: W.p.pos() }); } });
+  const seek = el('input', { type: 'range', min: 0, max: 1000, value: 0, class: 'watchseek', onchange: () => { const d = W.p && W.p.dur(); if (d) sendWS({ t: 'vc_watch', room: K.room, act: 'seek', pos: seek.value / 1000 * d }); } });
+  const time = el('span', { class: 'small muted watchtime' }, '0:00');
+  const vol = el('input', { type: 'range', min: 0, max: 100, value: 100, class: 'watchvol', title: 'volume', oninput: () => { if (W.p) W.p.vol(vol.value / 100); } });
+  W.host = el('div', { class: 'watchdock' },
+    el('div', { class: 'watchhead' }, ic('play', 15), el('b', null, 'watch together'), el('span', { class: 'muted small grow' }, 'started by ' + st.byName),
+      el('button', { class: 'icon-btn tiny', title: 'stop watching for everyone', onclick: () => sendWS({ t: 'vc_watch', room: K.room, act: 'stop' }) }, ic('x', 14))),
+    built.stage, el('div', { class: 'watchbar' }, play, seek, time, vol));
+  document.body.append(W.host);
+  W.tick = setInterval(() => {
+    if (!W.p || !W.st) return;
+    const d = W.p.dur(); const c = W.p.pos();
+    if (d && document.activeElement !== seek) seek.value = Math.round(c / d * 1000);
+    time.textContent = mmss(c) + ' / ' + mmss(d);
+    play.replaceChildren(ic(W.st.playing ? 'pause' : 'play', 18));
+    if (W.st.playing && Math.abs(c - wPos()) > 2.5) wSync(false);
+  }, 700);
+  wSync(true);
+}
+function wSync(force) {
+  if (!W.p || !W.st) return;
+  const t = wPos();
+  if (force || Math.abs(W.p.pos() - t) > 1.3) W.p.seek(t);
+  if (W.st.playing) W.p.play(); else W.p.pause();
+}
+function openWatchModal() {
+  const inp = el('input', { placeholder: 'youtube link, or a direct https link to an mp4 or webm', maxLength: 500 });
+  const m = window.__ui.modal('watch together', el('div', null, el('p', { class: 'muted small', style: 'margin-top:0' }, 'everyone in this call sees the same video at the same time. anyone in the call can pause or skip.'), inp,
+    el('button', { class: 'btn primary wide', style: 'margin-top:10px', onclick: () => { const v = inp.value.trim(); if (!v) return; sendWS({ t: 'vc_watch', room: K.room, act: 'start', url: v }); m.close(); } }, ic('play', 16), 'start')));
+  setTimeout(() => inp.focus(), 50);
+}
+function tuneSenders() {
+  const n = K.members.length;
+  const max = n > 9 ? 120000 : n > 6 ? 220000 : n > 4 ? 450000 : 1200000, scale = n > 9 ? 3 : n > 6 ? 2 : 1;
+  for (const L of K.links.values()) for (const s of L.pc.getSenders()) {
+    if (!s.track || s.track.kind !== 'video') continue;
+    try { const prm = s.getParameters(); if (!prm.encodings || !prm.encodings.length) prm.encodings = [{}]; prm.encodings[0].maxBitrate = max; prm.encodings[0].scaleResolutionDownBy = scale; s.setParameters(prm).catch(() => {}); } catch { /* unsupported */ }
+  }
+}
+setInterval(() => { if (K.room) tuneSenders(); }, 8000);
+
 Object.assign(window.__ext, { onCall, startCall, joinChannel, callRoom: () => K.room, callSettingsRows, onWsReady, notifExtra, testRing, _callState: K });
 })();
 
@@ -6104,6 +6245,219 @@ function decideModal(a, done) {
 
 Object.assign(window.__ext, { applyModal, adminApps });
 }
+
+(() => {
+'use strict';
+const C = window.__core, S = C.S, el = C.el, ic = C.ic, api = C.api, toast = C.toast;
+const D = { at: null, off: 0, hasVideo: false, released: false, timer: null, phase: 'idle', video: null, url: null, shade: null, pill: null, raf: 0 };
+S.drop = D;
+
+const seenKey = () => 'doom_seen_' + D.at;
+const seen = () => { try { return localStorage.getItem(seenKey()) === '1'; } catch { return false; } };
+const markSeen = () => { try { localStorage.setItem(seenKey(), '1'); } catch {} };
+const now = () => Date.now() + D.off;
+const pad = (n) => String(n).padStart(2, '0');
+const parts = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return { d: Math.floor(s / 86400), h: Math.floor(s % 86400 / 3600), m: Math.floor(s % 3600 / 60), s: s % 60 }; };
+const label = (ms) => { const p = parts(ms); return p.d ? `${p.d}d ${pad(p.h)}:${pad(p.m)}:${pad(p.s)}` : p.h ? `${p.h}:${pad(p.m)}:${pad(p.s)}` : `${pad(p.m)}:${pad(p.s)}`; };
+
+const css = el('style', null, `
+.doompill{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:50%;transform:translateX(-50%);z-index:8000;display:flex;align-items:center;gap:8px;padding:7px 14px 7px 11px;border-radius:999px;background:#2a0f0b;color:#ffd9c7;border:1px solid #7a2a1a;box-shadow:0 6px 24px rgba(180,50,20,.35);font:700 13px/1 var(--mono);letter-spacing:.04em;pointer-events:none;animation:doomglow 2.4s ease-in-out infinite}
+.doompill b{font-family:var(--display);font-weight:800;letter-spacing:.02em;font-size:13px;color:#ff9a6b}
+@keyframes doomglow{0%,100%{box-shadow:0 6px 24px rgba(180,50,20,.28)}50%{box-shadow:0 6px 34px rgba(220,70,30,.6)}}
+.doomshade{position:fixed;inset:0;z-index:99999;background:#050303;color:#ffd9c7;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;user-select:none;-webkit-user-select:none;touch-action:none;animation:doomin .6s var(--ease)}
+@keyframes doomin{from{opacity:0}to{opacity:1}}
+.doomshade .t{font:800 clamp(14px,2.4vw,20px)/1 var(--display);letter-spacing:.38em;text-transform:uppercase;color:#ff7a45;margin-bottom:22px}
+.doomshade .n{font:800 clamp(64px,19vw,220px)/1 var(--display);font-variant-numeric:tabular-nums;color:#fff1e6;text-shadow:0 0 40px rgba(255,90,40,.55)}
+.doomshade.hot .n{animation:doompulse 1s ease-in-out infinite;color:#ff5a2b}
+@keyframes doompulse{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
+.doomshade .s{margin-top:22px;color:#a08170;font:600 clamp(13px,1.8vw,16px)/1.4 var(--body)}
+.doomshade video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;pointer-events:none}
+.doomshade .tap{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.72);cursor:pointer}
+.doomshade .tap span{padding:16px 30px;border-radius:999px;background:#ff5a2b;color:#1b0803;font:800 17px var(--body)}
+.doomshade .snd{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 22px);z-index:3;padding:10px 20px;border-radius:999px;background:rgba(255,90,43,.92);color:#1b0803;font:800 14px var(--body);cursor:pointer}
+.doomshade.fade{animation:doomout 1.1s ease forwards}
+@keyframes doomout{to{opacity:0}}
+`);
+document.head.appendChild(css);
+
+function ensurePill() {
+  if (!D.pill) { D.pill = el('div', { class: 'doompill' }, ic('timer', 14), el('b', null, 'THE DOOMSCLOCK'), el('span', { class: 'v' })); document.body.appendChild(D.pill); }
+  return D.pill;
+}
+function dropPill() { if (D.pill) { D.pill.remove(); D.pill = null; } }
+
+function shadeEl() {
+  if (D.shade) return D.shade;
+  D.shade = el('div', { class: 'doomshade' }, el('div', { class: 't' }, 'the doomsclock'), el('div', { class: 'n' }), el('div', { class: 's' }, ''));
+  D.shade.addEventListener('contextmenu', (e) => e.preventDefault());
+  D.shade.addEventListener('keydown', (e) => e.preventDefault(), true);
+  document.body.appendChild(D.shade);
+  return D.shade;
+}
+function dropShade(fade) {
+  const sh = D.shade; if (!sh) return;
+  D.shade = null;
+  if (fade) { sh.classList.add('fade'); setTimeout(() => sh.remove(), 1200); } else sh.remove();
+}
+
+async function preload() {
+  if (D.url || !D.hasVideo) return;
+  D.url = 'pending';
+  try {
+    const d = await api('GET', '/api/drop/video-url', null, { quiet: true });
+    D.url = API_BASE() + d.url;
+    const v = document.createElement('video');
+    v.preload = 'auto'; v.playsInline = true; v.setAttribute('playsinline', ''); v.setAttribute('webkit-playsinline', ''); v.controls = false; v.disablePictureInPicture = true;
+    v.setAttribute('controlslist', 'nodownload noplaybackrate noremoteplayback');
+    v.src = D.url; v.load();
+    D.video = v;
+  } catch { D.url = null; }
+}
+const API_BASE = () => (window.__core.API || '');
+
+function unlock(withVideo) {
+  if (D.phase === 'done') return;
+  D.phase = 'done'; markSeen();
+  cancelAnimationFrame(D.raf); clearInterval(D.timer);
+  dropPill(); dropShade(true);
+  if (D.video) { try { D.video.pause(); } catch {} D.video.removeAttribute('src'); D.video.load(); D.video = null; }
+  window.__ui.renderAll();
+  setTimeout(() => toast(withVideo ? 'the update is here, enjoy' : 'the update is here', 'success'), 900);
+}
+
+async function playVideo() {
+  const sh = shadeEl(); sh.classList.remove('hot');
+  const v = D.video || document.createElement('video');
+  if (!D.video) { v.playsInline = true; v.setAttribute('playsinline', ''); v.controls = false; v.src = D.url && D.url !== 'pending' ? D.url : ''; D.video = v; }
+  if (!v.src) return unlock(false);
+  sh.replaceChildren(v);
+  const expected = () => Math.max(0, (now() - D.at) / 1000);
+  const start = () => {
+    const dur = v.duration;
+    if (isFinite(dur) && expected() >= dur - 0.4) return unlock(true);
+    try { v.currentTime = Math.min(expected(), (dur || 1e9) - 0.2); } catch {}
+    v.muted = false;
+    const p = v.play();
+    const askTap = () => {
+      v.muted = true;
+      v.play().then(() => {
+        const b = el('div', { class: 'snd', onclick: () => { v.muted = false; b.remove(); } }, 'tap for sound');
+        sh.appendChild(b);
+      }).catch(() => {
+        const t = el('div', { class: 'tap', onclick: () => { v.muted = false; v.currentTime = Math.min(expected(), (v.duration || 1e9) - 0.2); v.play().then(() => t.remove()).catch(() => {}); } }, el('span', null, 'tap to watch'));
+        sh.appendChild(t);
+      });
+    };
+    if (p && p.catch) p.catch(askTap);
+  };
+  v.onpause = () => { if (D.phase === 'video' && !v.ended) v.play().catch(() => {}); };
+  v.onended = () => unlock(true);
+  v.onerror = () => unlock(false);
+  v.onseeking = () => { const e = expected(); if (Math.abs(v.currentTime - e) > 2.5 && !v.ended) { try { v.currentTime = e; } catch {} } };
+  D.phase = 'video';
+  if (v.readyState >= 1) start(); else v.onloadedmetadata = start;
+  setTimeout(() => { if (D.phase === 'video' && !v.duration) unlock(false); }, 20000);
+  const guard = () => { if (D.phase !== 'video') return; const e = expected(); if (!v.paused && Math.abs(v.currentTime - e) > 1.2 && !v.seeking) { try { v.currentTime = e; } catch {} } D.raf = setTimeout(guard, 2500); };
+  D.raf = setTimeout(guard, 2500);
+}
+
+function tick() {
+  if (!D.at) return;
+  const left = D.at - now();
+  if (D.phase === 'done' || D.phase === 'video') return;
+  if (left > 0) {
+    const pill = ensurePill();
+    pill.querySelector('.v').textContent = label(left);
+    if (left <= 180_000 && D.hasVideo) preload();
+    if (left <= 60_000) {
+      const sh = shadeEl(); sh.classList.toggle('hot', left <= 10_000);
+      if (!sh.querySelector('video')) { sh.querySelector('.n').textContent = label(left); sh.querySelector('.s').textContent = left <= 10_000 ? 'brace yourself' : 'everyone is watching this together'; }
+      dropPill();
+    }
+    return;
+  }
+  if (seen() || D.released && now() - D.at > 6 * 3600_000) return finishQuiet();
+  if (!D.hasVideo) { D.phase = 'video'; const sh = shadeEl(); sh.querySelector('.n').textContent = '00:00'; sh.querySelector('.s').textContent = 'it is here'; setTimeout(() => unlock(false), 2500); return; }
+  if (!D.url) { D.phase = 'wait'; preload().then(() => { if (D.url && D.url !== 'pending') playVideo(); else unlock(false); }); return; }
+  if (D.url === 'pending') return;
+  playVideo();
+}
+function finishQuiet() { D.phase = 'done'; clearInterval(D.timer); dropPill(); dropShade(false); window.__ui.renderAll(); }
+
+function apply(d) {
+  const t0 = Date.now();
+  D.off = d.now - t0;
+  const changed = d.at !== D.at;
+  D.hasVideo = d.hasVideo; D.released = d.released;
+  if (changed) {
+    D.at = d.at; D.phase = 'idle'; D.url = null;
+    if (D.video) { try { D.video.pause(); } catch {} D.video = null; }
+    clearInterval(D.timer); dropPill(); dropShade(false);
+    if (!D.at) return;
+    D.timer = setInterval(tick, 250); tick();
+  }
+  if (!D.at) { clearInterval(D.timer); dropPill(); }
+  if (D.at && d.hasVideo && D.phase === 'idle') tick();
+}
+
+async function sync() {
+  try { const t0 = Date.now(); const d = await fetch(window.__core.API + '/api/drop').then((r) => r.json()); const rtt = Date.now() - t0; d.now += rtt / 2; apply(d); } catch {}
+}
+function onDrop(m) { if (m.t === 'drop_update' && m.drop) apply({ ...m.drop }); }
+
+const dropOn = () => !!(D.released || (D.at && now() >= D.at && D.phase === 'done') || (S.me && S.me.isAdmin));
+setInterval(sync, 60_000);
+
+function fmtLocal(ms) { const d = new Date(ms); const p = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; }
+
+async function adminDrop(box) {
+  box.replaceChildren(el('div', { class: 'muted pad' }, '...'));
+  let d;
+  try { d = await api('GET', '/api/admin/drop', null, { quiet: true }); } catch (e) { return box.replaceChildren(el('div', { class: 'form-err' }, e.message)); }
+  const status = el('div', { class: 'small muted', style: 'margin:8px 0' });
+  const showStatus = (x) => {
+    const v = x.video || {};
+    status.textContent = (x.at ? 'drops ' + new Date(x.at).toLocaleString() : 'no drop scheduled') + ' - video: ' + ({ none: 'none yet', fetching: 'downloading from drive...', ready: 'ready (' + Math.round(v.bytes / 1048576 * 10) / 10 + ' MB)', failed: 'failed - ' + (v.error || '') }[v.state] || v.state);
+    status.style.color = v.state === 'failed' ? 'var(--bad)' : '';
+  };
+  showStatus(d);
+  if (!d.isOwner) return box.replaceChildren(el('p', { class: 'muted' }, 'only the owner can change the doomsclock.'), status);
+  const when = el('input', { type: 'datetime-local', value: d.at ? fmtLocal(d.at) : '' });
+  const link = el('input', { placeholder: 'google drive share link to the video (anyone with the link)', value: d.link || '' });
+  const err = el('div', { class: 'form-err' });
+  let poll = 0;
+  const watch = async () => {
+    clearTimeout(poll);
+    try { const x = await api('GET', '/api/admin/drop', null, { quiet: true }); showStatus(x); if (x.video.state === 'fetching') poll = setTimeout(watch, 1500); } catch {}
+  };
+  if (d.video.state === 'fetching') watch();
+  const save = el('button', { class: 'btn primary grow', onclick: async () => {
+    err.textContent = '';
+    const at = when.value ? new Date(when.value).getTime() : null;
+    if (!at) { err.textContent = 'pick a date and time'; return; }
+    try { const x = await api('PUT', '/api/admin/drop', { at, link: link.value.trim() }, { quiet: true }); showStatus(x); toast('the doomsclock is set', 'success'); watch(); }
+    catch (e) { err.textContent = e.message; }
+  } }, ic('timer', 16), 'set the doomsclock');
+  const clear = el('button', { class: 'btn danger', onclick: async () => {
+    if (!(await window.__ui.confirmModal('cancel the doomsclock?', 'the countdown disappears for everyone.', 'cancel it'))) return;
+    try { await api('DELETE', '/api/admin/drop', null, { quiet: true }); showStatus({ video: { state: 'none' } }); when.value = ''; link.value = ''; } catch (e) { err.textContent = e.message; }
+  } }, 'cancel');
+  const prev = el('button', { class: 'btn', onclick: async () => {
+    try {
+      const u = await api('GET', '/api/drop/video-url', null, { quiet: true });
+      const v = el('video', { src: window.__core.API + u.url, controls: true, playsInline: true, style: 'width:100%;border-radius:12px;background:#000' });
+      const m = window.__ui.modal('preview', v); v.play().catch(() => {});
+      const oc = m.close; m.close = () => { v.pause(); oc(); };
+    } catch (e) { err.textContent = e.message; }
+  } }, ic('play', 16), 'preview video');
+  box.replaceChildren(el('div', { class: 'pad' },
+    el('p', { class: 'muted small', style: 'margin-top:0' }, 'everyone sees a countdown. at zero the video plays for everyone at the same moment, with no controls, and the new features unlock when it ends. admins can use the new features early.'),
+    el('label', null, 'drop time (your local time)', when), el('label', null, 'video', link), err, status,
+    el('div', { class: 'row gap' }, save, clear), el('div', { style: 'margin-top:8px' }, prev)));
+}
+
+Object.assign(window.__ext, { dropSync: sync, onDrop, dropOn, adminDrop });
+})();
 
 /* ===== Chatroom client: mod tools, admin panes (appeals, audit log, stats), appeal screen, and app start ===== */
 (() => {
