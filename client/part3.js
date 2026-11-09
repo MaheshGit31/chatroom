@@ -67,6 +67,7 @@ const linkify = (text, c) => {                                 // links become a
 };
 const isOnline = (c, uid) => { const p = S.presence.get(uid); if (p) return p.online; const m = c && memberOf(c, uid); return !!(m && m.online); };
 const activityOf = (uid) => { const p = S.presence.get(uid); return p && p.activity; };
+const sring = (w, id) => (window.__ext.storyRing ? window.__ext.storyRing(w, id) : w);
 const dot = (on, mode) => el('span', { class: 'pdot ' + (on ? (mode === 'busy' ? 'busy' : 'on') : '') });
 // status of anyone: mine comes from S.me, others from live presence, falling back to the member row
 const statusFor = (uid, c) => {
@@ -176,6 +177,7 @@ function buildShell() {
         el('button', { class: 'icon-btn', title: 'new chat', onclick: newChatModal }, ic('userplus')),
         el('button', { class: 'icon-btn', title: 'new group', onclick: newGroupModal }, ic('users')))),
       el('div', { class: 'searchbox side-search' }, ic('search', 16), search),
+      el('div', { class: 'storystrip', id: 'storystrip' }),
       el('div', { class: 'folders', id: 'folders' }),
       el('div', { class: 'clist', id: 'clist' })),
     el('main', { class: 'main', id: 'main' }));
@@ -234,7 +236,7 @@ function renderRail() {
     el('button', { class: 'rbtn', title: 'settings', onclick: settingsModal }, ic('sliders', 22), el('span', { class: 'rlabel' }, 'you'), X.newsUnseen() ? el('span', { class: 'newdot' }) : null),
     el('div', { class: 'grow' }),
     el('div', { class: 'conn ' + (S.wsOk ? 'ok' : 'bad'), title: S.wsOk ? 'connected' : 'reconnecting' }),
-    el('button', { class: 'rme', title: 'status', onclick: statusModal }, el('div', { class: 'avwrap' }, avatar(S.me.displayName, 38, '', S.me.avatar), dot(S.me.mode !== 'invisible', S.me.mode)))].filter(Boolean));
+    el('button', { class: 'rme', title: 'status', onclick: statusModal }, sring(el('div', { class: 'avwrap' }, avatar(S.me.displayName, 38, '', S.me.avatar), dot(S.me.mode !== 'invisible', S.me.mode)), S.me.id))].filter(Boolean));
   requestAnimationFrame(() => {
     const on = r.querySelector('.rbtn.on');
     if (!on || isMobile()) { rind.style.opacity = 0; return; }
@@ -247,6 +249,7 @@ function renderRail() {
 function renderSide() {
   const list = $('#clist'); if (!list) return;
   const f = ($('#cfilter') || { value: '' }).value.trim().toLowerCase();
+  X.renderStories && X.renderStories();
   X.renderFolders();                                         // folder chips above the list (beta)
   const items = X.inFolder(S.convs).filter((c) => !f || convTitle(c).toLowerCase().includes(f)).sort((a, b) => (b.systemKind ? 1 : 0) - (a.systemKind ? 1 : 0)); // Everyone + Beta lounge stay on top
   if (!items.length) { list.classList.remove('stagger'); list.replaceChildren(el('div', { class: 'empty-s' }, S.convs.length ? 'no matches' : 'nothing yet, start one above')); return; }
@@ -255,7 +258,7 @@ function renderSide() {
   list.replaceChildren(...items.map((c, i) => {
     const o = c.type === 'dm' ? other(c) : null;
     const st = o ? statusFor(o.id, c) : null;
-    const av = c.type === 'dm' ? el('div', { class: 'avwrap' }, avatar(convTitle(c), 46, '', o.avatar), dot(isOnline(c, o.id), st.mode)) : el('div', { class: 'avwrap' }, el('div', { class: 'avatar', style: `width:46px;height:46px;background:${tone(c.name)}` }, ic(c.systemKind === 'beta' ? 'star' : c.isPublic ? 'globe' : 'users', 20)));
+    const av = c.type === 'dm' ? sring(el('div', { class: 'avwrap' }, avatar(convTitle(c), 46, '', o.avatar), dot(isOnline(c, o.id), st.mode)), o.id) : el('div', { class: 'avwrap' }, el('div', { class: 'avatar', style: `width:46px;height:46px;background:${tone(c.name)}` }, ic(c.systemKind === 'beta' ? 'star' : c.isPublic ? 'globe' : 'users', 20)));
     const act = o && activityOf(o.id);
     const typing = S.typing.get(c.id) && S.typing.get(c.id).size;
     const sub = typing ? el('span', { class: 'accent' }, 'typing...') : act ? el('span', null, 'playing ' + act.title) : (c._preview || '');
@@ -368,7 +371,7 @@ function renderHeader() {
   } else sub = el('span', { class: 'muted' }, `${c.isPublic ? 'public · ' : ''}${c.members.filter((x) => isOnline(c, x.id)).length} of ${c.memberCount || c.members.length} here${c.slowSeconds ? ' · slow mode ' + X.slowLabel(c.slowSeconds) : ''}`);
   h.replaceChildren(
     el('button', { class: 'icon-btn back', title: 'back', onclick: () => { S.active = null; renderAll(); } }, ic('back', 22)),
-    o ? el('div', { class: 'avwrap' }, avatar(convTitle(c), 42, '', o.avatar), dot(isOnline(c, o.id), st.mode)) : el('div', { class: 'avatar', style: `width:42px;height:42px;background:${tone(c.name)}` }, ic(c.isPublic ? 'globe' : 'users', 18)),
+    o ? sring(el('div', { class: 'avwrap' }, avatar(convTitle(c), 42, '', o.avatar), dot(isOnline(c, o.id), st.mode)), o.id) : el('div', { class: 'avatar', style: `width:42px;height:42px;background:${tone(c.name)}` }, ic(c.isPublic ? 'globe' : 'users', 18)),
     el('div', { class: 'grow click', onclick: () => (o ? openProfile(o.username) : groupModal(c)) }, el('div', { class: 'ctitle' }, convTitle(c), o ? vb(o) : null), el('div', { class: 'small' }, sub)),
     el('span', { class: 'ic muted', title: c.isPublic ? 'public room: open to everyone, not end-to-end encrypted' : 'end-to-end encrypted' }, ic(c.isPublic ? 'globe' : 'lock', 16)),
     (!c.systemKind || S.me.isAdmin) && (c.type === 'dm' || c.role === 'admin' || S.me.isAdmin) ? el('button', { class: 'icon-btn' + (c.ttlSeconds ? ' on' : ''), title: 'disappearing messages', onclick: () => X.ttlModal(c) }, ic('timer', 20)) : null,
@@ -589,7 +592,7 @@ async function groupModal(c) {
       isAdmin() && c.isPublic ? el('button', { class: 'btn small', style: 'margin-top:8px', onclick: () => X.editPublic(c, draw) }, ic('edit', 14), 'about') : null,
       el('h4', null, `${c.members.length} people`),
       el('div', { class: 'ulist' }, c.members.map((u) => el('div', { class: 'urow' },
-        el('div', { class: 'avwrap click', onclick: () => openProfile(u.username) }, avatar(u.displayName, 34, '', u.avatar), dot(isOnline(c, u.id))),
+        sring(el('div', { class: 'avwrap click', onclick: () => openProfile(u.username) }, avatar(u.displayName, 34, '', u.avatar), dot(isOnline(c, u.id))), u.id),
         el('div', { class: 'grow click', onclick: () => openProfile(u.username) }, el('div', { class: 'ctitle' }, u.displayName + (u.id === S.me.id ? ' (you)' : ''), vb(u)), el('div', { class: 'muted small' }, '@' + u.username)),
         u.isBot ? el('span', { class: 'tag gold' }, 'bot') : u.role === 'admin' ? el('span', { class: 'tag' }, 'host') : u.role === 'mod' ? el('span', { class: 'tag' }, 'mod') : null,
         ...X.memberTools(c, u, draw),
@@ -631,7 +634,7 @@ async function openProfile(username) {
     const owner = p.isOwner;
     body.replaceChildren(
       X.banner(p.banner),
-      el('div', { class: 'prof-head' + (p.banner ? ' hasbanner' : '') }, el('div', { class: 'avwrap' }, avatar(p.displayName, 68, '', p.avatar), dot(p.online, p.mode)),
+      el('div', { class: 'prof-head' + (p.banner ? ' hasbanner' : '') }, sring(el('div', { class: 'avwrap' }, avatar(p.displayName, 68, '', p.avatar), dot(p.online, p.mode)), p.id),
         el('div', { class: 'grow' }, el('h3', null, p.displayName, vb(p)), el('div', { class: 'muted' }, '@' + p.username, p.isAdmin ? el('span', { class: 'tag gold', style: 'margin-left:8px' }, owner ? 'owner' : 'admin') : null),
           el('div', { style: 'margin-top:4px' }, p.activity ? el('span', { class: 'good small' }, 'playing ' + p.activity.title) : statusLine(st) || el('span', { class: (p.online ? 'good' : 'muted') + ' small' }, p.online ? 'online' : 'offline')))),
       p.bio ? el('p', { class: 'bio' }, p.bio) : null,

@@ -151,7 +151,8 @@ const avatar = (name, size = 40, extra = '', preset = null) => {
   return el('div', { class: 'avatar ' + extra, style: `width:${size}px;height:${size}px;font-size:${Math.round(size * 0.46)}px;background:${tone(name)}` }, (String(name).trim()[0] || '?').toLowerCase());
 };
 const pad = (n) => String(n).padStart(2, '0');
-const fmtTime = (d) => { d = new Date(d); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const fmtTime = (d) => { d = new Date(d); const h = d.getHours(); return `${h % 12 || 12}:${pad(d.getMinutes())} ${h < 12 ? 'AM' : 'PM'}`; };
+const fmt12 = (hhmm) => { const m = /^(\d{1,2}):(\d{2})/.exec(String(hhmm || '')); if (!m) return String(hhmm || ''); const h = +m[1]; return `${h % 12 || 12}:${m[2]} ${h < 12 ? 'AM' : 'PM'}`; };
 const fmtDay = (d) => { d = new Date(d); const t = new Date(); const y = new Date(Date.now() - 864e5); if (d.toDateString() === t.toDateString()) return 'Today'; if (d.toDateString() === y.toDateString()) return 'Yesterday'; return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: d.getFullYear() === t.getFullYear() ? undefined : 'numeric' }); };
 const fmtDur = (s) => { s = Math.max(0, Math.round(s)); if (s < 60) return s + 's'; const m = Math.floor(s / 60); if (m < 60) return m + 'm'; const h = Math.floor(m / 60); return h + 'h ' + (m % 60) + 'm'; };
 const ago = (d) => fmtDur((Date.now() - new Date(d)) / 1000) + ' ago';
@@ -468,6 +469,7 @@ const sendWS = (o) => { if (S.ws && S.ws.readyState === 1) S.ws.send(JSON.string
 async function onWS(m) {
   const ui = window.__ui;
   if (typeof m.t === 'string' && (m.t.startsWith('vc_') || m.t.startsWith('call_'))) { const h = window.__ext && window.__ext.onCall; if (h) h(m); return; }
+  if (m.t === 'stories_changed') { const h = window.__ext && window.__ext.onStories; if (h) h(m); return; }
   if (m.t === 'drop_update') { const h = window.__ext && window.__ext.onDrop; if (h) h(m); return; }
   if (typeof m.t === 'string' && (m.t.startsWith('channel_') || m.t.startsWith('thread_'))) { const h = window.__ext && window.__ext.onChan; if (h) h(m); return; }
   if (typeof m.t === 'string' && (m.t.startsWith('board_') || m.t === 'night_new')) { const h = window.__ext && window.__ext.onBoard; if (h) h(m); return; }
@@ -475,7 +477,7 @@ async function onWS(m) {
     case 'ready':
       S.wsOk = true; wsBackoff = 1000;
       if (window.__ext && window.__ext.onWsReady) window.__ext.onWsReady();
-      if (window.__ext && window.__ext.dropSync) window.__ext.dropSync();
+      if (window.__ext && window.__ext.dropSync) window.__ext.dropSync(); if (window.__ext && window.__ext.storiesLoad) setTimeout(window.__ext.storiesLoad, 1500);
       clearInterval(hb); hb = setInterval(() => sendWS({ t: 'ping' }), 25000);
       await loadConvs().catch(() => {});                     // resync after (re)connect
       api('GET', '/api/presence', null, { quiet: true }).then((d) => { for (const p of d.presence) S.presence.set(p.userId, p); ui.renderAll(); }).catch(() => {});
@@ -615,5 +617,5 @@ async function onWS(m) {
   }
 }
 
-window.__core = { PRESETS, F, API, SAME_ORIGIN, S, el, $, ic, avatar, fmtTime, fmtDay, fmtDur, ago, rid, debounce, lsGet, lsSet, lsDel, toast, beep, updateBadge, api, kdf, newIdentity, openIdentity, wrapGroupKey, encryptPayload, decryptMsg, safetyNumber, idbGet, idbSet, idbDel, convOf, other, convTitle, memberOf, keyFor, previewText, refreshPreview, sortConvs, mergeConvs, loadConvs, loadMessages, addMessage, sendPayload, markRead, connectWS, sendWS, rand, b64, unb64, subtle, skCache, convKeys, startCooldown, hue, tone, EMOJI, EMOJI_LIST, QUICK_REACTS, emojiEl, emojify, onlyEmoji, expandShortcodes, gifOk, betaActive, betaMsLeft, betaUntilLabel };
+window.__core = { PRESETS, F, API, SAME_ORIGIN, S, el, $, ic, avatar, fmtTime, fmt12, fmtDay, fmtDur, ago, rid, debounce, lsGet, lsSet, lsDel, toast, beep, updateBadge, api, kdf, newIdentity, openIdentity, wrapGroupKey, encryptPayload, decryptMsg, safetyNumber, idbGet, idbSet, idbDel, convOf, other, convTitle, memberOf, keyFor, previewText, refreshPreview, sortConvs, mergeConvs, loadConvs, loadMessages, addMessage, sendPayload, markRead, connectWS, sendWS, rand, b64, unb64, subtle, skCache, convKeys, startCooldown, hue, tone, EMOJI, EMOJI_LIST, QUICK_REACTS, emojiEl, emojify, onlyEmoji, expandShortcodes, gifOk, betaActive, betaMsLeft, betaUntilLabel };
 })();
