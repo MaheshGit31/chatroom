@@ -166,7 +166,7 @@ app.post('/api/auth/register', rl('register', 30, 3_600_000), wrap(async (req, r
   const displayName = String(b.displayName || username).trim().slice(0, 32) || username;
   if (!USERNAME.test(username)) return bad(res, 'username must be 3-20 chars: a-z 0-9 _');
   if (username === 'gng') return bad(res, 'that name is taken');
-  if (safety.F.check(username) || safety.F.check(displayName)) return bad(res, 'pick a cleaner name');
+  if (safety.F.checkName(username) || safety.F.checkName(displayName)) return bad(res, 'pick a cleaner name');
   if (username === ADMIN_USERNAME && ADMIN_SETUP_KEY && sha256(String(b.setupKey || '')) !== sha256(ADMIN_SETUP_KEY)) return res.status(403).json({ error: 'setup_key_required', message: 'this name is reserved, enter the setup key' });
   if (![b.kdfSalt, b.authSecret, b.publicKey, b.wrappedPriv, b.wrappedPrivIv].every((x) => isB64(x, 2000))) return bad(res, 'bad key material');
   const authSalt = crypto.randomBytes(16).toString('hex');
@@ -222,7 +222,7 @@ app.get('/api/me', auth, wrap(async (req, res) => {
 
 app.patch('/api/me', auth, byUser('me-patch', 20, 60_000), wrap(async (req, res) => {
   const sets = [], vals = [req.user.id];
-  if (typeof req.body.displayName === 'string' && safety.F.check(req.body.displayName)) return bad(res, 'pick a cleaner name');
+  if (typeof req.body.displayName === 'string' && safety.F.checkName(req.body.displayName)) return bad(res, 'pick a cleaner name');
   if (typeof req.body.displayName === 'string') { vals.push(req.body.displayName.trim().slice(0, 32) || req.user.username); sets.push(`display_name=$${vals.length}`); }
   if (typeof req.body.shareActivity === 'boolean') { vals.push(req.body.shareActivity); sets.push(`share_activity=$${vals.length}`); }
   if ('avatar' in req.body) {                                 // only preset ids are accepted, never uploads
@@ -471,7 +471,7 @@ app.post('/api/conversations/group', auth, byUser('conv-create', 15, 3_600_000),
   const members = Array.isArray(req.body.members) ? req.body.members : [];
   const self = req.body.self || {};
   if (!name) return bad(res, 'group needs a name');
-  if (safety.F.check(name)) return bad(res, 'keep the name clean');
+  if (safety.F.checkName(name)) return bad(res, 'keep the name clean');
   if (members.length < 1 || members.length > 49) return bad(res, 'pick 1-49 members');
   if (!isB64(self.wrappedKey, 400) || !isB64(self.iv, 40)) return bad(res, 'bad key');
   const ids = new Set();
@@ -517,7 +517,7 @@ app.patch('/api/conversations/:id', auth, byUser('conv-edit', 20, 60_000), wrap(
   const name = String(req.body.name || '').trim().slice(0, 40);
   if (!name) return bad(res, 'bad name');
   if (m.system_kind && !req.user.is_admin) return bad(res, 'the built-in rooms keep their names', 403);
-  if (safety.F.check(name)) return bad(res, 'keep the name clean');
+  if (safety.F.checkName(name)) return bad(res, 'keep the name clean');
   await q('update conversations set name=$2 where id=$1', [req.params.id, name]);
   await sendToConv(req.params.id, { t: 'conv_update', convId: req.params.id, name });
   res.json({ ok: true });
@@ -652,6 +652,8 @@ app.post('/api/conversations/:id/messages', auth, wrap(async (req, res, next) =>
     const p = safety.decryptPublic(req.params.id, uid, keyVersion, ciphertext, iv); pubPayload = p;
     if (!p) return bad(res, 'could not read that message');
     if (safety.payloadDirty(p)) return res.status(400).json({ error: 'blocked_word', message: 'keep it clean' });
+    const sp = !req.user.is_admin && safety.spamReason(uid, p);
+    if (sp) return res.status(400).json({ error: 'spam', message: sp });
   }
   if (m.type === 'dm') {                                       // blocked users cannot message
     const other = (await q('select user_id from members where conv_id=$1 and user_id<>$2', [req.params.id, uid])).rows[0];

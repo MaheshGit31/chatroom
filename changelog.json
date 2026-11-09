@@ -1,5 +1,15 @@
 [
   {
+    "id": "2026-11-08-a",
+    "date": "2026-11-08",
+    "title": "tougher filters",
+    "items": [
+      "the word filter now catches words stuck together like bitchass, masked ones like f*ck and fvck, and more slang and threats",
+      "names are checked much harder: usernames, display names, rooms, channels and roles can no longer hide bad words inside longer names",
+      "public rooms now block all-caps shouting, repeated-letter spam and sending the same message over and over"
+    ]
+  },
+  {
     "id": "2026-11-06-b",
     "date": "2026-11-06",
     "title": "admin applications",
