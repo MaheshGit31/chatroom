@@ -874,7 +874,8 @@ const avatar = (name, size = 40, extra = '', preset = null) => {
   return el('div', { class: 'avatar ' + extra, style: `width:${size}px;height:${size}px;font-size:${Math.round(size * 0.46)}px;background:${tone(name)}` }, (String(name).trim()[0] || '?').toLowerCase());
 };
 const pad = (n) => String(n).padStart(2, '0');
-const fmtTime = (d) => { d = new Date(d); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const fmtTime = (d) => { d = new Date(d); const h = d.getHours(); return `${h % 12 || 12}:${pad(d.getMinutes())} ${h < 12 ? 'AM' : 'PM'}`; };
+const fmt12 = (hhmm) => { const m = /^(\d{1,2}):(\d{2})/.exec(String(hhmm || '')); if (!m) return String(hhmm || ''); const h = +m[1]; return `${h % 12 || 12}:${m[2]} ${h < 12 ? 'AM' : 'PM'}`; };
 const fmtDay = (d) => { d = new Date(d); const t = new Date(); const y = new Date(Date.now() - 864e5); if (d.toDateString() === t.toDateString()) return 'Today'; if (d.toDateString() === y.toDateString()) return 'Yesterday'; return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: d.getFullYear() === t.getFullYear() ? undefined : 'numeric' }); };
 const fmtDur = (s) => { s = Math.max(0, Math.round(s)); if (s < 60) return s + 's'; const m = Math.floor(s / 60); if (m < 60) return m + 'm'; const h = Math.floor(m / 60); return h + 'h ' + (m % 60) + 'm'; };
 const ago = (d) => fmtDur((Date.now() - new Date(d)) / 1000) + ' ago';
@@ -1191,6 +1192,7 @@ const sendWS = (o) => { if (S.ws && S.ws.readyState === 1) S.ws.send(JSON.string
 async function onWS(m) {
   const ui = window.__ui;
   if (typeof m.t === 'string' && (m.t.startsWith('vc_') || m.t.startsWith('call_'))) { const h = window.__ext && window.__ext.onCall; if (h) h(m); return; }
+  if (m.t === 'stories_changed') { const h = window.__ext && window.__ext.onStories; if (h) h(m); return; }
   if (m.t === 'drop_update') { const h = window.__ext && window.__ext.onDrop; if (h) h(m); return; }
   if (typeof m.t === 'string' && (m.t.startsWith('channel_') || m.t.startsWith('thread_'))) { const h = window.__ext && window.__ext.onChan; if (h) h(m); return; }
   if (typeof m.t === 'string' && (m.t.startsWith('board_') || m.t === 'night_new')) { const h = window.__ext && window.__ext.onBoard; if (h) h(m); return; }
@@ -1198,7 +1200,7 @@ async function onWS(m) {
     case 'ready':
       S.wsOk = true; wsBackoff = 1000;
       if (window.__ext && window.__ext.onWsReady) window.__ext.onWsReady();
-      if (window.__ext && window.__ext.dropSync) window.__ext.dropSync();
+      if (window.__ext && window.__ext.dropSync) window.__ext.dropSync(); if (window.__ext && window.__ext.storiesLoad) setTimeout(window.__ext.storiesLoad, 1500);
       clearInterval(hb); hb = setInterval(() => sendWS({ t: 'ping' }), 25000);
       await loadConvs().catch(() => {});                     // resync after (re)connect
       api('GET', '/api/presence', null, { quiet: true }).then((d) => { for (const p of d.presence) S.presence.set(p.userId, p); ui.renderAll(); }).catch(() => {});
@@ -1338,7 +1340,7 @@ async function onWS(m) {
   }
 }
 
-window.__core = { PRESETS, F, API, SAME_ORIGIN, S, el, $, ic, avatar, fmtTime, fmtDay, fmtDur, ago, rid, debounce, lsGet, lsSet, lsDel, toast, beep, updateBadge, api, kdf, newIdentity, openIdentity, wrapGroupKey, encryptPayload, decryptMsg, safetyNumber, idbGet, idbSet, idbDel, convOf, other, convTitle, memberOf, keyFor, previewText, refreshPreview, sortConvs, mergeConvs, loadConvs, loadMessages, addMessage, sendPayload, markRead, connectWS, sendWS, rand, b64, unb64, subtle, skCache, convKeys, startCooldown, hue, tone, EMOJI, EMOJI_LIST, QUICK_REACTS, emojiEl, emojify, onlyEmoji, expandShortcodes, gifOk, betaActive, betaMsLeft, betaUntilLabel };
+window.__core = { PRESETS, F, API, SAME_ORIGIN, S, el, $, ic, avatar, fmtTime, fmt12, fmtDay, fmtDur, ago, rid, debounce, lsGet, lsSet, lsDel, toast, beep, updateBadge, api, kdf, newIdentity, openIdentity, wrapGroupKey, encryptPayload, decryptMsg, safetyNumber, idbGet, idbSet, idbDel, convOf, other, convTitle, memberOf, keyFor, previewText, refreshPreview, sortConvs, mergeConvs, loadConvs, loadMessages, addMessage, sendPayload, markRead, connectWS, sendWS, rand, b64, unb64, subtle, skCache, convKeys, startCooldown, hue, tone, EMOJI, EMOJI_LIST, QUICK_REACTS, emojiEl, emojify, onlyEmoji, expandShortcodes, gifOk, betaActive, betaMsLeft, betaUntilLabel };
 })();
 
 /* ===== Chatroom client: ui (auth, shell, chats, modals, gamesplace, activity) ===== */
@@ -1410,6 +1412,7 @@ const linkify = (text, c) => {                                 // links become a
 };
 const isOnline = (c, uid) => { const p = S.presence.get(uid); if (p) return p.online; const m = c && memberOf(c, uid); return !!(m && m.online); };
 const activityOf = (uid) => { const p = S.presence.get(uid); return p && p.activity; };
+const sring = (w, id) => (window.__ext.storyRing ? window.__ext.storyRing(w, id) : w);
 const dot = (on, mode) => el('span', { class: 'pdot ' + (on ? (mode === 'busy' ? 'busy' : 'on') : '') });
 // status of anyone: mine comes from S.me, others from live presence, falling back to the member row
 const statusFor = (uid, c) => {
@@ -1519,6 +1522,7 @@ function buildShell() {
         el('button', { class: 'icon-btn', title: 'new chat', onclick: newChatModal }, ic('userplus')),
         el('button', { class: 'icon-btn', title: 'new group', onclick: newGroupModal }, ic('users')))),
       el('div', { class: 'searchbox side-search' }, ic('search', 16), search),
+      el('div', { class: 'storystrip', id: 'storystrip' }),
       el('div', { class: 'folders', id: 'folders' }),
       el('div', { class: 'clist', id: 'clist' })),
     el('main', { class: 'main', id: 'main' }));
@@ -1577,7 +1581,7 @@ function renderRail() {
     el('button', { class: 'rbtn', title: 'settings', onclick: settingsModal }, ic('sliders', 22), el('span', { class: 'rlabel' }, 'you'), X.newsUnseen() ? el('span', { class: 'newdot' }) : null),
     el('div', { class: 'grow' }),
     el('div', { class: 'conn ' + (S.wsOk ? 'ok' : 'bad'), title: S.wsOk ? 'connected' : 'reconnecting' }),
-    el('button', { class: 'rme', title: 'status', onclick: statusModal }, el('div', { class: 'avwrap' }, avatar(S.me.displayName, 38, '', S.me.avatar), dot(S.me.mode !== 'invisible', S.me.mode)))].filter(Boolean));
+    el('button', { class: 'rme', title: 'status', onclick: statusModal }, sring(el('div', { class: 'avwrap' }, avatar(S.me.displayName, 38, '', S.me.avatar), dot(S.me.mode !== 'invisible', S.me.mode)), S.me.id))].filter(Boolean));
   requestAnimationFrame(() => {
     const on = r.querySelector('.rbtn.on');
     if (!on || isMobile()) { rind.style.opacity = 0; return; }
@@ -1590,6 +1594,7 @@ function renderRail() {
 function renderSide() {
   const list = $('#clist'); if (!list) return;
   const f = ($('#cfilter') || { value: '' }).value.trim().toLowerCase();
+  X.renderStories && X.renderStories();
   X.renderFolders();                                         // folder chips above the list (beta)
   const items = X.inFolder(S.convs).filter((c) => !f || convTitle(c).toLowerCase().includes(f)).sort((a, b) => (b.systemKind ? 1 : 0) - (a.systemKind ? 1 : 0)); // Everyone + Beta lounge stay on top
   if (!items.length) { list.classList.remove('stagger'); list.replaceChildren(el('div', { class: 'empty-s' }, S.convs.length ? 'no matches' : 'nothing yet, start one above')); return; }
@@ -1598,7 +1603,7 @@ function renderSide() {
   list.replaceChildren(...items.map((c, i) => {
     const o = c.type === 'dm' ? other(c) : null;
     const st = o ? statusFor(o.id, c) : null;
-    const av = c.type === 'dm' ? el('div', { class: 'avwrap' }, avatar(convTitle(c), 46, '', o.avatar), dot(isOnline(c, o.id), st.mode)) : el('div', { class: 'avwrap' }, el('div', { class: 'avatar', style: `width:46px;height:46px;background:${tone(c.name)}` }, ic(c.systemKind === 'beta' ? 'star' : c.isPublic ? 'globe' : 'users', 20)));
+    const av = c.type === 'dm' ? sring(el('div', { class: 'avwrap' }, avatar(convTitle(c), 46, '', o.avatar), dot(isOnline(c, o.id), st.mode)), o.id) : el('div', { class: 'avwrap' }, el('div', { class: 'avatar', style: `width:46px;height:46px;background:${tone(c.name)}` }, ic(c.systemKind === 'beta' ? 'star' : c.isPublic ? 'globe' : 'users', 20)));
     const act = o && activityOf(o.id);
     const typing = S.typing.get(c.id) && S.typing.get(c.id).size;
     const sub = typing ? el('span', { class: 'accent' }, 'typing...') : act ? el('span', null, 'playing ' + act.title) : (c._preview || '');
@@ -1711,7 +1716,7 @@ function renderHeader() {
   } else sub = el('span', { class: 'muted' }, `${c.isPublic ? 'public · ' : ''}${c.members.filter((x) => isOnline(c, x.id)).length} of ${c.memberCount || c.members.length} here${c.slowSeconds ? ' · slow mode ' + X.slowLabel(c.slowSeconds) : ''}`);
   h.replaceChildren(
     el('button', { class: 'icon-btn back', title: 'back', onclick: () => { S.active = null; renderAll(); } }, ic('back', 22)),
-    o ? el('div', { class: 'avwrap' }, avatar(convTitle(c), 42, '', o.avatar), dot(isOnline(c, o.id), st.mode)) : el('div', { class: 'avatar', style: `width:42px;height:42px;background:${tone(c.name)}` }, ic(c.isPublic ? 'globe' : 'users', 18)),
+    o ? sring(el('div', { class: 'avwrap' }, avatar(convTitle(c), 42, '', o.avatar), dot(isOnline(c, o.id), st.mode)), o.id) : el('div', { class: 'avatar', style: `width:42px;height:42px;background:${tone(c.name)}` }, ic(c.isPublic ? 'globe' : 'users', 18)),
     el('div', { class: 'grow click', onclick: () => (o ? openProfile(o.username) : groupModal(c)) }, el('div', { class: 'ctitle' }, convTitle(c), o ? vb(o) : null), el('div', { class: 'small' }, sub)),
     el('span', { class: 'ic muted', title: c.isPublic ? 'public room: open to everyone, not end-to-end encrypted' : 'end-to-end encrypted' }, ic(c.isPublic ? 'globe' : 'lock', 16)),
     (!c.systemKind || S.me.isAdmin) && (c.type === 'dm' || c.role === 'admin' || S.me.isAdmin) ? el('button', { class: 'icon-btn' + (c.ttlSeconds ? ' on' : ''), title: 'disappearing messages', onclick: () => X.ttlModal(c) }, ic('timer', 20)) : null,
@@ -1932,7 +1937,7 @@ async function groupModal(c) {
       isAdmin() && c.isPublic ? el('button', { class: 'btn small', style: 'margin-top:8px', onclick: () => X.editPublic(c, draw) }, ic('edit', 14), 'about') : null,
       el('h4', null, `${c.members.length} people`),
       el('div', { class: 'ulist' }, c.members.map((u) => el('div', { class: 'urow' },
-        el('div', { class: 'avwrap click', onclick: () => openProfile(u.username) }, avatar(u.displayName, 34, '', u.avatar), dot(isOnline(c, u.id))),
+        sring(el('div', { class: 'avwrap click', onclick: () => openProfile(u.username) }, avatar(u.displayName, 34, '', u.avatar), dot(isOnline(c, u.id))), u.id),
         el('div', { class: 'grow click', onclick: () => openProfile(u.username) }, el('div', { class: 'ctitle' }, u.displayName + (u.id === S.me.id ? ' (you)' : ''), vb(u)), el('div', { class: 'muted small' }, '@' + u.username)),
         u.isBot ? el('span', { class: 'tag gold' }, 'bot') : u.role === 'admin' ? el('span', { class: 'tag' }, 'host') : u.role === 'mod' ? el('span', { class: 'tag' }, 'mod') : null,
         ...X.memberTools(c, u, draw),
@@ -1974,7 +1979,7 @@ async function openProfile(username) {
     const owner = p.isOwner;
     body.replaceChildren(
       X.banner(p.banner),
-      el('div', { class: 'prof-head' + (p.banner ? ' hasbanner' : '') }, el('div', { class: 'avwrap' }, avatar(p.displayName, 68, '', p.avatar), dot(p.online, p.mode)),
+      el('div', { class: 'prof-head' + (p.banner ? ' hasbanner' : '') }, sring(el('div', { class: 'avwrap' }, avatar(p.displayName, 68, '', p.avatar), dot(p.online, p.mode)), p.id),
         el('div', { class: 'grow' }, el('h3', null, p.displayName, vb(p)), el('div', { class: 'muted' }, '@' + p.username, p.isAdmin ? el('span', { class: 'tag gold', style: 'margin-left:8px' }, owner ? 'owner' : 'admin') : null),
           el('div', { style: 'margin-top:4px' }, p.activity ? el('span', { class: 'good small' }, 'playing ' + p.activity.title) : statusLine(st) || el('span', { class: (p.online ? 'good' : 'muted') + ' small' }, p.online ? 'online' : 'offline')))),
       p.bio ? el('p', { class: 'bio' }, p.bio) : null,
@@ -6458,6 +6463,249 @@ async function adminDrop(box) {
 
 Object.assign(window.__ext, { dropSync: sync, onDrop, dropOn, adminDrop });
 })();
+
+// ---------- stories ----------
+{
+const C = window.__core, S = C.S, el = C.el, ic = C.ic, api = C.api, toast = C.toast, avatar = C.avatar, fmtTime = C.fmtTime;
+const modal = (...a) => window.__ui.modal(...a);
+const ST = { users: new Map(), list: [], loaded: false };
+S.stories = ST.users;
+const live = () => !!(window.__ext && window.__ext.dropOn && window.__ext.dropOn());
+
+const css = document.createElement('style');
+css.textContent = `
+.avwrap.hasstory{cursor:pointer}
+.avwrap.hasstory>.avatar{box-shadow:0 0 0 2px var(--bg,#1c1612),0 0 0 4px var(--muted,#8a7b6a)}
+.avwrap.hasstory.unseen>.avatar{box-shadow:0 0 0 2px var(--bg,#1c1612),0 0 0 4.5px var(--accent),0 0 16px 4px color-mix(in srgb,var(--accent) 60%,transparent);animation:storyglow 2.4s ease-in-out infinite}
+@keyframes storyglow{50%{box-shadow:0 0 0 2px var(--bg,#1c1612),0 0 0 4.5px var(--accent),0 0 24px 8px color-mix(in srgb,var(--accent) 75%,transparent)}}
+.storystrip{display:flex;gap:14px;overflow-x:auto;padding:10px 14px 6px;scrollbar-width:none;flex:none}
+.storystrip::-webkit-scrollbar{display:none}
+.storystrip:empty{display:none}
+.stitem{display:flex;flex-direction:column;align-items:center;gap:6px;flex:none;width:58px;background:none;color:var(--text);padding:4px 0}
+.stitem .stname{font-size:var(--t-xs,12px);max-width:58px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
+.stadd{position:relative}
+.stadd .plus{position:absolute;right:-4px;bottom:-4px;width:20px;height:20px;border-radius:50%;background:var(--accent);color:var(--accent-ink,#fff);display:flex;align-items:center;justify-content:center;border:2px solid var(--bg,#1c1612)}
+.stvid{width:100%;max-height:60dvh;border-radius:18px;background:#000;display:block;object-fit:cover}
+.stvid.mirror{transform:scaleX(-1)}
+.stprev{width:100%;max-height:60dvh;border-radius:18px;display:block;object-fit:contain;background:#000}
+.stbtns{display:flex;gap:8px;margin-top:10px;align-items:center;justify-content:center}
+.stshot{width:64px;height:64px;border-radius:50%;border:4px solid var(--text);background:var(--accent);flex:none}
+.storyview{position:fixed;inset:0;z-index:290;background:#000;display:flex;align-items:center;justify-content:center;animation:fade .2s both}
+.storyview .sv-box{position:relative;width:min(100vw,calc(100dvh*9/16));height:100dvh;max-height:100dvh;background:#0b0907;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.storyview img.sv-img{width:100%;height:100%;object-fit:contain;user-select:none;-webkit-user-drag:none}
+.sv-top{position:absolute;left:0;right:0;top:0;padding:max(10px,env(safe-area-inset-top)) 12px 28px;background:linear-gradient(#000a,#0000);color:#fff;z-index:3}
+.sv-bars{display:flex;gap:4px;margin-bottom:10px}
+.sv-bars i{flex:1;height:3px;border-radius:2px;background:#fff4;overflow:hidden;display:block}
+.sv-bars i b{display:block;height:100%;width:0;background:#fff}
+.sv-bars i.done b{width:100%}
+.sv-head{display:flex;align-items:center;gap:10px}
+.sv-head .nm{font-weight:700;font-size:15px}.sv-head .tm{font-size:12px;opacity:.75}
+.sv-head button{color:#fff;background:#fff2;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;flex:none}
+.sv-cap{position:absolute;left:0;right:0;bottom:0;padding:40px 18px max(22px,env(safe-area-inset-bottom));background:linear-gradient(#0000,#000c);color:#fff;font-size:17px;text-align:center;z-index:3}
+.sv-tap{position:absolute;top:70px;bottom:90px;width:40%;z-index:2}
+.sv-tap.l{left:0}.sv-tap.r{right:0;width:60%}
+.sv-own{position:absolute;right:12px;bottom:max(70px,env(safe-area-inset-bottom));z-index:4;display:flex;gap:8px}
+.sv-own button{display:flex;align-items:center;gap:6px;color:#fff;background:#0009;border-radius:999px;padding:8px 14px;font-size:14px}
+`;
+document.head.append(css);
+
+async function load() {
+  if (!live() || !S.me) return;
+  try {
+    const d = await api('GET', '/api/stories', null, { quiet: true });
+    ST.list = d.users;
+    ST.users = new Map(d.users.map((u) => [u.userId, u]));
+    S.stories = ST.users;
+    ST.loaded = true;
+    window.__ui.renderSide();
+    renderStrip();
+    window.__ui.renderRail && window.__ui.renderRail();
+  } catch {}
+}
+
+function ring(wrap, uid) {
+  const s = uid && ST.users.get(uid);
+  if (!s || !wrap) return wrap;
+  wrap.classList.add('hasstory');
+  if (!s.seen) wrap.classList.add('unseen');
+  wrap.addEventListener('click', (e) => { e.stopPropagation(); e.stopImmediatePropagation(); e.preventDefault(); openViewer(uid); }, true);
+  return wrap;
+}
+
+function renderStrip() {
+  const box = document.getElementById('storystrip');
+  if (!box) return;
+  if (!live() || !S.me) { box.replaceChildren(); return; }
+  const mine = ST.users.get(S.me.id);
+  const meWrap = el('div', { class: 'avwrap stadd' }, avatar(S.me.displayName, 46, '', S.me.avatar), el('span', { class: 'plus' }, ic('plus', 12)));
+  const meBtn = el('button', { class: 'stitem', title: 'add to your story', onclick: () => composer() }, meWrap, el('span', { class: 'stname' }, 'your story'));
+  const items = [meBtn];
+  if (mine) {
+    const mw = el('div', { class: 'avwrap' }, avatar(S.me.displayName, 46, '', S.me.avatar));
+    items.push(el('button', { class: 'stitem', title: 'view your story' }, ring(mw, S.me.id), el('span', { class: 'stname' }, 'mine')));
+  }
+  for (const u of ST.list) {
+    if (u.userId === S.me.id) continue;
+    const w = el('div', { class: 'avwrap' }, avatar(u.displayName, 46, '', u.avatar));
+    items.push(el('button', { class: 'stitem', title: u.displayName }, ring(w, u.userId), el('span', { class: 'stname' }, u.displayName)));
+  }
+  box.replaceChildren(...items);
+}
+
+function shrink(src, mirror) {
+  const w0 = src.videoWidth || src.naturalWidth || src.width, h0 = src.videoHeight || src.naturalHeight || src.height;
+  const k = Math.min(1, 960 / Math.max(w0, h0));
+  const c = document.createElement('canvas');
+  c.width = Math.round(w0 * k); c.height = Math.round(h0 * k);
+  const g = c.getContext('2d');
+  if (mirror) { g.translate(c.width, 0); g.scale(-1, 1); }
+  g.drawImage(src, 0, 0, c.width, c.height);
+  let q = 0.82, out = c.toDataURL('image/jpeg', q);
+  while (out.length * 0.75 > 300_000 && q > 0.3) { q -= 0.08; out = c.toDataURL('image/jpeg', q); }
+  return out;
+}
+
+function composer() {
+  if (!S.me.verified && !S.me.isAdmin) return toast('verify your account to post a story', 'error');
+  let stream = null, facing = 'user', shot = null;
+  const body = el('div', null);
+  const stop = () => { if (stream) stream.getTracks().forEach((t) => t.stop()); stream = null; };
+  const m = modal('new story', body, { onClose: stop });
+  const video = el('video', { class: 'stvid mirror', autoplay: true, playsInline: true, muted: true });
+  const file = el('input', { type: 'file', accept: 'image/*', style: 'display:none' });
+  const note = el('p', { class: 'muted small', style: 'text-align:center;margin:8px 0 0' }, 'stories vanish after 24 hours');
+
+  const start = async () => {
+    stop();
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 1280 } }, audio: false });
+      video.srcObject = stream;
+      video.classList.toggle('mirror', facing === 'user');
+      note.textContent = 'stories vanish after 24 hours';
+    } catch { note.textContent = 'camera is blocked or missing. you can pick a photo instead'; }
+  };
+  const draw = () => {
+    shot = null;
+    const snap = el('button', { class: 'stshot', title: 'take photo', onclick: () => {
+      if (!video.videoWidth) return toast('camera is not ready yet', 'error');
+      shot = shrink(video, facing === 'user'); stop(); review();
+    } });
+    body.replaceChildren(video, el('div', { class: 'stbtns' },
+      el('button', { class: 'btn', onclick: () => { facing = facing === 'user' ? 'environment' : 'user'; start(); } }, 'flip'),
+      snap,
+      el('button', { class: 'btn', onclick: () => file.click() }, ic('image', 16), 'photo')), note, file);
+    start();
+  };
+  const review = () => {
+    const cap = el('input', { placeholder: 'add a caption', maxlength: 140, style: 'width:100%;margin-top:10px' });
+    const post = el('button', { class: 'btn primary grow' }, ic('send', 16), 'post story');
+    post.onclick = async () => {
+      post.disabled = true;
+      try { await api('POST', '/api/stories', { image: shot, caption: cap.value.trim() }); toast('story posted', 'success'); m.close(); load(); }
+      catch (e) { toast(e.message, 'error'); post.disabled = false; }
+    };
+    body.replaceChildren(el('img', { class: 'stprev', src: shot }), cap,
+      el('div', { class: 'row gap', style: 'margin-top:10px' }, el('button', { class: 'btn', onclick: draw }, 'retake'), post));
+  };
+  file.onchange = () => {
+    const f = file.files && file.files[0]; if (!f) return;
+    const img = new Image();
+    img.onload = () => { shot = shrink(img, false); URL.revokeObjectURL(img.src); stop(); review(); };
+    img.onerror = () => toast('could not read that photo', 'error');
+    img.src = URL.createObjectURL(f);
+  };
+  draw();
+}
+
+async function openViewer(uid) {
+  let order = ST.list.map((u) => u.userId);
+  if (uid === S.me.id && !order.includes(uid)) order = [uid];
+  let ui = Math.max(0, order.indexOf(uid)), si = 0, items = [], timer = 0, started = 0, paused = false, left = 0, DUR = 5000;
+  const root = el('div', { class: 'storyview' });
+  const box = el('div', { class: 'sv-box' });
+  root.append(box);
+  document.body.append(root);
+  const close = () => { clearInterval(timer); document.removeEventListener('keydown', key); root.remove(); load(); };
+  const key = (e) => { if (e.key === 'Escape') close(); else if (e.key === 'ArrowRight') next(); else if (e.key === 'ArrowLeft') prev(); };
+  document.addEventListener('keydown', key);
+
+  async function loadUser() {
+    clearInterval(timer);
+    const id = order[ui];
+    try { items = (await api('GET', `/api/stories/user/${id}`, null, { quiet: true })).stories; } catch { items = []; }
+    if (!items.length) return next(true);
+    si = Math.max(0, items.findIndex((x) => !x.seen)); if (si < 0 || order[ui] === S.me.id) si = 0;
+    show();
+  }
+  function show() {
+    const id = order[ui], u = ST.users.get(id) || (id === S.me.id ? { displayName: S.me.displayName, avatar: S.me.avatar } : { displayName: '', avatar: null });
+    const it = items[si];
+    const bars = el('div', { class: 'sv-bars' }, items.map((_, i) => el('i', { class: i < si ? 'done' : '' }, el('b'))));
+    const mine = id === S.me.id;
+    const top = el('div', { class: 'sv-top' }, bars, el('div', { class: 'sv-head' }, avatar(u.displayName, 36, '', u.avatar),
+      el('div', { class: 'grow' }, el('div', { class: 'nm' }, mine ? 'your story' : u.displayName), el('div', { class: 'tm' }, fmtTime(it.createdAt))),
+      el('button', { title: 'close', onclick: close }, ic('x', 18))));
+    const img = el('img', { class: 'sv-img', src: `${C.API}/api/stories/${it.id}/img`, draggable: false });
+    const kids = [img, top,
+      el('div', { class: 'sv-tap l', onclick: prev }), el('div', { class: 'sv-tap r', onclick: () => next() })];
+    if (it.caption) kids.push(el('div', { class: 'sv-cap' }, it.caption));
+    const own = [];
+    if (mine || S.me.isAdmin) {
+      if (it.views !== undefined) own.push(el('button', { onclick: () => viewers(it) }, ic('eye', 16), String(it.views)));
+      own.push(el('button', { title: 'delete', onclick: () => del(it) }, ic('trash', 16)));
+    }
+    if (own.length) kids.push(el('div', { class: 'sv-own' }, own));
+    box.replaceChildren(...kids);
+    const bar = bars.children[si].firstChild;
+    started = performance.now(); left = DUR; paused = false;
+    clearInterval(timer);
+    timer = setInterval(() => {
+      if (paused) { started = performance.now() - (DUR - left); return; }
+      const t = performance.now() - started; left = DUR - t;
+      bar.style.width = Math.min(100, (t / DUR) * 100) + '%';
+      if (t >= DUR) next();
+    }, 50);
+    box.onpointerdown = () => { paused = true; };
+    box.onpointerup = box.onpointercancel = () => { paused = false; };
+    if (!mine && !it.seen) { it.seen = true; api('POST', `/api/stories/${it.id}/view`, null, { quiet: true }).catch(() => {}); }
+    if (si === items.length - 1) { const s = ST.users.get(id); if (s) { s.seen = true; } }
+  }
+  function next(skip) {
+    if (si < items.length - 1 && !skip) { si++; return show(); }
+    if (ui < order.length - 1) { ui++; si = 0; return loadUser(); }
+    close();
+  }
+  function prev() {
+    if (si > 0) { si--; return show(); }
+    if (ui > 0) { ui--; return loadUser(); }
+    show();
+  }
+  async function del(it) {
+    paused = true;
+    if (!(await window.__ui.confirmModal('delete story', 'delete this story for everyone?'))) { paused = false; return; }
+    try { await api('DELETE', `/api/stories/${it.id}`); } catch (e) { paused = false; return toast(e.message, 'error'); }
+    items.splice(si, 1);
+    if (!items.length) { await load(); order.splice(ui, 1); if (ui >= order.length) return close(); return loadUser(); }
+    if (si >= items.length) si = items.length - 1;
+    show();
+  }
+  async function viewers(it) {
+    paused = true;
+    const b = el('div', null, el('div', { class: 'muted pad' }, '...'));
+    modal('seen by', b, { onClose: () => { paused = false; } });
+    try {
+      const d = await api('GET', `/api/stories/${it.id}/views`);
+      b.replaceChildren(...(d.views.length ? d.views.map((v) => el('div', { class: 'urow' }, avatar(v.displayName, 32), el('div', { class: 'grow' }, el('div', { class: 'ctitle' }, v.displayName), el('div', { class: 'small muted' }, '@' + v.username)), el('span', { class: 'small muted' }, fmtTime(v.at)))) : [el('div', { class: 'muted pad' }, 'nobody yet')]));
+    } catch (e) { b.replaceChildren(el('div', { class: 'muted pad' }, e.message)); }
+  }
+  loadUser();
+}
+
+function onStories(m) { if (m.t === 'stories_changed') load(); }
+setInterval(() => { if (live() && S.me && (!ST.loaded || document.visibilityState === 'visible')) load(); }, 60_000);
+setTimeout(load, 4000);
+Object.assign(window.__ext, { storyRing: ring, renderStories: renderStrip, storiesLoad: load, onStories, storyComposer: composer });
+}
 
 /* ===== Chatroom client: mod tools, admin panes (appeals, audit log, stats), appeal screen, and app start ===== */
 (() => {
