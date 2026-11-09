@@ -75,6 +75,7 @@ const ICONS = {
   trash: '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
   x: '<path d="M18 6 6 18M6 6l12 12"/>',
   back: '<path d="m15 18-6-6 6-6"/>',
+  pause: '<rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/>',
   play: '<polygon points="6 3 20 12 6 21 6 3"/>',
   share: '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="m16 6-4-4-4 4"/><path d="M12 2v13"/>',
   external: '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
@@ -467,12 +468,14 @@ const sendWS = (o) => { if (S.ws && S.ws.readyState === 1) S.ws.send(JSON.string
 async function onWS(m) {
   const ui = window.__ui;
   if (typeof m.t === 'string' && (m.t.startsWith('vc_') || m.t.startsWith('call_'))) { const h = window.__ext && window.__ext.onCall; if (h) h(m); return; }
+  if (m.t === 'drop_update') { const h = window.__ext && window.__ext.onDrop; if (h) h(m); return; }
   if (typeof m.t === 'string' && (m.t.startsWith('channel_') || m.t.startsWith('thread_'))) { const h = window.__ext && window.__ext.onChan; if (h) h(m); return; }
   if (typeof m.t === 'string' && (m.t.startsWith('board_') || m.t === 'night_new')) { const h = window.__ext && window.__ext.onBoard; if (h) h(m); return; }
   switch (m.t) {
     case 'ready':
       S.wsOk = true; wsBackoff = 1000;
       if (window.__ext && window.__ext.onWsReady) window.__ext.onWsReady();
+      if (window.__ext && window.__ext.dropSync) window.__ext.dropSync();
       clearInterval(hb); hb = setInterval(() => sendWS({ t: 'ping' }), 25000);
       await loadConvs().catch(() => {});                     // resync after (re)connect
       api('GET', '/api/presence', null, { quiet: true }).then((d) => { for (const p of d.presence) S.presence.set(p.userId, p); ui.renderAll(); }).catch(() => {});

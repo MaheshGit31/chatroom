@@ -200,10 +200,11 @@ function onState(m) {
   if (!meMember()) { if (K.joined) cleanup(); return; }
   K.joined = true;
   paintDock();
-  reconcile().catch((e) => console.warn('reconcile', e));
+  reconcile().catch((e) => console.warn('reconcile', e)).then(tuneSenders);
 }
 
 function cleanup(msg) {
+  wClose();
   for (const id of [...K.links.keys()]) closeLink(id);
   for (const t of [K.localAudio, K.localVideo]) if (t) try { t.stop(); } catch { /* ended */ }
   for (const l of (K.levels || new Map()).values()) try { l.src.disconnect(); } catch { /* gone */ }
@@ -334,6 +335,7 @@ function showIncoming(m) {
 function onCall(m) {
   switch (m.t) {
     case 'vc_state': onState(m); break;
+    case 'vc_watch': onWatch(m); break;
     case 'vc_sig': onSig(m).catch((e) => console.warn('sig', e)); break;
     case 'vc_live': X.setLive(m); break;
     case 'vc_closed':
@@ -405,7 +407,7 @@ function paintDock() {
       }
     } else {
       const list = K.members.length ? K.members : [{ id: myId(), name: S.me.displayName, avatar: S.me.avatar, mic: K.mic, cam: K.cam }];
-      parts.push(el('div', { class: 'tiles n' + Math.min(list.length, 6) }, list.map(tile)));
+      parts.push(el('div', { class: 'tiles n' + Math.min(list.length, 12) }, list.map(tile)));
     }
   }
   if (K.afk) parts.splice(1, 0, el('div', { class: 'afkwarn' }, el('div', { class: 'grow' }, 'still there? you will be removed soon to save bandwidth'), el('button', { class: 'btn small primary', onclick: sendAlive }, 'i am here')));
@@ -414,6 +416,7 @@ function paintDock() {
   if (canSpeak) bar.push(btn(K.mic ? 'mic' : 'micoff', K.mic ? 'mute' : 'unmute', () => toggleMic(), K.mic ? '' : 'off'));
   if (hasVideo()) bar.push(btn(K.cam ? 'video' : 'videooff', K.cam ? 'camera off' : 'camera on', () => toggleCam(), K.cam ? 'on' : 'off'));
   bar.push(btn('headphones', K.deaf ? 'undeafen' : 'deafen', toggleDeaf, K.deaf ? 'off' : ''));
+  if (window.__ext.dropOn && window.__ext.dropOn() && K.joined && (!stg || (me && me.staff))) bar.push(btn('play', 'watch together', openWatchModal, W.host ? 'on' : ''));
   if (stg && me && !me.speaker) bar.push(btn('hand', me.hand ? 'lower hand' : 'raise hand', () => sendWS({ t: 'vc_hand', room: K.room, up: !me.hand }), me.hand ? 'on' : ''));
   if (stg && me && me.speaker) bar.push(btn('users', 'step down to audience', () => sendWS({ t: 'vc_promote', room: K.room, user: myId(), on: false })));
   bar.push(btn('phoneoff', ringing && K.outgoing ? 'cancel' : 'leave', leave, 'hang'));
@@ -484,5 +487,100 @@ function notifExtra(type, d) {
 }
 
 window.addEventListener('pagehide', () => { if (K.room) sendWS({ t: 'vc_leave', room: K.room }); });
+
+const W = { host: null, st: null, p: null, key: '', off: 0, tick: 0, yt: null };
+function wClose() {
+  clearInterval(W.tick);
+  if (W.p) { try { W.p.destroy(); } catch { /* gone */ } }
+  if (W.host) W.host.remove();
+  Object.assign(W, { host: null, st: null, p: null, key: '', tick: 0 });
+}
+const wPos = () => W.st.pos + (W.st.playing ? (Date.now() + W.off - W.st.at) / 1000 : 0);
+const mmss = (s) => { s = Math.max(0, Math.floor(s || 0)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+function loadYT() {
+  if (W.yt) return W.yt;
+  W.yt = new Promise((res, rej) => {
+    if (window.YT && window.YT.Player) return res();
+    const prev = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => { if (prev) prev(); res(); };
+    const s = document.createElement('script'); s.src = 'https://www.youtube.com/iframe_api'; s.onerror = () => rej(new Error('youtube is blocked on this network'));
+    document.head.append(s);
+    setTimeout(() => rej(new Error('youtube did not load')), 12000);
+  });
+  W.yt.catch(() => { W.yt = null; });
+  return W.yt;
+}
+async function wBuild(st) {
+  const stage = el('div', { class: 'watchstage' });
+  const tapBox = el('div', { class: 'watchtap', style: 'display:none', onclick: () => { tapBox.style.display = 'none'; wSync(true); } }, el('span', null, 'tap to join the video'));
+  let p;
+  if (st.kind === 'yt') {
+    await loadYT();
+    const holder = el('div'); stage.append(holder);
+    let ready = false;
+    const pl = new window.YT.Player(holder, { videoId: st.id, width: '100%', height: '100%', playerVars: { controls: 0, disablekb: 1, playsinline: 1, rel: 0, modestbranding: 1, fs: 0, iv_load_policy: 3, origin: location.origin }, events: { onReady: () => { ready = true; wSync(true); }, onError: () => toast('that video cannot be played here', 'error') } });
+    p = { pos: () => (ready ? pl.getCurrentTime() : 0), dur: () => (ready ? pl.getDuration() : 0), play: () => { if (ready) pl.playVideo(); }, pause: () => { if (ready) pl.pauseVideo(); }, seek: (t) => { if (ready) pl.seekTo(t, true); }, vol: (x) => { if (ready) pl.setVolume(x * 100); }, destroy: () => { try { pl.destroy(); } catch { /* gone */ } } };
+  } else {
+    const v = el('video', { src: st.url, playsinline: true, preload: 'auto', style: 'width:100%;height:100%;background:#000' });
+    v.controls = false; v.setAttribute('playsinline', '');
+    stage.append(v);
+    p = { pos: () => v.currentTime, dur: () => v.duration || 0, play: () => { v.play().catch(() => { tapBox.style.display = 'flex'; }); }, pause: () => v.pause(), seek: (t) => { try { v.currentTime = t; } catch { /* not ready */ } }, vol: (x) => { v.volume = x; }, destroy: () => { v.pause(); v.removeAttribute('src'); v.load(); } };
+    v.onerror = () => toast('that video could not be loaded', 'error');
+  }
+  stage.append(el('div', { class: 'watchblock' }), tapBox);
+  return { p, stage };
+}
+async function onWatch(m) {
+  if (m.room !== K.room) return;
+  if (!m.watch) { if (W.host) toast('watch together ended', 'info'); wClose(); return; }
+  const st = m.watch; W.off = st.now - Date.now();
+  const key = st.kind + '|' + st.url;
+  if (key === W.key && W.p) { W.st = st; wSync(false); return; }
+  wClose(); W.key = key; W.st = st;
+  let built;
+  try { built = await wBuild(st); } catch (e) { toast(e.message || 'could not start the video', 'error'); W.key = ''; return; }
+  if (W.key !== key) { built.p.destroy(); return; }
+  W.p = built.p;
+  const play = el('button', { class: 'icon-btn', title: 'play or pause', onclick: () => { if (!W.p) return; sendWS({ t: 'vc_watch', room: K.room, act: W.st.playing ? 'pause' : 'play', pos: W.p.pos() }); } });
+  const seek = el('input', { type: 'range', min: 0, max: 1000, value: 0, class: 'watchseek', onchange: () => { const d = W.p && W.p.dur(); if (d) sendWS({ t: 'vc_watch', room: K.room, act: 'seek', pos: seek.value / 1000 * d }); } });
+  const time = el('span', { class: 'small muted watchtime' }, '0:00');
+  const vol = el('input', { type: 'range', min: 0, max: 100, value: 100, class: 'watchvol', title: 'volume', oninput: () => { if (W.p) W.p.vol(vol.value / 100); } });
+  W.host = el('div', { class: 'watchdock' },
+    el('div', { class: 'watchhead' }, ic('play', 15), el('b', null, 'watch together'), el('span', { class: 'muted small grow' }, 'started by ' + st.byName),
+      el('button', { class: 'icon-btn tiny', title: 'stop watching for everyone', onclick: () => sendWS({ t: 'vc_watch', room: K.room, act: 'stop' }) }, ic('x', 14))),
+    built.stage, el('div', { class: 'watchbar' }, play, seek, time, vol));
+  document.body.append(W.host);
+  W.tick = setInterval(() => {
+    if (!W.p || !W.st) return;
+    const d = W.p.dur(); const c = W.p.pos();
+    if (d && document.activeElement !== seek) seek.value = Math.round(c / d * 1000);
+    time.textContent = mmss(c) + ' / ' + mmss(d);
+    play.replaceChildren(ic(W.st.playing ? 'pause' : 'play', 18));
+    if (W.st.playing && Math.abs(c - wPos()) > 2.5) wSync(false);
+  }, 700);
+  wSync(true);
+}
+function wSync(force) {
+  if (!W.p || !W.st) return;
+  const t = wPos();
+  if (force || Math.abs(W.p.pos() - t) > 1.3) W.p.seek(t);
+  if (W.st.playing) W.p.play(); else W.p.pause();
+}
+function openWatchModal() {
+  const inp = el('input', { placeholder: 'youtube link, or a direct https link to an mp4 or webm', maxLength: 500 });
+  const m = window.__ui.modal('watch together', el('div', null, el('p', { class: 'muted small', style: 'margin-top:0' }, 'everyone in this call sees the same video at the same time. anyone in the call can pause or skip.'), inp,
+    el('button', { class: 'btn primary wide', style: 'margin-top:10px', onclick: () => { const v = inp.value.trim(); if (!v) return; sendWS({ t: 'vc_watch', room: K.room, act: 'start', url: v }); m.close(); } }, ic('play', 16), 'start')));
+  setTimeout(() => inp.focus(), 50);
+}
+function tuneSenders() {
+  const n = K.members.length;
+  const max = n > 9 ? 120000 : n > 6 ? 220000 : n > 4 ? 450000 : 1200000, scale = n > 9 ? 3 : n > 6 ? 2 : 1;
+  for (const L of K.links.values()) for (const s of L.pc.getSenders()) {
+    if (!s.track || s.track.kind !== 'video') continue;
+    try { const prm = s.getParameters(); if (!prm.encodings || !prm.encodings.length) prm.encodings = [{}]; prm.encodings[0].maxBitrate = max; prm.encodings[0].scaleResolutionDownBy = scale; s.setParameters(prm).catch(() => {}); } catch { /* unsupported */ }
+  }
+}
+setInterval(() => { if (K.room) tuneSenders(); }, 8000);
+
 Object.assign(window.__ext, { onCall, startCall, joinChannel, callRoom: () => K.room, callSettingsRows, onWsReady, notifExtra, testRing, _callState: K });
 })();

@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1c1612">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Chatroom">
 <title>Chatroom</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%23c4572c'/%3E%3Cpath d='M9 12h11v7a4 4 0 0 1-4 4h-3a4 4 0 0 1-4-4z' fill='%23fbefdc'/%3E%3Cpath d='M20 14h1.5a2.5 2.5 0 0 1 0 5H20' fill='none' stroke='%23fbefdc' stroke-width='1.8'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -450,6 +456,29 @@ html.shielded body::after{content:'hidden while you are away';position:fixed;ins
   .bubble{max-width:88%}.page{padding:16px}
   .status-grid{grid-template-columns:repeat(4,1fr)}
 }
+@media (max-width:760px){
+  html,body{height:100dvh}
+  .app{padding-bottom:env(safe-area-inset-bottom)}
+  .rail{padding-bottom:max(4px,env(safe-area-inset-bottom));height:auto}
+  .chat-head{padding:8px 10px;gap:8px;min-height:0}
+  .chat-head .avatar{width:34px;height:34px;flex:none}
+  .chat-head .ctitle{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chat-head .small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chat-head .grow{min-width:0}
+  .chat-head .icon-btn{width:36px;height:36px;flex:none}
+  .chanbar{padding:4px 10px}
+  .chanbar .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .chanbar .chips::-webkit-scrollbar{display:none}
+  .chanbar .chip{flex:none;white-space:nowrap}
+  .annbar{min-width:0}.annbar .anntext{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+  .composer{gap:2px;padding:6px 8px;padding-bottom:max(6px,env(safe-area-inset-bottom))}
+  .composer .icon-btn{width:34px;height:34px;flex:none}
+  .composer textarea{font-size:16px;min-width:0}
+  input,textarea,select{font-size:16px}
+  .modal{max-width:100vw;max-height:92dvh}
+  .msgs{overscroll-behavior:contain}
+}
+@media (display-mode:standalone){body{-webkit-user-select:none;user-select:none}.msgs,.bubble,textarea,input{-webkit-user-select:text;user-select:text}html{overscroll-behavior:none}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 .or{text-align:center;color:var(--muted,#8a7b6a);font-size:13px;margin:14px 0 8px}
 .avgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:10px}
@@ -583,6 +612,17 @@ button.oncecard{cursor:pointer}.oncecard.gone{opacity:.6;cursor:default}.oncetex
 .cbtn.hang{background:var(--bad);color:#fff}
 .tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .tiles.n1{grid-template-columns:1fr}
+.tiles.n7,.tiles.n8,.tiles.n9{grid-template-columns:repeat(3,1fr)}.tiles.n10,.tiles.n11,.tiles.n12{grid-template-columns:repeat(4,1fr)}
+.tiles.n7 .tile,.tiles.n8 .tile,.tiles.n9 .tile,.tiles.n10 .tile,.tiles.n11 .tile,.tiles.n12 .tile{aspect-ratio:4/3}
+.watchdock{position:fixed;left:16px;bottom:16px;width:min(680px,calc(100vw - 480px));min-width:300px;z-index:999;background:var(--panel);border:1px solid rgba(128,128,128,.3);border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.45);overflow:hidden}
+.watchhead{display:flex;align-items:center;gap:8px;padding:8px 10px}
+.watchstage{position:relative;aspect-ratio:16/9;background:#000}
+.watchstage iframe,.watchstage>div:first-child,.watchstage>video{position:absolute;inset:0;width:100%;height:100%;border:0}
+.watchblock{position:absolute;inset:0}
+.watchtap{position:absolute;inset:0;z-index:2;align-items:center;justify-content:center;background:rgba(0,0,0,.7);cursor:pointer;color:#fff;font-weight:700}
+.watchbar{display:flex;align-items:center;gap:10px;padding:6px 10px 10px}
+.watchseek{flex:1;min-width:0}.watchvol{width:80px}.watchtime{min-width:76px;text-align:center}
+@media (max-width:900px){.watchdock{left:8px;right:8px;width:auto;min-width:0;bottom:auto;top:calc(env(safe-area-inset-top,0px) + 8px)}}
 .tile{position:relative;aspect-ratio:16/10;border-radius:12px;background:rgba(128,128,128,.18);display:flex;align-items:center;justify-content:center;overflow:hidden;outline:3px solid transparent;transition:outline-color .12s}
 .tile.speaking{outline-color:var(--good)}
 .tile video{width:100%;height:100%;object-fit:cover;display:block}
