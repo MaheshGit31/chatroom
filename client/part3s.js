@@ -4,7 +4,7 @@ const C = window.__core, S = C.S, el = C.el, ic = C.ic, api = C.api, toast = C.t
 const modal = (...a) => window.__ui.modal(...a);
 const ST = { users: new Map(), list: [], loaded: false };
 S.stories = ST.users;
-const live = () => !!(window.__ext && window.__ext.dropOn && window.__ext.dropOn());
+const live = () => true;
 
 const css = document.createElement('style');
 css.textContent = `

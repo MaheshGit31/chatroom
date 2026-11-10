@@ -695,6 +695,7 @@ function settingsModal() {
       el('button', { class: 'btn grow', onclick: () => { m.close(); X.newsModal(); } }, ic('newspaper', 16), "what's new", X.newsUnseen() ? el('span', { class: 'newdot inline' }) : null)),
     el('h4', null, ic('palette', 14), 'look'),
     el('div', { class: 'seg small' }, themeBtn('auto', 'auto'), themeBtn('light', 'day'), themeBtn('dark', 'night')),
+    X.uiSeg ? X.uiSeg(savePrefs) : null,
     el('div', { class: 'row gap', style: 'margin-top:10px' },
       el('button', { class: 'btn grow', onclick: () => { m.close(); X.myBots(); } }, ic('sparkle', 16), 'my bots'),
       el('button', { class: 'btn grow', onclick: () => { m.close(); X.botDirectory(); } }, ic('compass', 16), 'browse bots')),
