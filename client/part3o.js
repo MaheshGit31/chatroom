@@ -478,6 +478,7 @@ function notifExtra(type, d) {
   if (type === 'missed_call') return `missed call from ${d.from}`;
   if (type === 'adminapp_new') return `${d.by} (@${d.username}) applied to be an admin`;
   if (type === 'adminapp_result') return d.approved ? 'your admin application was approved, welcome to the team' : 'your admin application was denied' + (d.response ? ': ' + d.response : '');
+  if (type === 'boss_reward') return `you placed #${d.rank} in the boss fight and won ${d.days} day${d.days > 1 ? 's' : ''} of beta`;
   if (type === 'vouch_ask') return `${d.from} (@${d.username}) asks you to vouch for them`;
   if (type === 'vouch_got') return `${d.from} vouched for you (${d.count}/${d.need})`;
   if (type === 'vouch_done') return 'you are verified, thanks to your vouchers';

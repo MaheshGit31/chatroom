@@ -74,7 +74,7 @@ function unlock(withVideo) {
   dropPill(); dropShade(true);
   if (D.video) { try { D.video.pause(); } catch {} D.video.removeAttribute('src'); D.video.load(); D.video = null; }
   window.__ui.renderAll();
-  setTimeout(() => toast(withVideo ? 'the update is here, enjoy' : 'the update is here', 'success'), 900);
+  setTimeout(() => toast('the doomsclock hit zero. the update is here', 'success'), 900); if (window.__ext.bossLoad) setTimeout(window.__ext.bossLoad, 1500);
 }
 
 async function playVideo() {
@@ -116,23 +116,10 @@ async function playVideo() {
 function tick() {
   if (!D.at) return;
   const left = D.at - now();
-  if (D.phase === 'done' || D.phase === 'video') return;
-  if (left > 0) {
-    const pill = ensurePill();
-    pill.querySelector('.v').textContent = label(left);
-    if (left <= 180_000 && D.hasVideo) preload();
-    if (left <= 60_000) {
-      const sh = shadeEl(); sh.classList.toggle('hot', left <= 10_000);
-      if (!sh.querySelector('video')) { sh.querySelector('.n').textContent = label(left); sh.querySelector('.s').textContent = left <= 10_000 ? 'brace yourself' : 'everyone is watching this together'; }
-      dropPill();
-    }
-    return;
-  }
+  if (D.phase === 'done') return;
+  if (left > 0) { ensurePill().querySelector('.v').textContent = label(left); return; }
   if (seen() || D.released && now() - D.at > 6 * 3600_000) return finishQuiet();
-  if (!D.hasVideo) { D.phase = 'video'; const sh = shadeEl(); sh.querySelector('.n').textContent = '00:00'; sh.querySelector('.s').textContent = 'it is here'; setTimeout(() => unlock(false), 2500); return; }
-  if (!D.url) { D.phase = 'wait'; preload().then(() => { if (D.url && D.url !== 'pending') playVideo(); else unlock(false); }); return; }
-  if (D.url === 'pending') return;
-  playVideo();
+  unlock(false);
 }
 function finishQuiet() { D.phase = 'done'; clearInterval(D.timer); dropPill(); dropShade(false); window.__ui.renderAll(); }
 
@@ -166,46 +153,26 @@ async function adminDrop(box) {
   box.replaceChildren(el('div', { class: 'muted pad' }, '...'));
   let d;
   try { d = await api('GET', '/api/admin/drop', null, { quiet: true }); } catch (e) { return box.replaceChildren(el('div', { class: 'form-err' }, e.message)); }
-  const status = el('div', { class: 'small muted', style: 'margin:8px 0' });
-  const showStatus = (x) => {
-    const v = x.video || {};
-    status.textContent = (x.at ? 'drops ' + new Date(x.at).toLocaleString() : 'no drop scheduled') + ' - video: ' + ({ none: 'none yet', fetching: 'downloading from drive...', ready: 'ready (' + Math.round(v.bytes / 1048576 * 10) / 10 + ' MB)', failed: 'failed - ' + (v.error || '') }[v.state] || v.state);
-    status.style.color = v.state === 'failed' ? 'var(--bad)' : '';
-  };
-  showStatus(d);
-  if (!d.isOwner) return box.replaceChildren(el('p', { class: 'muted' }, 'only the owner can change the doomsclock.'), status);
+  const status = el('div', { class: 'small muted', style: 'margin:8px 0' }, d.at ? 'drops ' + new Date(d.at).toLocaleString() : 'no drop scheduled');
+  const bossBox = el('div', null);
+  const bossPart = () => { if (window.__ext.adminBoss) window.__ext.adminBoss(bossBox); };
+  if (!d.isOwner) return box.replaceChildren(el('p', { class: 'muted pad' }, 'only the owner can change the doomsclock.'), status, bossBox) || bossPart();
   const when = el('input', { type: 'datetime-local', value: d.at ? fmtLocal(d.at) : '' });
-  const link = el('input', { placeholder: 'google drive share link to the video (anyone with the link)', value: d.link || '' });
   const err = el('div', { class: 'form-err' });
-  let poll = 0;
-  const watch = async () => {
-    clearTimeout(poll);
-    try { const x = await api('GET', '/api/admin/drop', null, { quiet: true }); showStatus(x); if (x.video.state === 'fetching') poll = setTimeout(watch, 1500); } catch {}
-  };
-  if (d.video.state === 'fetching') watch();
   const save = el('button', { class: 'btn primary grow', onclick: async () => {
     err.textContent = '';
     const at = when.value ? new Date(when.value).getTime() : null;
     if (!at) { err.textContent = 'pick a date and time'; return; }
-    try { const x = await api('PUT', '/api/admin/drop', { at, link: link.value.trim() }, { quiet: true }); showStatus(x); toast('the doomsclock is set', 'success'); watch(); }
-    catch (e) { err.textContent = e.message; }
+    try { const x = await api('PUT', '/api/admin/drop', { at }, { quiet: true }); status.textContent = 'drops ' + new Date(x.at).toLocaleString(); toast('the doomsclock is set', 'success'); } catch (e) { err.textContent = e.message; }
   } }, ic('timer', 16), 'set the doomsclock');
   const clear = el('button', { class: 'btn danger', onclick: async () => {
     if (!(await window.__ui.confirmModal('cancel the doomsclock?', 'the countdown disappears for everyone.', 'cancel it'))) return;
-    try { await api('DELETE', '/api/admin/drop', null, { quiet: true }); showStatus({ video: { state: 'none' } }); when.value = ''; link.value = ''; } catch (e) { err.textContent = e.message; }
+    try { await api('DELETE', '/api/admin/drop', null, { quiet: true }); status.textContent = 'no drop scheduled'; when.value = ''; } catch (e) { err.textContent = e.message; }
   } }, 'cancel');
-  const prev = el('button', { class: 'btn', onclick: async () => {
-    try {
-      const u = await api('GET', '/api/drop/video-url', null, { quiet: true });
-      const v = el('video', { src: window.__core.API + u.url, controls: true, playsInline: true, style: 'width:100%;border-radius:12px;background:#000' });
-      const m = window.__ui.modal('preview', v); v.play().catch(() => {});
-      const oc = m.close; m.close = () => { v.pause(); oc(); };
-    } catch (e) { err.textContent = e.message; }
-  } }, ic('play', 16), 'preview video');
   box.replaceChildren(el('div', { class: 'pad' },
-    el('p', { class: 'muted small', style: 'margin-top:0' }, 'everyone sees a countdown. at zero the video plays for everyone at the same moment, with no controls, and the new features unlock when it ends. admins can use the new features early.'),
-    el('label', null, 'drop time (your local time)', when), el('label', null, 'video', link), err, status,
-    el('div', { class: 'row gap' }, save, clear), el('div', { style: 'margin-top:8px' }, prev)));
+    el('p', { class: 'muted small', style: 'margin-top:0' }, 'everyone sees a countdown. at zero the new features unlock and a minute later the first boss fight starts. admins can use the new features early.'),
+    el('label', null, 'drop time (your local time)', when), err, status, el('div', { class: 'row gap' }, save, clear)), el('hr'), bossBox);
+  bossPart();
 }
 
 Object.assign(window.__ext, { dropSync: sync, onDrop, dropOn, adminDrop });

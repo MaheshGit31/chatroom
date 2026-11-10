@@ -469,6 +469,7 @@ const sendWS = (o) => { if (S.ws && S.ws.readyState === 1) S.ws.send(JSON.string
 async function onWS(m) {
   const ui = window.__ui;
   if (typeof m.t === 'string' && (m.t.startsWith('vc_') || m.t.startsWith('call_'))) { const h = window.__ext && window.__ext.onCall; if (h) h(m); return; }
+  if (typeof m.t === 'string' && m.t.startsWith('boss_')) { const h = window.__ext && window.__ext.onBoss; if (h) h(m); return; }
   if (m.t === 'stories_changed') { const h = window.__ext && window.__ext.onStories; if (h) h(m); return; }
   if (m.t === 'drop_update') { const h = window.__ext && window.__ext.onDrop; if (h) h(m); return; }
   if (typeof m.t === 'string' && (m.t.startsWith('channel_') || m.t.startsWith('thread_'))) { const h = window.__ext && window.__ext.onChan; if (h) h(m); return; }
@@ -477,7 +478,7 @@ async function onWS(m) {
     case 'ready':
       S.wsOk = true; wsBackoff = 1000;
       if (window.__ext && window.__ext.onWsReady) window.__ext.onWsReady();
-      if (window.__ext && window.__ext.dropSync) window.__ext.dropSync(); if (window.__ext && window.__ext.storiesLoad) setTimeout(window.__ext.storiesLoad, 1500);
+      if (window.__ext && window.__ext.dropSync) window.__ext.dropSync(); if (window.__ext && window.__ext.storiesLoad) setTimeout(window.__ext.storiesLoad, 1500); if (window.__ext && window.__ext.bossLoad) setTimeout(window.__ext.bossLoad, 1800);
       clearInterval(hb); hb = setInterval(() => sendWS({ t: 'ping' }), 25000);
       await loadConvs().catch(() => {});                     // resync after (re)connect
       api('GET', '/api/presence', null, { quiet: true }).then((d) => { for (const p of d.presence) S.presence.set(p.userId, p); ui.renderAll(); }).catch(() => {});
