@@ -849,6 +849,8 @@ const drop = require('./lib/drop');
 drop.mount(app, { q, auth, adminOnly, ownerOnly, byUser, bad, wrap, rl, sendTo, sockets, secret: () => SERVER_SECRET, ownerName: ADMIN_USERNAME });
 const stories = require('./lib/stories');
 stories.mount(app, { q, auth, adminOnly, ownerOnly, byUser, bad, wrap, rl, sendTo, sockets, secret: () => SERVER_SECRET, ownerName: ADMIN_USERNAME });
+const boss = require('./lib/boss');
+boss.mount(app, { q, auth, adminOnly, ownerOnly, byUser, bad, wrap, rl, sendTo, notify, sockets, secret: () => SERVER_SECRET, ownerName: ADMIN_USERNAME });
 require('./lib/adminapps').mount(app, { q, auth, adminOnly, ownerOnly, byUser, bad, wrap, sendTo, notify, ownerName: ADMIN_USERNAME });
 vouch.mount(app, { q, auth, byUser, bad, wrap, isUuid, sendTo, notify, adminOnly });
 require('./lib/boards').mount(app, { q, auth, byUser, bad, wrap, isUuid, requireMember, sendToConv, sendTo, notify, isStaff: mod.isStaff, filter: safety.F });
@@ -963,6 +965,7 @@ wss.on('connection', (ws) => {
         sendTo(m.to, { t: 'rtc', from: ws.userId, room: m.room, kind: m.kind, data: m.data || null });
       }
       else if (typeof m.t === 'string' && (m.t.startsWith('vc_') || m.t.startsWith('call_'))) await voice.handle(ws, m);
+      else if (typeof m.t === 'string' && m.t.startsWith('boss_')) await boss.handle(ws, m);
       else if (m.t === 'ping') ws.send('{"t":"pong"}');
     } catch (e) { console.error('ws error', e.message); }
   });
@@ -1012,6 +1015,7 @@ async function getSetting(key, make) {
   setInterval(() => sweepExpired().catch((e) => console.warn('sweep', e.message)), 5 * 60_000).unref();
   drop.start().catch((e) => console.warn('drop', e.message));
   stories.start();
+  boss.start();
   beta.start({ q, sendTo, notify, pushTo, sockets, isBlockedEitherWay });
   setInterval(async () => {
     try {

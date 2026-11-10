@@ -1,13 +1,14 @@
 [
   {
-    "id": "2026-11-09-a",
+    "id": "2026-11-09-b",
     "date": "2026-11-09",
-    "title": "phones and the doomsclock",
+    "title": "something is coming",
     "items": [
       "the app now fits phones properly: tighter headers, one-row channel tabs, bigger text boxes and no more zoom on typing",
       "you can install chatroom to your home screen like a real app",
       "times now show in 12 hour format like 3:05 PM",
-      "something is counting down. keep an eye on the top"
+      "something is counting down. keep an eye on the top",
+      "stories got a few small fixes"
     ]
   },
   {
