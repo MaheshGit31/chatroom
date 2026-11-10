@@ -65,7 +65,7 @@ app.use((req, res, next) => {
   next();
 });
 const smallJson = express.json({ limit: '64kb' });
-app.use((req, res, next) => (req.path === '/api/verify' || req.path === '/api/me/avatar' ? next() : smallJson(req, res, next)));   // only the id photo upload may be bigger                    // ciphertext is small, big bodies are rejected
+app.use((req, res, next) => (req.path === '/api/verify' || req.path === '/api/me/avatar' || req.path === '/api/stories' ? next() : smallJson(req, res, next)));   // only the id photo upload may be bigger                    // ciphertext is small, big bodies are rejected
 app.use('/api', rl('api-ip', 1500, 60_000));                  // global per-ip cap
 
 // ---------- realtime hub ----------
